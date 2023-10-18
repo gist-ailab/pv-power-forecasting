@@ -471,3 +471,5 @@ PatchTST_supervised/checkpoints/*
 PatchTST_supervised/results/*
 PatchTST_supervised/test_results/*
 PatchTST_supervised/result.txt
+
+.vscode/*

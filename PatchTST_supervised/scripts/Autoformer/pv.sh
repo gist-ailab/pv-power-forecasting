@@ -9,9 +9,9 @@ seq_len=336
 model_name=Autoformer
 
 root_path_name=./dataset/
-data_path_name=PV
+data_path_name=PV/55-Site_29-CSUN.csv
 model_id_name=weather
-data_name=custom
+data_name=pv
 
 random_seed=2021
 for pred_len in 96 192 336 720

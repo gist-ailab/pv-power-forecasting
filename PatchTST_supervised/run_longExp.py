@@ -12,13 +12,13 @@ if __name__ == '__main__':
     parser.add_argument('--random_seed', type=int, default=2021, help='random seed')
 
     # basic config
-    parser.add_argument('--is_training', type=int, required=True, default=1, help='status')
-    parser.add_argument('--model_id', type=str, required=True, default='test', help='model id')
-    parser.add_argument('--model', type=str, required=True, default='Autoformer',
+    parser.add_argument('--is_training', type=int, default=1, help='status')
+    parser.add_argument('--model_id', type=str, default='test', help='model id')
+    parser.add_argument('--model', type=str, default='Autoformer',
                         help='model name, options: [Autoformer, Informer, Transformer]')
 
     # data loader
-    parser.add_argument('--data', type=str, required=True, default='ETTm1', help='dataset type')
+    parser.add_argument('--data', type=str, default='ETTm1', help='dataset type')
     parser.add_argument('--root_path', type=str, default='./data/ETT/', help='root path of the data file')
     parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')
     parser.add_argument('--features', type=str, default='M',
@@ -93,6 +93,36 @@ if __name__ == '__main__':
     parser.add_argument('--test_flop', action='store_true', default=False, help='See utils/tools for usage')
 
     args = parser.parse_args()
+    
+    #####  debug  #####
+    args.gpu = 2
+    args.random_seed = 2021
+    args.is_training = 1
+    args.root_path = './dataset/'
+    args.data_path = 'PV/55-Site_29-CSUN.csv'
+    args.model_id = 'weather336_96'
+    args.model = 'Autoformer'
+    args.data = 'pv'
+    args.features = 'M'
+    args.seq_len = 336
+    args.pred_len = 96
+    args.enc_in = 21
+    args.e_layers = 3
+    args.n_heads = 16
+    args.d_model = 128
+    args.d_ff = 256
+    args.dropout = 0.2
+    args.fc_dropout = 0.2
+    args.head_dropout = 0
+    args.patch_len = 16
+    args.stride = 8
+    args.des = 'Exp'
+    args.train_epochs = 100
+    args.patience = 20
+    args.itr = 1
+    args.batch_size = 128
+    args.learning_rate = 0.0001
+
 
     # random seed
     fix_seed = args.random_seed
