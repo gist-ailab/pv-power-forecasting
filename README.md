@@ -1,3 +1,6 @@
+## Environment Setting
+python==3.8.18, CUDA 10.1, torch=='1.11.0+cu102'
+---
 # PatchTST (ICLR 2023)
 
 ### This is an offical implementation of PatchTST: [A Time Series is Worth 64 Words: Long-term Forecasting with Transformers](https://arxiv.org/abs/2211.14730). 
