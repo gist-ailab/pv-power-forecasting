@@ -83,7 +83,7 @@ def save(data, v, save_dir):
 
 
 if __name__ == '__main__':
-    datadir = 'data/EMHIRESPV_TSh_CF_Country_19862015.csv'
+    datadir = 'data/EMHIRESpv_TSh_CF_Country_19862015.csv'
     all_data = load_data(datadir)
     covariates = get_covariates(len(all_data[0]), '1986-01-01 00:00:00')
     split_seq(all_data, covariates, 192, 24, 24, 'data/wind/')

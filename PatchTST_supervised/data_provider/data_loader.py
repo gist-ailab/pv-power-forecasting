@@ -290,9 +290,9 @@ class Dataset_Custom(Dataset):
         return self.scaler.inverse_transform(data)
 
 ####################################################
-class Dataset_PV(Dataset):
+class Dataset_pv(Dataset):
     def __init__(self, root_path, flag='train', size=None,
-                 features='S', data_path='PV/55-Site_29-CSUN.csv',
+                 features='S', data_path='pv/55-Site_29-CSUN.csv',
                  target='Active_Power', scale=True, timeenc=0, freq='h'):
         # size [seq_len, label_len, pred_len]
         # info
@@ -317,23 +317,33 @@ class Dataset_PV(Dataset):
 
         self.root_path = root_path
         self.data_path = data_path
+
+        self.DATASET_SPLIT_YEAR = {
+            '70-Site_3-BP-Solar.csv':       [2009, 2020, 2022, 2022],   # 5.0kW, poly-Si, Fixed, Roof Mounted
+            '79-Site_7-First-Solar.csv':    [2009, 2020, 2022, 2022],   # 7.0kW, CdTe, Fixed
+            '93-Site_8-Kaneka.csv':         [2009, 2020, 2022, 2022],   # 6.0kW, Amorphous Silicon, Fixed
+            '85-Site_10-SunPower.csv':      [2010, 2020, 2022, 2022],   # 5.8kW, mono-Si, Fixed
+            '55-Site_29-CSUN.csv':          [2014, 2020, 2022, 2022],   # 6.0kW, poly-Si, Fixed
+            '73-Site_35-Elkem.csv':         [2014, 2020, 2022, 2022],   # 5.5kW, poly-Si, Fixed
+            '72-Site_26-Q-CELLS.csv':       [2014, 2020, 2022, 2022],   # 5.5kW, poly-Si, Fixed
+            '56-Site_30-Q-CELLS.csv':       [2014, 2020, 2022, 2022],   # 5.6kW, poly-Si, Fixed
+            '213-Site_24-Q-CELLS.csv':      [2017, 2020, 2022, 2022],   # 6.1kW, poly-Si, Fixed
+            '59-Site_38-Q-CELLS.csv':       [2017, 2020, 2022, 2022],   # 5.9kW, mono-Si, Fixed
+            '212-Site_25-Hanwha-Solar.csv': [2017, 2020, 2022, 2022],   # 5.8kW, poly-Si, Fixed
+        }
         self.__read_data__()
 
     def __read_data__(self):
         self.scaler = StandardScaler()
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
-        df_raw['timestamp'] = pd.to_numeric(df_raw['timestamp'], errors='coerce')
+        df_raw['date'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
 
         '''
         df_raw.columns: ['date', ...(other features), target feature]
         '''
-        cols = list(df_raw.columns)
-        print('** df_raw.columns', df_raw.columns)
-        print('** self.target', self.target)
-        cols.remove(self.target)
-        df_raw = df_raw[['timestamp'] + cols + [self.target]]
-        # print(cols)
+        cols = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        df_raw = df_raw[['date'] + cols + [self.target]]
         num_train = int(len(df_raw) * 0.7)
         num_test = int(len(df_raw) * 0.2)
         num_vali = len(df_raw) - num_train - num_test
@@ -341,6 +351,7 @@ class Dataset_PV(Dataset):
         border2s = [num_train, num_train + num_vali, len(df_raw)]
         border1 = border1s[self.set_type]
         border2 = border2s[self.set_type]
+
 
         if self.features == 'M' or self.features == 'MS':
             cols_data = df_raw.columns[1:]
@@ -357,13 +368,13 @@ class Dataset_PV(Dataset):
         else:
             data = df_data.values
 
-        df_stamp = df_raw[['timestamp']][border1:border2]
-        df_stamp['timestamp'] = pd.to_datetime(df_stamp.date)
+        df_stamp = df_raw[['date']][border1:border2]
+        df_stamp['date'] = pd.to_datetime(df_stamp.date)
         if self.timeenc == 0:
-            df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
-            df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
-            df_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
-            df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
+            df_stamp['month'] = df_stamp.timestamp.apply(lambda row: row.month, 1)
+            df_stamp['day'] = df_stamp.timestamp.apply(lambda row: row.day, 1)
+            df_stamp['weekday'] = df_stamp.timestamp.apply(lambda row: row.weekday(), 1)
+            df_stamp['hour'] = df_stamp.timestamp.apply(lambda row: row.hour, 1)
             data_stamp = df_stamp.drop(['date'], axis=1).values
         elif self.timeenc == 1:
             data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
