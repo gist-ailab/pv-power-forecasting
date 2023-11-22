@@ -10,7 +10,7 @@ seq_len=336
 model_name=DLinear
 
 python -u run_longExp.py \
-  --gpu 6 \
+  --gpu 2 \
   --is_training 1 \
   --root_path ./dataset/pv/ \
   --data_path 55-Site_29-CSUN.csv \
@@ -22,10 +22,11 @@ python -u run_longExp.py \
   --pred_len 96 \
   --enc_in 21 \
   --des 'Exp' \
+  --embed 'fixed' \
   --itr 1 --batch_size 16  >logs/LongForecasting/$model_name'_'pv_$seq_len'_'96.log
 
 python -u run_longExp.py \
-  --gpu 6 \
+  --gpu 2 \
   --is_training 1 \
   --root_path ./dataset/pv/ \
   --data_path 55-Site_29-CSUN.csv \
@@ -37,10 +38,11 @@ python -u run_longExp.py \
   --pred_len 192 \
   --enc_in 21 \
   --des 'Exp' \
+  --embed 'fixed' \
   --itr 1 --batch_size 16  >logs/LongForecasting/$model_name'_'pv_$seq_len'_'192.log
 
 python -u run_longExp.py \
-  --gpu 6 \
+  --gpu 2 \
   --is_training 1 \
   --root_path ./dataset/pv/ \
   --data_path 55-Site_29-CSUN.csv \
@@ -52,10 +54,11 @@ python -u run_longExp.py \
   --pred_len 336 \
   --enc_in 21 \
   --des 'Exp' \
+  --embed 'fixed' \
   --itr 1 --batch_size 16  >logs/LongForecasting/$model_name'_'pv_$seq_len'_'336.log
 
 python -u run_longExp.py \
-  --gpu 6 \
+  --gpu 2 \
   --is_training 1 \
   --root_path ./dataset/pv/ \
   --data_path 55-Site_29-CSUN.csv \
@@ -67,5 +70,6 @@ python -u run_longExp.py \
   --pred_len 720 \
   --enc_in 21 \
   --des 'Exp' \
+  --embed 'fixed' \
   --itr 1 --batch_size 16  >logs/LongForecasting/$model_name'_'pv_$seq_len'_'720.log
 

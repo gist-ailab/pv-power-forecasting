@@ -468,8 +468,11 @@ $RECYCLE.BIN/
 
 PatchTST_supervised/dataset/*
 PatchTST_supervised/checkpoints/*
+PatchTST_supervised/checkpoints_*/*
 PatchTST_supervised/results/*
+PatchTST_supervised/results_*/*
 PatchTST_supervised/test_results/*
+PatchTST_supervised/test_results_*/*
 PatchTST_supervised/result.txt
 
 .vscode/*
