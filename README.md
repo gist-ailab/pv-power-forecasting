@@ -1,6 +1,13 @@
 ## Environment Setting
 python==3.8.18, CUDA 10.1, torch=='1.11.0+cu102'
 
+
+```
+mkdir -p PatchTST_supervised/dataset/pv/
+# download csv files in this directory
+```
+
+
 ---
 # PatchTST (ICLR 2023)
 
