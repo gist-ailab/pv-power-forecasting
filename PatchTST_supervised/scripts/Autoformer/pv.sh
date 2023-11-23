@@ -9,7 +9,7 @@ seq_len=336
 model_name=Autoformer
 
 root_path_name=./dataset/
-data_path_name=pv/55-Site_29-CSUN.csv
+data_path_name=pv/91-Site_DKA-M9_B-Phase.csv
 model_id_name=weather
 data_name=pv
 

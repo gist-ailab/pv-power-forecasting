@@ -9,7 +9,7 @@ seq_len=336
 model_name=PatchTST
 
 root_path_name=./dataset/pv/
-data_path_name=55-Site_29-CSUN.csv
+data_path_name=91-Site_DKA-M9_B-Phase.csv
 model_id_name=pv
 data_name=pv
 
@@ -17,7 +17,7 @@ random_seed=2021
 for pred_len in 96 192 336 720
 do
     python -u run_longExp.py \
-      --gpu 2 \
+      --gpu 0 \
       --random_seed $random_seed \
       --is_training 1 \
       --root_path $root_path_name \

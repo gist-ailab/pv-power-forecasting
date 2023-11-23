@@ -294,7 +294,7 @@ class Dataset_Custom(Dataset):
 ####################################################
 class Dataset_pv(Dataset):
     def __init__(self, root_path, flag='train', size=None,
-                 features='S', data_path='pv/55-Site_29-CSUN.csv',
+                 features='S', data_path='pv/91-Site_DKA-M9_B-Phase.csv',
                  target='Active_Power', scale=True, timeenc=0, freq='h'):
         # size [seq_len, label_len, pred_len]
         # info
@@ -325,7 +325,7 @@ class Dataset_pv(Dataset):
             '79-Site_7-First-Solar.csv':    [2009, 2020, 2022, 2022],   # 7.0kW, CdTe, Fixed
             '93-Site_8-Kaneka.csv':         [2009, 2020, 2022, 2022],   # 6.0kW, Amorphous Silicon, Fixed
             '85-Site_10-SunPower.csv':      [2010, 2020, 2022, 2022],   # 5.8kW, mono-Si, Fixed
-            '55-Site_29-CSUN.csv':          [2014, 2020, 2022, 2022],   # 6.0kW, poly-Si, Fixed
+            '91-Site_DKA-M9_B-Phase.csv':          [2014, 2020, 2022, 2022],   # 6.0kW, poly-Si, Fixed
             '73-Site_35-Elkem.csv':         [2014, 2020, 2022, 2022],   # 5.5kW, poly-Si, Fixed
             '72-Site_26-Q-CELLS.csv':       [2014, 2020, 2022, 2022],   # 5.5kW, poly-Si, Fixed
             '56-Site_30-Q-CELLS.csv':       [2014, 2020, 2022, 2022],   # 5.6kW, poly-Si, Fixed

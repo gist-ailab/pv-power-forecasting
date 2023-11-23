@@ -99,7 +99,7 @@ if __name__ == '__main__':
     # args.random_seed = 2021
     # args.is_training = 1
     # args.root_path = './dataset/pv/'
-    # args.data_path = '55-Site_29-CSUN.csv'
+    # args.data_path = '91-Site_DKA-M9_B-Phase.csv'
     # args.model_id = 'debug'
     # args.model = 'DLinear'
     # args.data = 'pv'

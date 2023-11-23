@@ -10,10 +10,10 @@ seq_len=336
 model_name=DLinear
 
 python -u run_longExp.py \
-  --gpu 2 \
+  --gpu 0 \
   --is_training 1 \
   --root_path ./dataset/pv/ \
-  --data_path 55-Site_29-CSUN.csv \
+  --data_path 91-Site_DKA-M9_B-Phase.csv \
   --model_id pv_$seq_len'_'96 \
   --model $model_name \
   --data pv \
@@ -26,10 +26,10 @@ python -u run_longExp.py \
   --itr 1 --batch_size 16  >logs/LongForecasting/$model_name'_'pv_$seq_len'_'96.log
 
 python -u run_longExp.py \
-  --gpu 2 \
+  --gpu 0 \
   --is_training 1 \
   --root_path ./dataset/pv/ \
-  --data_path 55-Site_29-CSUN.csv \
+  --data_path 91-Site_DKA-M9_B-Phase.csv \
   --model_id pv_$seq_len'_'192 \
   --model $model_name \
   --data pv \
@@ -42,10 +42,10 @@ python -u run_longExp.py \
   --itr 1 --batch_size 16  >logs/LongForecasting/$model_name'_'pv_$seq_len'_'192.log
 
 python -u run_longExp.py \
-  --gpu 2 \
+  --gpu 0 \
   --is_training 1 \
   --root_path ./dataset/pv/ \
-  --data_path 55-Site_29-CSUN.csv \
+  --data_path 91-Site_DKA-M9_B-Phase.csv \
   --model_id pv_$seq_len'_'336 \
   --model $model_name \
   --data pv \
@@ -58,10 +58,10 @@ python -u run_longExp.py \
   --itr 1 --batch_size 16  >logs/LongForecasting/$model_name'_'pv_$seq_len'_'336.log
 
 python -u run_longExp.py \
-  --gpu 2 \
+  --gpu 0 \
   --is_training 1 \
   --root_path ./dataset/pv/ \
-  --data_path 55-Site_29-CSUN.csv \
+  --data_path 91-Site_DKA-M9_B-Phase.csv \
   --model_id pv_$seq_len'_'720 \
   --model $model_name \
   --data pv \
