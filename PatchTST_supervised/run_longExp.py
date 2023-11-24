@@ -91,11 +91,14 @@ if __name__ == '__main__':
     parser.add_argument('--use_multi_gpu', action='store_true', help='use multiple gpus', default=False)
     parser.add_argument('--devices', type=str, default='0,1,2,3', help='device ids of multile gpus')
     parser.add_argument('--test_flop', action='store_true', default=False, help='See utils/tools for usage')
+    
+    ## HS
+    parser.add_argument('--exp_id', type=str, default='debug', help='exp_id')
 
     args = parser.parse_args()
     
     # #####  debug  #####
-    # args.gpu = 2
+    # args.gpu = 0
     # args.random_seed = 2021
     # args.is_training = 1
     # args.root_path = './dataset/pv/'
@@ -167,14 +170,14 @@ if __name__ == '__main__':
 
             exp = Exp(args)  # set experiments
             print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-            exp.train(setting)
+            exp.train(setting, args.exp_id)
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-            exp.test(setting)
+            exp.test(setting, args.exp_id)
 
             if args.do_predict:
                 print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-                exp.predict(setting, True)
+                exp.predict(setting, args.exp_id, True)
 
             torch.cuda.empty_cache()
     else:

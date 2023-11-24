@@ -1,16 +1,18 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
+exp_id=exp3
 
-if [ ! -d "./logs/LongForecasting" ]; then
-    mkdir ./logs/LongForecasting
+if [ ! -d "./logs/$exp_id" ]; then
+    mkdir ./logs/$exp_id
 fi
+
 seq_len=336
 model_name=PatchTST
 
 root_path_name=./dataset/pv/
 data_path_name=91-Site_DKA-M9_B-Phase.csv
-model_id_name=pv
+model_id_name=pv_DKASC_$exp_id'_'
 data_name=pv
 
 random_seed=2021
@@ -42,5 +44,6 @@ do
       --train_epochs 100\
       --patience 20\
       --embed 'fixed' \
-      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/LongForecasting/$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
+      --exp_id $exp_id \
+      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$exp_id/DKASC_$exp_id_$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
 done

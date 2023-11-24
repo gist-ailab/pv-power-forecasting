@@ -97,12 +97,12 @@ class Exp_Main(Exp_Basic):
         self.model.train()
         return total_loss
 
-    def train(self, setting):
+    def train(self, setting, exp_id):
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
 
-        path = os.path.join(self.args.checkpoints, setting)
+        path = os.path.join(self.args.checkpoints, exp_id, setting)
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -216,17 +216,17 @@ class Exp_Main(Exp_Basic):
 
         return self.model
 
-    def test(self, setting, test=0):
+    def test(self, setting, exp_id, test=0):
         test_data, test_loader = self._get_data(flag='test')
         
         if test:
             print('loading model')
-            self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + setting, 'checkpoint.pth')))
+            self.model.load_state_dict(torch.load(os.path.join('./checkpoints/', exp_id, setting, 'checkpoint.pth')))
 
         preds = []
         trues = []
         inputx = []
-        folder_path = './test_results/' + setting + '/'
+        folder_path = './test_results/' + exp_id + '/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
@@ -293,7 +293,7 @@ class Exp_Main(Exp_Basic):
         inputx = inputx.reshape(-1, inputx.shape[-2], inputx.shape[-1])
 
         # result save
-        folder_path = './results/' + setting + '/'
+        folder_path = './results/' + exp_id+ '/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
@@ -312,7 +312,7 @@ class Exp_Main(Exp_Basic):
         # np.save(folder_path + 'x.npy', inputx)
         return
 
-    def predict(self, setting, load=False):
+    def predict(self, setting, exp_id, load=False):
         pred_data, pred_loader = self._get_data(flag='pred')
 
         if load:
@@ -358,7 +358,7 @@ class Exp_Main(Exp_Basic):
         preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
 
         # result save
-        folder_path = './results/' + setting + '/'
+        folder_path = './results/' + exp_id + '/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 

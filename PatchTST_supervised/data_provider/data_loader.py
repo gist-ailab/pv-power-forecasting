@@ -294,7 +294,7 @@ class Dataset_Custom(Dataset):
 ####################################################
 class Dataset_pv(Dataset):
     def __init__(self, root_path, flag='train', size=None,
-                 features='S', data_path='pv/91-Site_DKA-M9_B-Phase.csv',
+                 features='S', data_path='91-Site_DKA-M9_B-Phase.csv',
                  target='Active_Power', scale=True, timeenc=0, freq='h'):
         # size [seq_len, label_len, pred_len]
         # info
@@ -321,17 +321,21 @@ class Dataset_pv(Dataset):
         self.data_path = data_path
 
         self.DATASET_SPLIT_YEAR = {
-            '70-Site_3-BP-Solar.csv':       [2009, 2020, 2022, 2022],   # 5.0kW, poly-Si, Fixed, Roof Mounted
-            '79-Site_7-First-Solar.csv':    [2009, 2020, 2022, 2022],   # 7.0kW, CdTe, Fixed
-            '93-Site_8-Kaneka.csv':         [2009, 2020, 2022, 2022],   # 6.0kW, Amorphous Silicon, Fixed
-            '85-Site_10-SunPower.csv':      [2010, 2020, 2022, 2022],   # 5.8kW, mono-Si, Fixed
-            '91-Site_DKA-M9_B-Phase.csv':          [2014, 2020, 2022, 2022],   # 6.0kW, poly-Si, Fixed
-            '73-Site_35-Elkem.csv':         [2014, 2020, 2022, 2022],   # 5.5kW, poly-Si, Fixed
-            '72-Site_26-Q-CELLS.csv':       [2014, 2020, 2022, 2022],   # 5.5kW, poly-Si, Fixed
-            '56-Site_30-Q-CELLS.csv':       [2014, 2020, 2022, 2022],   # 5.6kW, poly-Si, Fixed
-            '213-Site_24-Q-CELLS.csv':      [2017, 2020, 2022, 2022],   # 6.1kW, poly-Si, Fixed
-            '59-Site_38-Q-CELLS.csv':       [2017, 2020, 2022, 2022],   # 5.9kW, mono-Si, Fixed
-            '212-Site_25-Hanwha-Solar.csv': [2017, 2020, 2022, 2022],   # 5.8kW, poly-Si, Fixed
+            # '91-Site_DKA-M9_B-Phase.csv'    : [2014, 2020, 2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A
+            '91-Site_DKA-M9_B-Phase.csv'    : [2020, 2021, 2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A
+            '87-Site_DKA-M9_A+C-Phases.csv' : [2010, 2020, 2022, 2022],   # 23.4kW, mono-Si, Tracker: Dual              # 1B
+            '78-Site_DKA-M11_3-Phase.csv'   : [2010, 2020, 2022, 2022],   # 26.5kW, mono-Si, Tracker: Dual              # 2
+            '70-Site_3-BP-Solar.csv'        : [2009, 2020, 2022, 2022],   # 5.0kW, poly-Si, Fixed, Roof Mounted         # 3
+            '79-Site_7-First-Solar.csv'     : [2009, 2020, 2022, 2022],   # 7.0kW, CdTe, Fixed
+            '93-Site_8-Kaneka.csv'          : [2009, 2020, 2022, 2022],   # 6.0kW, Amorphous Silicon, Fixed
+            '85-Site_10-SunPower.csv'       : [2010, 2020, 2022, 2022],   # 5.8kW, mono-Si, Fixed
+            '55-Site_29-CSUN.csv'           : [2014, 2020, 2022, 2022],   # 6.0kW, poly-Si, Fixed
+            '73-Site_35-Elkem.csv'          : [2014, 2020, 2022, 2022],   # 5.5kW, poly-Si, Fixed
+            '72-Site_26-Q-CELLS.csv'        : [2014, 2020, 2022, 2022],   # 5.5kW, poly-Si, Fixed
+            '56-Site_30-Q-CELLS.csv'        : [2014, 2020, 2022, 2022],   # 5.6kW, poly-Si, Fixed
+            '213-Site_24-Q-CELLS.csv'       : [2017, 2020, 2022, 2022],   # 6.1kW, poly-Si, Fixed
+            '59-Site_38-Q-CELLS.csv'        : [2017, 2020, 2022, 2022],   # 5.9kW, mono-Si, Fixed
+            '212-Site_25-Hanwha-Solar.csv'  : [2017, 2020, 2022, 2022],   # 5.8kW, poly-Si, Fixed
         }
         self.__read_data__()
 
@@ -339,6 +343,12 @@ class Dataset_pv(Dataset):
         self.scaler = StandardScaler()
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
+        
+        ## apply resolution
+        df_raw['minute'] = df_raw['timestamp'].apply(lambda x: int(x.split(' ')[1].split(':')[1]))
+        df_raw = df_raw.drop(df_raw[df_raw['minute'] % 60 != 0].index)
+        df_raw = df_raw.reset_index()
+        
         df_raw['date'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
 
         '''
@@ -367,26 +377,31 @@ class Dataset_pv(Dataset):
         df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
         df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Active_Power')
         print('-> ', len(df_raw[df_raw['Active_Power'].isnull()]['Active_Power'].index.tolist()))
+        assert len(df_raw[df_raw['Active_Power'].isnull()]['Active_Power'].index.tolist()) == 0
         ## remove missing value of 'Weather_Temperature_Celsius'
         print(len(df_raw[df_raw['Weather_Temperature_Celsius'].isnull()]['Weather_Temperature_Celsius'].index.tolist()))
         df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
         df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Weather_Temperature_Celsius')
         print('-> ', len(df_raw[df_raw['Weather_Temperature_Celsius'].isnull()]['Weather_Temperature_Celsius'].index.tolist()))
+        assert len(df_raw[df_raw['Weather_Temperature_Celsius'].isnull()]['Weather_Temperature_Celsius'].index.tolist()) == 0
         ## remove missing value of 'Global_Horizontal_Radiation'
         print(len(df_raw[df_raw['Global_Horizontal_Radiation'].isnull()]['Global_Horizontal_Radiation'].index.tolist()))
         df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
         df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Global_Horizontal_Radiation')
         print('-> ', len(df_raw[df_raw['Global_Horizontal_Radiation'].isnull()]['Global_Horizontal_Radiation'].index.tolist()))
+        assert len(df_raw[df_raw['Global_Horizontal_Radiation'].isnull()]['Global_Horizontal_Radiation'].index.tolist()) == 0
         ## remove missing value of 'Diffuse_Horizontal_Radiation'
         print(len(df_raw[df_raw['Diffuse_Horizontal_Radiation'].isnull()]['Diffuse_Horizontal_Radiation'].index.tolist()))
         df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
         df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Diffuse_Horizontal_Radiation')
         print('-> ', len(df_raw[df_raw['Diffuse_Horizontal_Radiation'].isnull()]['Diffuse_Horizontal_Radiation'].index.tolist()))
+        assert len(df_raw[df_raw['Diffuse_Horizontal_Radiation'].isnull()]['Diffuse_Horizontal_Radiation'].index.tolist()) == 0
         ## remove missing value of 'Weather_Relative_Humidity'
         print(len(df_raw[df_raw['Weather_Relative_Humidity'].isnull()]['Weather_Relative_Humidity'].index.tolist()))
         df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
         df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Weather_Relative_Humidity')
         print('-> ', len(df_raw[df_raw['Weather_Relative_Humidity'].isnull()]['Weather_Relative_Humidity'].index.tolist()))
+        assert len(df_raw[df_raw['Weather_Relative_Humidity'].isnull()]['Weather_Relative_Humidity'].index.tolist()) == 0
 
         ## remove minus temperature
         print(len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()))
@@ -409,23 +424,28 @@ class Dataset_pv(Dataset):
         print('-> ', len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()))
 
 
-        num_train = int(len(df_raw) * 0.7)
-        num_test = int(len(df_raw) * 0.2)
-        num_vali = len(df_raw) - num_train - num_test
-        border1s = [0, num_train - self.seq_len, len(df_raw) - num_test - self.seq_len]
-        border2s = [num_train, num_train + num_vali, len(df_raw)]
-        border1 = border1s[self.set_type]
-        border2 = border2s[self.set_type]
+        # num_train = int(len(df_raw) * 0.7)
+        # num_test = int(len(df_raw) * 0.2)
+        # num_vali = len(df_raw) - num_train - num_test
+        # border1s = [0, num_train - self.seq_len, len(df_raw) - num_test - self.seq_len]
+        # border2s = [num_train, num_train + num_vali, len(df_raw)]
+        # border1 = border1s[self.set_type]
+        # border2 = border2s[self.set_type]
+        border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][self.set_type]}-01-01 00:00:00'].index.tolist()[0]
+        border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[self.data_path][self.set_type+1]}-12-31 23:00:00'].index.tolist()[-1]
 
 
         if self.features == 'M' or self.features == 'MS':
-            cols_data = df_raw.columns[1:]
+            cols_data = df_raw.columns[1:] 
             df_data = df_raw[cols_data]
         elif self.features == 'S':
             df_data = df_raw[[self.target]]
 
         if self.scale:
-            train_data = df_data[border1s[0]:border2s[0]]
+            # train_data = df_data[border1s[0]:border2s[0]]
+            border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][0]}-01-01 00:00:00'].index.tolist()[0]
+            border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[self.data_path][1]}-12-31 23:00:00'].index.tolist()[-1]
+            train_data = df_data[border1:border2]
             self.scaler.fit(train_data.values)
             # print(self.scaler.mean_)
             # exit()
@@ -491,7 +511,7 @@ class Dataset_pv(Dataset):
     def remove_null_value(self, pv, df_stamp, column):   # pv = df_raw
         df_stamp_org = copy.deepcopy(df_stamp)
         missing_idx = pv[pv[column].isnull()][column].index.tolist()
-        for i in range(len(missing_idx)-1, 1, -1):
+        for i in range(len(missing_idx)-1, -1, -1):
             idx = missing_idx[i]
             year, month, day = df_stamp_org.iloc[idx]['year'], df_stamp_org.iloc[idx]['month'], df_stamp_org.iloc[idx]['day']
             has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
