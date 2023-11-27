@@ -97,35 +97,35 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    #####  debug  #####
-    args.gpu = 0
-    args.random_seed = 2021
-    args.is_training = 1
-    args.root_path = './dataset/pv/'
-    args.data_path = '91-Site_DKA-M9_B-Phase.csv'
-    args.model_id = 'debug'
-    args.model = 'DLinear'
-    args.data = 'pv_DKASC'
-    args.features = 'M'
-    args.seq_len = 336
-    args.pred_len = 96
-    args.enc_in = 21
-    args.e_layers = 3
-    args.n_heads = 16
-    args.d_model = 128
-    args.d_ff = 256
-    args.dropout = 0.2
-    args.fc_dropout = 0.2
-    args.head_dropout = 0
-    args.patch_len = 16
-    args.stride = 8
-    args.des = 'Exp'
-    args.train_epochs = 100
-    args.patience = 20
-    args.itr = 1
-    args.batch_size = 128
-    args.learning_rate = 0.00001
-    args.embed = 'fixed'    # 'timeF', 'fixed'
+    # #####  debug  #####
+    # args.gpu = 0
+    # args.random_seed = 2021
+    # args.is_training = 1
+    # args.root_path = './dataset/pv/'
+    # args.data_path = '91-Site_DKA-M9_B-Phase.csv'
+    # args.model_id = 'debug'
+    # args.model = 'DLinear'
+    # args.data = 'pv_DKASC'
+    # args.features = 'M'
+    # args.seq_len = 336
+    # args.pred_len = 96
+    # args.enc_in = 21
+    # args.e_layers = 3
+    # args.n_heads = 16
+    # args.d_model = 128
+    # args.d_ff = 256
+    # args.dropout = 0.2
+    # args.fc_dropout = 0.2
+    # args.head_dropout = 0
+    # args.patch_len = 16
+    # args.stride = 8
+    # args.des = 'Exp'
+    # args.train_epochs = 100
+    # args.patience = 20
+    # args.itr = 1
+    # args.batch_size = 128
+    # args.learning_rate = 0.00001
+    # args.embed = 'fixed'    # 'timeF', 'fixed'
 
     # random seed
     fix_seed = args.random_seed
