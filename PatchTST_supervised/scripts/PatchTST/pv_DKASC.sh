@@ -13,8 +13,8 @@ model_name=PatchTST
 root_path_name=./dataset/pv/
 data_path_name=91-Site_DKA-M9_B-Phase.csv
 model_id_name=pv_DKASC_$exp_id'_'
-data_name=pv
-
+data_name=pv_DKASC
+    
 random_seed=2021
 for pred_len in 96 192 336 720
 do

@@ -292,7 +292,7 @@ class Dataset_Custom(Dataset):
         return self.scaler.inverse_transform(data)
 
 ####################################################
-class Dataset_pv(Dataset):
+class Dataset_pv_DKASC(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                  features='S', data_path='91-Site_DKA-M9_B-Phase.csv',
                  target='Active_Power', scale=True, timeenc=0, freq='h'):
@@ -321,8 +321,8 @@ class Dataset_pv(Dataset):
         self.data_path = data_path
 
         self.DATASET_SPLIT_YEAR = {
-            # '91-Site_DKA-M9_B-Phase.csv'    : [2014, 2020, 2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A
-            '91-Site_DKA-M9_B-Phase.csv'    : [2020, 2021, 2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A
+            '91-Site_DKA-M9_B-Phase.csv'    : [2014, 2020, 2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A
+            # '91-Site_DKA-M9_B-Phase.csv'    : [2020, 2021, 2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A
             '87-Site_DKA-M9_A+C-Phases.csv' : [2010, 2020, 2022, 2022],   # 23.4kW, mono-Si, Tracker: Dual              # 1B
             '78-Site_DKA-M11_3-Phase.csv'   : [2010, 2020, 2022, 2022],   # 26.5kW, mono-Si, Tracker: Dual              # 2
             '70-Site_3-BP-Solar.csv'        : [2009, 2020, 2022, 2022],   # 5.0kW, poly-Si, Fixed, Roof Mounted         # 3
@@ -372,35 +372,294 @@ class Dataset_pv(Dataset):
             data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
             data_stamp = data_stamp.transpose(1, 0)
 
+
         ## remove missing value of 'Active_Power'
         print(len(df_raw[df_raw['Active_Power'].isnull()]['Active_Power'].index.tolist()))
         df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
         df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Active_Power')
         print('-> ', len(df_raw[df_raw['Active_Power'].isnull()]['Active_Power'].index.tolist()))
-        assert len(df_raw[df_raw['Active_Power'].isnull()]['Active_Power'].index.tolist()) == 0
         ## remove missing value of 'Weather_Temperature_Celsius'
         print(len(df_raw[df_raw['Weather_Temperature_Celsius'].isnull()]['Weather_Temperature_Celsius'].index.tolist()))
         df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
         df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Weather_Temperature_Celsius')
         print('-> ', len(df_raw[df_raw['Weather_Temperature_Celsius'].isnull()]['Weather_Temperature_Celsius'].index.tolist()))
-        assert len(df_raw[df_raw['Weather_Temperature_Celsius'].isnull()]['Weather_Temperature_Celsius'].index.tolist()) == 0
         ## remove missing value of 'Global_Horizontal_Radiation'
         print(len(df_raw[df_raw['Global_Horizontal_Radiation'].isnull()]['Global_Horizontal_Radiation'].index.tolist()))
         df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
         df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Global_Horizontal_Radiation')
         print('-> ', len(df_raw[df_raw['Global_Horizontal_Radiation'].isnull()]['Global_Horizontal_Radiation'].index.tolist()))
-        assert len(df_raw[df_raw['Global_Horizontal_Radiation'].isnull()]['Global_Horizontal_Radiation'].index.tolist()) == 0
         ## remove missing value of 'Diffuse_Horizontal_Radiation'
         print(len(df_raw[df_raw['Diffuse_Horizontal_Radiation'].isnull()]['Diffuse_Horizontal_Radiation'].index.tolist()))
         df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
         df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Diffuse_Horizontal_Radiation')
         print('-> ', len(df_raw[df_raw['Diffuse_Horizontal_Radiation'].isnull()]['Diffuse_Horizontal_Radiation'].index.tolist()))
-        assert len(df_raw[df_raw['Diffuse_Horizontal_Radiation'].isnull()]['Diffuse_Horizontal_Radiation'].index.tolist()) == 0
         ## remove missing value of 'Weather_Relative_Humidity'
         print(len(df_raw[df_raw['Weather_Relative_Humidity'].isnull()]['Weather_Relative_Humidity'].index.tolist()))
         df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
         df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Weather_Relative_Humidity')
         print('-> ', len(df_raw[df_raw['Weather_Relative_Humidity'].isnull()]['Weather_Relative_Humidity'].index.tolist()))
+        
+        assert df_raw['Active_Power'].isnull().sum() == 0
+        assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
+        assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
+        assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
+        assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
+
+        ## remove minus temperature
+        print(len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()))
+        df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
+        df_raw, df_stamp = self.remove_minus_temperature(df_raw, df_stamp)
+        print('-> ', len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()))
+
+        ## remove minus radiation
+        print(len(df_raw[df_raw['Global_Horizontal_Radiation'] < 0].index.tolist()))
+        print(len(df_raw[df_raw['Diffuse_Horizontal_Radiation'] < 0].index.tolist()))
+        df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
+        df_raw, df_stamp = self.remove_minus_radiation(df_raw, df_stamp)
+        print('-> ', len(df_raw[df_raw['Global_Horizontal_Radiation'] < 0].index.tolist()))
+        print('-> ', len(df_raw[df_raw['Diffuse_Horizontal_Radiation'] < 0].index.tolist()))
+
+        ## clip over 100 humidity
+        print(len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()))
+        df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
+        df_raw, df_stamp = self.clip_over_hundred_humidity(df_raw, df_stamp)
+        print('-> ', len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()))
+
+
+        border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][self.set_type]}-01-01 00:00:00'].index.tolist()[0]
+        border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[self.data_path][self.set_type+1]}-12-31 23:00:00'].index.tolist()[-1]
+
+
+        if self.features == 'M' or self.features == 'MS':
+            cols_data = df_raw.columns[1:] 
+            df_data = df_raw[cols_data]
+        elif self.features == 'S':
+            df_data = df_raw[[self.target]]
+
+        if self.scale:
+            border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][0]}-01-01 00:00:00'].index.tolist()[0]
+            border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[self.data_path][1]}-12-31 23:00:00'].index.tolist()[-1]
+            train_data = df_data[border1:border2]
+            self.scaler.fit(train_data.values)
+            # print(self.scaler.mean_)
+            # exit()
+            data = self.scaler.transform(df_data.values)
+        else:
+            data = df_data.values
+
+        self.data_x = data[border1:border2]
+        self.data_y = data[border1:border2]
+        self.data_stamp = df_stamp[border1:border2][['year', 'month', 'day', 'weekday', 'hour']].values
+        
+
+        # # 13. check if there is missing value
+        # assert len(df_raw[df_raw['Active_Power'].isnull()]['Active_Power'].index.tolist()) == 0
+        # assert len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()) == 0
+        # assert len(df_raw[df_raw['Global_Horizontal_Radiation'] < 0].index.tolist()) == 0
+        # assert len(df_raw[df_raw['Diffuse_Horizontal_Radiation'] < 0].index.tolist()) == 0
+        # assert len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()) == 0
+
+    def remove_successive_missing_value(self, pv, df_stamp):
+        df_stamp_org = copy.deepcopy(df_stamp)
+        missing_idx = pv[pv['Active_Power'].isnull()]['Active_Power'].index.tolist()
+        successive, count = True, 1
+        front, rear = 0, 0
+
+        for i in range(len(missing_idx)-1, 0, -1):
+            front, rear = missing_idx[i-1], missing_idx[i]
+            # print(successive, count)
+            if successive:
+                if front == rear-1:
+                    count += 1
+                else:
+                    if count >= 4:
+                        year, month, day = df_stamp_org.iloc[rear]['year'], df_stamp_org.iloc[rear]['month'], df_stamp_org.iloc[rear]['day']
+                        # print('[', rear, ']', year, month, day)
+                        has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                        if has_index:
+                            pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                            df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                    successive = False
+                    count = 1
+            else:
+                if front == rear-1:
+                    successive = True
+                    count += 1
+                else:
+                    pass
+        
+        if successive and count >= 4:
+            year, month, day = df_stamp_org.iloc[rear]['year'], df_stamp_org.iloc[rear]['month'], df_stamp_org.iloc[rear]['day']
+            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+            if has_index:
+                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+
+        return pv, df_stamp
+        
+    def remove_null_value(self, pv, df_stamp, column):   # pv = df_raw
+        df_stamp_org = copy.deepcopy(df_stamp)
+        missing_idx = pv[pv[column].isnull()][column].index.tolist()
+        for i in range(len(missing_idx)-1, -1, -1):
+            idx = missing_idx[i]
+            year, month, day = df_stamp_org.iloc[idx]['year'], df_stamp_org.iloc[idx]['month'], df_stamp_org.iloc[idx]['day']
+            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+            if has_index:
+                # print('year, month, day: ', year, month, day)
+                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+
+        return pv, df_stamp
+    
+    def remove_minus_temperature(self, pv, df_stamp):   # pv = df_raw
+        df_stamp_org = copy.deepcopy(df_stamp)
+        minus_idx = pv[pv['Weather_Temperature_Celsius'] < 0].index.tolist()
+        for i in range(len(minus_idx)-1, 1, -1):
+            idx = minus_idx[i]
+            year, month, day = df_stamp_org.iloc[idx]['year'], df_stamp_org.iloc[idx]['month'], df_stamp_org.iloc[idx]['day']
+            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+            if has_index:
+                # print('year, month, day: ', year, month, day)
+                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+
+        return pv, df_stamp
+
+    def remove_minus_radiation(self, pv, df_stamp):
+        df_stamp_org = copy.deepcopy(df_stamp)
+        minus_idx = pv[pv['Global_Horizontal_Radiation'] < 0].index.tolist()
+        minus_idx.extend(pv[pv['Diffuse_Horizontal_Radiation'] < 0].index.tolist())
+        for i in range(len(minus_idx)-1, -1, -1):
+            idx = minus_idx[i]
+            year, month, day = df_stamp_org.iloc[idx]['year'], df_stamp_org.iloc[idx]['month'], df_stamp_org.iloc[idx]['day']
+            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+            if has_index:
+                # print('year, month, day: ', year, month, day)
+                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+            
+        return pv, df_stamp
+
+
+    def clip_over_hundred_humidity(self, pv, df_stamp):
+        over_idx = pv[pv['Weather_Relative_Humidity'] > 100].index.tolist()
+        pv.loc[over_idx, 'Weather_Relative_Humidity'] = 100
+        
+        return pv, df_stamp
+
+
+    def __getitem__(self, index):
+        s_begin = index
+        s_end = s_begin + self.seq_len
+        r_begin = s_end - self.label_len
+        r_end = r_begin + self.label_len + self.pred_len
+
+        seq_x = self.data_x[s_begin:s_end]
+        seq_y = self.data_y[r_begin:r_end]
+        seq_x_mark = self.data_stamp[s_begin:s_end]
+        seq_y_mark = self.data_stamp[r_begin:r_end]
+
+        return seq_x, seq_y, seq_x_mark, seq_y_mark
+
+    def __len__(self):
+        return len(self.data_x) - self.seq_len - self.pred_len + 1
+
+    def inverse_transform(self, data):
+        return self.scaler.inverse_transform(data)
+   
+class Dataset_pv_GIST(Dataset):
+    def __init__(self, root_path, flag='train', size=None,
+                 features='S', data_path='',
+                 target='Active_Power', scale=True, timeenc=0, freq='h'):
+        # size [seq_len, label_len, pred_len]
+        # info
+        if size == None:
+            self.seq_len = 24 * 4 * 4
+            self.label_len = 24 * 4
+            self.pred_len = 24 * 4
+        else:
+            self.seq_len = size[0]
+            self.label_len = size[1]
+            self.pred_len = size[2]
+        # init
+        assert flag in ['train', 'test', 'val']
+        type_map = {'train': 0, 'val': 1, 'test': 2}
+        self.set_type = type_map[flag]
+
+        self.features = features
+        self.target = 'Active_Power'
+        self.scale = scale
+        self.timeenc = timeenc
+        self.freq = freq
+
+        self.root_path = root_path
+        self.data_path = data_path
+
+        self.__read_data__()
+
+    def __read_data__(self):
+        self.scaler = StandardScaler()
+        df_raw = pd.read_csv(os.path.join(self.root_path,
+                                          self.data_path))
+        
+        ## apply resolution
+        df_raw['minute'] = df_raw['timestamp'].apply(lambda x: int(x.split(' ')[1].split(':')[1]))
+        df_raw = df_raw.drop(df_raw[df_raw['minute'] % 60 != 0].index)
+        df_raw = df_raw.reset_index()
+        
+        df_raw['date'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
+
+        '''
+        df_raw.columns: ['date', ...(other features), target feature]
+        '''
+        cols = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        df_raw = df_raw[['date'] + cols + [self.target]]
+
+
+        # df_stamp = df_raw[['date']][border1:border2]
+        df_stamp = pd.DataFrame()
+        df_stamp['date'] = pd.to_datetime(df_raw.date)
+        if self.timeenc == 0:
+            df_stamp['year'] = df_stamp.date.apply(lambda row: row.year, 1)
+            df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
+            df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
+            df_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
+            df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
+            data_stamp = df_stamp.drop(['date'], axis=1).values
+        elif self.timeenc == 1:
+            data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
+            data_stamp = data_stamp.transpose(1, 0)
+
+        ## remove missing value of 'Active_Power'
+        print(len(df_raw[df_raw['Active_Power'].isnull()]['Active_Power'].index.tolist()))
+        df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
+        df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Active_Power')
+        print('-> ', len(df_raw[df_raw['Active_Power'].isnull()]['Active_Power'].index.tolist()))
+        ## remove missing value of 'Weather_Temperature_Celsius'
+        print(len(df_raw[df_raw['Weather_Temperature_Celsius'].isnull()]['Weather_Temperature_Celsius'].index.tolist()))
+        df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
+        df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Weather_Temperature_Celsius')
+        print('-> ', len(df_raw[df_raw['Weather_Temperature_Celsius'].isnull()]['Weather_Temperature_Celsius'].index.tolist()))
+        ## remove missing value of 'Global_Horizontal_Radiation'
+        print(len(df_raw[df_raw['Global_Horizontal_Radiation'].isnull()]['Global_Horizontal_Radiation'].index.tolist()))
+        df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
+        df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Global_Horizontal_Radiation')
+        print('-> ', len(df_raw[df_raw['Global_Horizontal_Radiation'].isnull()]['Global_Horizontal_Radiation'].index.tolist()))
+        ## remove missing value of 'Diffuse_Horizontal_Radiation'
+        print(len(df_raw[df_raw['Diffuse_Horizontal_Radiation'].isnull()]['Diffuse_Horizontal_Radiation'].index.tolist()))
+        df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
+        df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Diffuse_Horizontal_Radiation')
+        print('-> ', len(df_raw[df_raw['Diffuse_Horizontal_Radiation'].isnull()]['Diffuse_Horizontal_Radiation'].index.tolist()))
+        ## remove missing value of 'Weather_Relative_Humidity'
+        print(len(df_raw[df_raw['Weather_Relative_Humidity'].isnull()]['Weather_Relative_Humidity'].index.tolist()))
+        df_raw, df_stamp = df_raw.reset_index(drop=True), df_stamp.reset_index(drop=True)
+        df_raw, df_stamp = self.remove_null_value(df_raw, df_stamp, 'Weather_Relative_Humidity')
+        print('-> ', len(df_raw[df_raw['Weather_Relative_Humidity'].isnull()]['Weather_Relative_Humidity'].index.tolist()))
+        
+        assert len(df_raw[df_raw['Active_Power'].isnull()]['Active_Power'].index.tolist()) == 0
+        assert len(df_raw[df_raw['Weather_Temperature_Celsius'].isnull()]['Weather_Temperature_Celsius'].index.tolist()) == 0
+        assert len(df_raw[df_raw['Global_Horizontal_Radiation'].isnull()]['Global_Horizontal_Radiation'].index.tolist()) == 0
+        assert len(df_raw[df_raw['Diffuse_Horizontal_Radiation'].isnull()]['Diffuse_Horizontal_Radiation'].index.tolist()) == 0
         assert len(df_raw[df_raw['Weather_Relative_Humidity'].isnull()]['Weather_Relative_Humidity'].index.tolist()) == 0
 
         ## remove minus temperature
@@ -454,14 +713,9 @@ class Dataset_pv(Dataset):
             data = df_data.values
 
 
-        # self.data_x = data[border1:border2]
-        # self.data_y = data[border1:border2]
-        df_stamp = df_stamp[border1:border2]
-
-        self.data_x = data
-        self.data_y = data
-
-        self.data_stamp = data_stamp
+        self.data_x = data[border1:border2]
+        self.data_y = data[border1:border2]
+        self.data_stamp = df_stamp[border1:border2]
 
         # # 13. check if there is missing value
         # assert len(df_raw[df_raw['Active_Power'].isnull()]['Active_Power'].index.tolist()) == 0
