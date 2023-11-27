@@ -92,6 +92,7 @@ def wrapup(file_list, save_name):
         df = df.reset_index(drop=True)
         
         ## add data
+        df.loc[24*i:24*(i+1)-1,'timestamp']                     = [pv_date + ' ' + str(i).zfill(2) + ':00' for i in range(24)]
         df.loc[24*i:24*(i+1)-1,'date']                          = pv_date
         df.loc[24*i:24*(i+1)-1,'time']                          = [str(i).zfill(2) + ':00' for i in range(24)]
         df.loc[24*i:24*(i+1)-1,'Active_Power']                  = pv_info.iloc[5:29]['6_sisuldong_hourly_power'].values

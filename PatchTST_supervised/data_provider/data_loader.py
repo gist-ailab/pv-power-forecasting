@@ -602,19 +602,13 @@ class Dataset_pv_GIST(Dataset):
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
         
-        ## apply resolution
-        df_raw['minute'] = df_raw['timestamp'].apply(lambda x: int(x.split(' ')[1].split(':')[1]))
-        df_raw = df_raw.drop(df_raw[df_raw['minute'] % 60 != 0].index)
-        df_raw = df_raw.reset_index()
-        
-        df_raw['date'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
+        df_raw['date'] = pd.to_datetime(df_raw['date'], errors='raise')
 
         '''
         df_raw.columns: ['date', ...(other features), target feature]
         '''
         cols = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
         df_raw = df_raw[['date'] + cols + [self.target]]
-
 
         # df_stamp = df_raw[['date']][border1:border2]
         df_stamp = pd.DataFrame()
