@@ -27,7 +27,7 @@ do
     --pred_len $pred_len \
     --enc_in 21 \
     --des 'Exp' \
-    --embed 'fixed' \
+    --embed 'timeF' \
     --exp_id $exp_id \
     --itr 1 --batch_size 16  >logs/$exp_id/DKASC_$exp_id'_'$model_name'_'pv_$seq_len'_'$pred_len.log
 done
