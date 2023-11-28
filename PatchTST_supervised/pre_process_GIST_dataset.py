@@ -43,7 +43,8 @@ def wrapup(file_list, save_name):
         weather_data = weather_info[weather_info['date'].str.contains(pv_date)]
         weather_data = weather_data.reset_index(drop=True)
         # weather_info['date'].str.contains(pv_date)
-        
+        if pv_date == '2022-12-13': continue
+                
         ## check if the time is correct
         pv_time = [_time.split(' ')[0] for _time in pv_info.iloc[5:29]['time'].values]
         if i == 0:
@@ -58,7 +59,6 @@ def wrapup(file_list, save_name):
             weather_data = weather_data.reset_index(drop=True)
         else:
             weather_time = [_time.split(' ')[1].split(':')[0] for _time in weather_data['date'].values]
-        
         
         ## handling the missing humidity data
         if weather_data['humidity'].isnull().sum():

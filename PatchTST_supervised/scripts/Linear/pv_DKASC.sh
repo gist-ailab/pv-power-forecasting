@@ -3,7 +3,7 @@ if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
 
-exp_id=exp0
+exp_id=exp2
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir ./logs/$exp_id
@@ -12,8 +12,7 @@ fi
 seq_len=336
 model_name=DLinear
 
-# for pred_len in 96 192 336 720
-for pred_len in 192 336 720
+for pred_len in 96 192 336 720
 do 
   python -u run_longExp.py \
     --gpu 0 \

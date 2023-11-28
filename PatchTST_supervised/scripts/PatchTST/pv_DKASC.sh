@@ -1,7 +1,7 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-exp_id=exp1
+exp_id=exp3
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir ./logs/$exp_id
