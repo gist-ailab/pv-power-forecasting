@@ -73,7 +73,7 @@ if __name__ == '__main__':
     parser.add_argument('--do_predict', action='store_true', help='whether to predict unseen future data')
 
     # optimization
-    parser.add_argument('--num_workers', type=int, default=10, help='data loader num workers')
+    parser.add_argument('--num_workers', type=int, default=0, help='data loader num workers')
     parser.add_argument('--itr', type=int, default=2, help='experiments times')
     parser.add_argument('--train_epochs', type=int, default=100, help='train epochs')
     parser.add_argument('--batch_size', type=int, default=128, help='batch size of train input data')
@@ -101,13 +101,14 @@ if __name__ == '__main__':
     args.gpu = 0
     args.random_seed = 2021
     args.is_training = 1
-    # args.root_path = './dataset/pv/'
-    # args.data_path = '91-Site_DKA-M9_B-Phase.csv'
-    args.root_path = './dataset/GIST_dataset/'
-    args.data_path = 'GIST_sisuldong.csv'
+    args.root_path = './dataset/pv/'
+    args.data_path = '91-Site_DKA-M9_B-Phase.csv'
+    args.data = 'pv_DKASC'
+    # args.root_path = './dataset/GIST_dataset/'
+    # args.data_path = 'GIST_sisuldong.csv'
+    # args.data = 'pv_GIST'
     args.model_id = 'debug'
     args.model = 'DLinear'
-    args.data = 'pv_GIST'
     args.features = 'M'
     args.seq_len = 336
     args.pred_len = 96
@@ -127,7 +128,7 @@ if __name__ == '__main__':
     args.itr = 1
     args.batch_size = 128
     args.learning_rate = 0.00001
-    args.embed = 'fixed'    # 'timeF', 'fixed'
+    args.embed = 'timeF'    # 'timeF', 'fixed'
 
     # random seed
     fix_seed = args.random_seed

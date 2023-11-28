@@ -19,7 +19,7 @@ do
     --is_training 1 \
     --root_path ./dataset/GIST_dataset/ \
     --data_path GIST_sisuldong.csv \
-    --model_id pv_GIST_$exp_id_$seq_len'_'$pred_len \
+    --model_id pv_GIST_$exp_id'_'$seq_len'_'$pred_len \
     --model $model_name \
     --data pv_GIST \
     --features M \
@@ -29,5 +29,5 @@ do
     --des 'Exp' \
     --embed 'fixed' \
     --exp_id $exp_id \
-    --itr 1 --batch_size 16  >logs/$exp_id/GIST_$exp_id_$model_name'_'pv_$seq_len'_'$pred_len.log
+    --itr 1 --batch_size 16  >logs/$exp_id/GIST_$exp_id'_'$model_name'_'pv_$seq_len'_'$pred_len.log
 done

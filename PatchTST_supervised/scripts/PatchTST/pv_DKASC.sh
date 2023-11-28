@@ -24,7 +24,7 @@ do
       --is_training 1 \
       --root_path $root_path_name \
       --data_path $data_path_name \
-      --model_id $model_id_name_$seq_len'_'$pred_len \
+      --model_id $model_id_name'_'$seq_len'_'$pred_len \
       --model $model_name \
       --data $data_name \
       --features M \
@@ -45,5 +45,5 @@ do
       --patience 20\
       --embed 'fixed' \
       --exp_id $exp_id \
-      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$exp_id/DKASC_$exp_id_$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
+      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$exp_id/DKASC_$exp_id'_'$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
 done

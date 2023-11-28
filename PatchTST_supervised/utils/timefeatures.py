@@ -133,7 +133,7 @@ def time_features_from_frequency_str(freq_str: str) -> List[TimeFeature]:
 def time_features(dates, freq='h'):
     # for feat in time_features_from_frequency_str(freq):
     #     print(feat)
-    #     print(feat(dates))
+        # print(feat(dates))
 
 
     return np.vstack([feat(dates) for feat in time_features_from_frequency_str(freq)])
