@@ -1,7 +1,7 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-exp_id=exp5
+exp_id=exp_1129_02
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir ./logs/$exp_id
@@ -16,7 +16,8 @@ model_id_name=pv_GIST_$exp_id'_'
 data_name=pv_GIST
 
 random_seed=2021
-for pred_len in 96 192 336 720
+# for pred_len in 96 192 336 720
+for pred_len in 24 48 96 192
 do
     python -u run_longExp.py \
       --gpu 0 \
