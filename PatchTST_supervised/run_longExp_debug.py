@@ -101,12 +101,22 @@ if __name__ == '__main__':
     args.gpu = 0
     args.random_seed = 2021
     args.is_training = 1
+    # ## debug DKASC
     # args.root_path = './dataset/pv/'
     # args.data_path = '91-Site_DKA-M9_B-Phase.csv'
     # args.data = 'pv_DKASC'
+    
+    ## debug GIST
     args.root_path = './dataset/GIST_dataset/'
     args.data_path = 'GIST_sisuldong.csv'
     args.data = 'pv_GIST'
+    
+    # ## debug others
+    # args.root_path = './dataset/'
+    # args.data_path = 'weather.csv'      # 'weather.csv', 'ETTh1.csv'
+    # args.data = 'custom'                # 'custom', 'ETTh1'
+    
+    args.embed = 'timeF'    # 'timeF', 'fixed'
     args.model_id = 'debug'
     args.model = 'DLinear'
     args.features = 'M'
@@ -128,7 +138,6 @@ if __name__ == '__main__':
     args.itr = 1
     args.batch_size = 128
     args.learning_rate = 0.00001
-    args.embed = 'timeF'    # 'timeF', 'fixed'
 
     # random seed
     fix_seed = args.random_seed
