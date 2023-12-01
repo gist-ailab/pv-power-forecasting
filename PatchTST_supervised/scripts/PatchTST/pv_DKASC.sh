@@ -11,7 +11,7 @@ seq_len=336
 model_name=PatchTST
 
 root_path_name=./dataset/pv/
-data_path_name=91-Site_DKA-M9_B-Phase.csv
+data_path_name='91-Site_DKA-M9_B-Phase.csv'
 model_id_name=pv_DKASC_$exp_id'_'
 data_name=pv_DKASC
 

@@ -18,7 +18,7 @@ do
     --gpu 0 \
     --is_training 1 \
     --root_path ./dataset/pv/ \
-    --data_path 91-Site_DKA-M9_B-Phase.csv \
+    --data_path '91-Site_DKA-M9_B-Phase.csv' \
     --model_id pv_DKASC_$exp_id'_'$seq_len'_'$pred_len \
     --model $model_name \
     --data pv_DKASC \

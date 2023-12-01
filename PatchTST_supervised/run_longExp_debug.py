@@ -105,25 +105,41 @@ if __name__ == '__main__':
     # args.root_path = './dataset/pv/'
     # args.data_path = '91-Site_DKA-M9_B-Phase.csv'
     # args.data = 'pv_DKASC'
+    args.enc_in = 4
+    args.dec_in = 4
+    args.c_out = 4
     
     ## debug GIST
     args.root_path = './dataset/GIST_dataset/'
     args.data_path = 'GIST_sisuldong.csv'
     args.data = 'pv_GIST'
     
-    # ## debug others
+    # ## debug other datasets
     # args.root_path = './dataset/'
     # args.data_path = 'weather.csv'      # 'weather.csv', 'ETTh1.csv'
     # args.data = 'custom'                # 'custom', 'ETTh1'
+    # args.enc_in = 21
+    # args.dec_in = 21
+    # args.c_out = 21
+    
     
     args.embed = 'timeF'    # 'timeF', 'fixed'
     args.model_id = 'debug'
-    args.model = 'DLinear'
     args.features = 'M'
-    args.seq_len = 336
-    args.pred_len = 96
-    args.enc_in = 21
-    args.e_layers = 3
+    args.seq_len = 96       # 336
+    args.label_len = 48
+    args.pred_len = 96      # 96
+    
+    args.model = 'Transformer'
+    args.seq_len = 96       # 336
+    args.label_len = 48
+    args.pred_len = 96      # 96
+
+    args.e_layers = 2       # 3
+    args.d_layers = 1
+    args.factor = 3
+        
+
     args.n_heads = 16
     args.d_model = 128
     args.d_ff = 256
