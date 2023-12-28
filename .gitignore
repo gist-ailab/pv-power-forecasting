@@ -474,5 +474,6 @@ PatchTST_supervised/results_*/*
 PatchTST_supervised/test_results/*
 PatchTST_supervised/test_results_*/*
 PatchTST_supervised/result.txt
+PatchTST_supervised/result*.txt
 
 .vscode/*
