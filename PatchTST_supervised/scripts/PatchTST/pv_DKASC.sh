@@ -1,7 +1,7 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-exp_id=exp3
+exp_id=exp2
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir ./logs/$exp_id
@@ -11,12 +11,14 @@ seq_len=336
 model_name=PatchTST
 
 root_path_name=./dataset/pv/
-data_path_name=91-Site_DKA-M9_B-Phase.csv
+# data_path_name=91-Site_DKA-M9_B-Phase.csv
+data_path_name=87-Site_DKA-M9_A+C-Phases.csv
 model_id_name=pv_DKASC_$exp_id'_'
 data_name=pv_DKASC
 
 random_seed=2021
-for pred_len in 96 192 336 720
+# for pred_len in 96 192 336 720
+for pred_len in 24 48 96 192
 do
     python -u run_longExp.py \
       --gpu 0 \
