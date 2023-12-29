@@ -1,7 +1,7 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-exp_id='231228_01'
+exp_id='231229_A1toG_01'
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir ./logs/$exp_id
@@ -10,10 +10,10 @@ fi
 seq_len=336
 model_name=PatchTST
 
-root_path_name=./dataset/pv/
-data_path_name='91-Site_DKA-M9_B-Phase.csv'
-model_id_name=pv_DKASC_$exp_id'_'
-data_name=pv_DKASC
+root_path_name=./dataset/GIST_dataset/
+data_path_name=GIST_sisuldong.csv
+model_id_name=pv_GIST_$exp_id'_'
+data_name=pv_GIST
 
 random_seed=2021
 # for pred_len in 96 192 336 720
@@ -47,5 +47,6 @@ do
       --patience 20\
       --embed 'timeF' \
       --exp_id $exp_id \
-      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$exp_id/DKASC_$exp_id'_'$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
+      --resume  \
+      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$exp_id/GIST_$exp_id'_'$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
 done

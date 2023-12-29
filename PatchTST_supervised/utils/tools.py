@@ -48,6 +48,7 @@ class EarlyStopping:
         self.delta = delta
 
     def __call__(self, val_loss, model, path):
+        self.save_latest_checkpoint(val_loss, model, path)
         score = -val_loss
         if self.best_score is None:
             self.best_score = score
@@ -67,6 +68,9 @@ class EarlyStopping:
             print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model.state_dict(), path + '/' + 'checkpoint.pth')
         self.val_loss_min = val_loss
+
+    def save_latest_checkpoint(self, val_loss, model, path):
+        torch.save(model.state_dict(), path + '/' + 'model_latest.pth')
 
 
 class dotdict(dict):
