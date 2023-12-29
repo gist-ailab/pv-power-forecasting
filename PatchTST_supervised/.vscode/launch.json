@@ -1,0 +1,50 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            // "program": "${file}",
+            "program": "${file}",
+            "args": ["--gpu", "0",
+                     "--random_seed", "2021",
+                     "--is_training", "0",  // 0: test, 1: train
+                     "--root_path", "./dataset/pv",
+                     "--data_path", "91-Site_DKA-M9_B-Phase.csv",
+                     "--model_id", "pv_DKASC_exp1",
+                     "--model", "PatchTST",
+                     "--data", "pv_DKASC",
+                     "--features", "M",
+                     "--checkpoints", "/HDD/pv/seongho/PatchTST/PatchTST_supervised/checkpoints/exp2/pv_DKASC_exp2__336_24_PatchTST_pv_DKASC_ftM_sl336_ll48_pl24_dm128_nh16_el3_dl1_df256_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth",
+                     "--seq_len", "336",
+                     "--pred_len", "24",
+                     "--enc_in", "21",
+                     "--e_layers", "3",
+                     "--n_heads", "16",
+                     "--d_model", "128",
+                     "--d_ff", "256",
+                     "--dropout", "0.2",
+                     "--fc_dropout", "0.2",
+                     "--head_dropout", "0",
+                     "--patch_len", "16",
+                     "--stride", "8",
+                     "--des", "Exp",
+                     "--train_epochs", "1", // 100
+                     "--patience", "20",
+                     "--embed", "timeF",
+                     "--itr", "1",
+                     "--batch_size", "128",
+                    //  "--batch_size", "16",
+                     "--learning_rate", "0.0001",
+                     "--exp_id", "2",
+        ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}
