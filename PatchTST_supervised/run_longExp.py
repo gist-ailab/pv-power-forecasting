@@ -94,6 +94,7 @@ if __name__ == '__main__':
     
     ## HS
     parser.add_argument('--exp_id', type=str, default='debug', help='exp_id')
+    parser.add_argument('--resume', action='store_true', default=False, help='resume')
 
     args = parser.parse_args()
 
@@ -140,7 +141,7 @@ if __name__ == '__main__':
 
             exp = Exp(args)  # set experiments
             print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-            exp.train(setting, args.exp_id)
+            exp.train(setting, args.exp_id, args.resume)
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
             exp.test(setting, args.exp_id)
