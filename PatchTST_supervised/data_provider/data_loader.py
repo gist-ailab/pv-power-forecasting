@@ -341,10 +341,13 @@ class Dataset_pv_DKASC(Dataset):
         }
         self.__read_data__()
 
-    def __read_data__(self):
-        self.scaler = StandardScaler()
+    def __read_data__(self):        
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
+        
+        # Creae scaler for each feature
+        for i in range(5):
+            setattr(self, f'scaler_{i}', StandardScaler())
         
         ## apply resolution
         df_raw['minute'] = df_raw['timestamp'].apply(lambda x: int(x.split(' ')[1].split(':')[1]))
@@ -447,10 +450,23 @@ class Dataset_pv_DKASC(Dataset):
             train_border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][0]}-01-01 00:00:00'].index.tolist()[0]
             train_border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[self.data_path][1]}-12-31 23:00:00'].index.tolist()[-1]+1
             train_data = df_data[train_border1:train_border2]
-            self.scaler.fit(train_data.values)
-            # print(self.scaler.mean_)
-            # exit()
-            data = self.scaler.transform(df_data.values)
+            # self.scaler.fit(train_data.values)
+            # # print(self.scaler.mean_)
+            # # exit()
+            # data = self.scaler.transform(df_data.values)
+            
+            train_data_values = train_data.values
+            df_data_values = df_data.values
+            transformed_data = []  # List to store each transformed feature
+            for i in range(5):
+                train_features = train_data_values[:, i].reshape(-1, 1)
+                getattr(self, f'scaler_{i}').fit(train_features)
+                
+                df_data_features = df_data_values[:, i].reshape(-1, 1)
+                transformed_feature = getattr(self, f'scaler_{i}').transform(df_data_features)
+                transformed_data.append(transformed_feature)
+            data = np.concatenate(transformed_data, axis=1)
+            
         else:
             data = df_data.values
 
@@ -570,7 +586,9 @@ class Dataset_pv_DKASC(Dataset):
         return len(self.data_x) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
-        return self.scaler.inverse_transform(data)
+        # return self.scaler.inverse_transform(data)
+        '''self.scaler_0: sStandardScaler for 'Active_Power'''
+        return self.scaler_4.inverse_transform(data)
    
 class Dataset_pv_GIST(Dataset):
     def __init__(self, root_path, flag='train', size=None,
