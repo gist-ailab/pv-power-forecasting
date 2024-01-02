@@ -91,6 +91,7 @@ class Exp_Main(Exp_Basic):
 
                 # pred = outputs.detach().cpu()
                 # true = batch_y.detach().cpu()
+                # loss = criterion(pred, true)
                 
                 
                 # ### calculate metrics with only active power, BSH
@@ -99,7 +100,9 @@ class Exp_Main(Exp_Basic):
                 active_power = torch.unsqueeze(outputs[:, :, 0], 2).detach().cpu()
                 active_power_gt = torch.unsqueeze(batch_y[:, :, 0], 2).detach().cpu()
 
-                # loss = criterion(pred, true)
+                # de-normalize the data and prediction values
+                active_power = vali_data.inverse_transform(active_power)
+                active_power_gt = vali_data.inverse_transform(active_power_gt)
                 loss = criterion(active_power, active_power_gt)
 
                 total_loss.append(loss)
@@ -295,24 +298,31 @@ class Exp_Main(Exp_Basic):
                 # true = batch_y  # batch_y.detach().cpu().numpy()  # .squeeze()
                 
                 # ### calculate metrics with only active power, BSH
-                active_power = torch.unsqueeze(outputs[:, :, 0], 2)
-                active_power_gt = torch.unsqueeze(batch_y[:, :, 0], 2)
+                # active_power = torch.unsqueeze(outputs[:, :, 0], 2)
+                # active_power_gt = torch.unsqueeze(batch_y[:, :, 0], 2)
+                ### Last column is active power
+                active_power = outputs[:, :, -1]
+                active_power_gt = batch_y[:, :, -1]
                 
                 active_power_np = active_power.detach().cpu().numpy()
                 active_power_gt_np = active_power_gt.detach().cpu().numpy()
                 
-                pred = active_power_np
-                true = active_power_gt_np           
+                # de-normalize the data and prediction values
+                pred = test_data.inverse_transform(active_power_np)
+                true = test_data.inverse_transform(active_power_gt_np)
                 # ### calculate metrics with only active power, BSH  
 
                 preds.append(pred)
-                trues.append(true)
+                trues.append(true[:,-self.args.pred_len:])
                 inputx.append(batch_x.detach().cpu().numpy())
                 if i % 20 == 0:
                     visualize_input_length = outputs.shape[1]*3 # visualize three times of the prediction length
-                    input_seq = input[0, -visualize_input_length:, -1]
-                    gt = true[0, -self.args.pred_len:, -1]
-                    pd = pred[0, -visualize_input_length:, -1]
+                    input_np = batch_x[:, :, -1].detach().cpu().numpy()
+                    
+                    input_inverse_transform = test_data.inverse_transform(input_np)
+                    input_seq = input_inverse_transform[0, -visualize_input_length:]
+                    gt = true[0, -self.args.pred_len:]
+                    pd = pred[0, -visualize_input_length:]
                     visual(input_seq, gt, pd, os.path.join(folder_path, str(i) + '.png'))
 
         if self.args.test_flop:
@@ -328,8 +338,9 @@ class Exp_Main(Exp_Basic):
 
         # result save
         folder_path = './results/' + exp_id+ '/' + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+        # if not os.path.exists(folder_path):
+        #     os.makedirs(folder_path)
+        os.makedirs(folder_path, exist_ok=True)
 
         # mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
         # print('mse:{}, mae:{}, rse:{}'.format(mse, mae, rse))
@@ -343,14 +354,15 @@ class Exp_Main(Exp_Basic):
         # calculate metrics with only generated power
         mae, mse, rmse = metric(preds, trues)
         print('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))
-        f = open(f"{self.args.pred_len}_result.txt", 'a')
+        txt_save_path = os.path.join(folder_path,
+                                     f"{self.args.seq_len}_{self.args.pred_len}_result.txt")
+        f = open(txt_save_path, 'a')
         f.write(setting + "  \n")
         f.write('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))
         f.write('\n')
         f.write('\n')
         f.close()
         
-
         # np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe,rse, corr]))
         np.save(folder_path + 'pred.npy', preds)
         # np.save(folder_path + 'true.npy', trues)
