@@ -94,6 +94,7 @@ if __name__ == '__main__':
     
     ## HS
     parser.add_argument('--exp_id', type=str, default='debug', help='exp_id')
+    parser.add_argument('--resume', action='store_true', default=False, help='resume')
 
     args = parser.parse_args()
     
@@ -101,18 +102,22 @@ if __name__ == '__main__':
     args.gpu = 0
     args.random_seed = 2021
     args.is_training = 1
-    # ## debug DKASC
-    # args.root_path = './dataset/pv/'
-    # args.data_path = '91-Site_DKA-M9_B-Phase.csv'
-    # args.data = 'pv_DKASC'
+    
+    ## debug DKASC
+    args.root_path = './dataset/pv/'
+    args.data_path = '91-Site_DKA-M9_B-Phase.csv'
+    args.data = 'pv_DKASC'
     args.enc_in = 4
     args.dec_in = 4
     args.c_out = 4
     
-    ## debug GIST
-    args.root_path = './dataset/GIST_dataset/'
-    args.data_path = 'GIST_sisuldong.csv'
-    args.data = 'pv_GIST'
+    # ## debug GIST
+    # args.root_path = './dataset/GIST_dataset/'
+    # args.data_path = 'GIST_sisuldong.csv'
+    # args.data = 'pv_GIST'
+    # args.enc_in = 4
+    # args.dec_in = 4
+    # args.c_out = 4
     
     # ## debug other datasets
     # args.root_path = './dataset/'
@@ -198,7 +203,7 @@ if __name__ == '__main__':
 
             exp = Exp(args)  # set experiments
             print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-            exp.train(setting, args.exp_id)
+            exp.train(setting, args.exp_id, args.resume)
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
             exp.test(setting, args.exp_id)
@@ -229,6 +234,6 @@ if __name__ == '__main__':
 
         exp = Exp(args)  # set experiments
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-        exp.test(setting, test=1)
+        exp.test(setting, args.exp_id, args.checkpoints, test=1)
         torch.cuda.empty_cache()
         
