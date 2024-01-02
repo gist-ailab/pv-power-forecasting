@@ -309,10 +309,11 @@ class Exp_Main(Exp_Basic):
                 trues.append(true)
                 inputx.append(batch_x.detach().cpu().numpy())
                 if i % 20 == 0:
-                    input = batch_x.detach().cpu().numpy()
-                    gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
-                    pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-                    visual(gt, pd, os.path.join(folder_path, str(i) + '.png'))
+                    visualize_input_length = outputs.shape[1]*3 # visualize three times of the prediction length
+                    input_seq = input[0, -visualize_input_length:, -1]
+                    gt = true[0, -self.args.pred_len:, -1]
+                    pd = pred[0, -visualize_input_length:, -1]
+                    visual(input_seq, gt, pd, os.path.join(folder_path, str(i) + '.png'))
 
         if self.args.test_flop:
             test_params_flop((batch_x.shape[1],batch_x.shape[2]))
