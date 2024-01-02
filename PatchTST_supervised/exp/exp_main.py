@@ -85,25 +85,20 @@ class Exp_Main(Exp_Basic):
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 f_dim = -1 if self.args.features == 'MS' else 0
                 
-                # ### calculate metrics with all features
-                # outputs = outputs[:, -self.args.pred_len:, f_dim:]
-                # batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-
-                # pred = outputs.detach().cpu()
-                # true = batch_y.detach().cpu()
-                # loss = criterion(pred, true)
-                
-                
-                # ### calculate metrics with only active power, BSH
+                # ### calculate metrics with only active power
                 outputs = outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                active_power = torch.unsqueeze(outputs[:, :, 0], 2).detach().cpu()
-                active_power_gt = torch.unsqueeze(batch_y[:, :, 0], 2).detach().cpu()
+                active_power = outputs[:, :, -1].detach().cpu()
+                active_power_gt = batch_y[:, :, -1].detach().cpu()
 
                 # de-normalize the data and prediction values
-                active_power = vali_data.inverse_transform(active_power)
-                active_power_gt = vali_data.inverse_transform(active_power_gt)
-                loss = criterion(active_power, active_power_gt)
+                active_power_np = vali_data.inverse_transform(active_power)
+                active_power_gt_np = vali_data.inverse_transform(active_power_gt)
+                
+                pred = torch.from_numpy(active_power_np)
+                gt = torch.from_numpy(active_power_gt_np)
+                
+                loss = criterion(pred, gt)
 
                 total_loss.append(loss)
         total_loss = np.average(total_loss)
@@ -246,7 +241,6 @@ class Exp_Main(Exp_Basic):
             else:
                 self.model.load_state_dict(torch.load(os.path.join('./checkpoints/', f'exp{exp_id}', setting, 'checkpoint.pth')))
             
-
         preds = []
         trues = []
         inputx = []
@@ -289,17 +283,7 @@ class Exp_Main(Exp_Basic):
                 f_dim = -1 if self.args.features == 'MS' else 0
                 # print(outputs.shape,batch_y.shape)
                 
-                # ### calculate metrics with all features
-                # outputs = outputs[:, -self.args.pred_len:, f_dim:]
-                # batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                # outputs = outputs.detach().cpu().numpy()
-                # batch_y = batch_y.detach().cpu().numpy()
-                # pred = outputs  # outputs.detach().cpu().numpy()  # .squeeze()
-                # true = batch_y  # batch_y.detach().cpu().numpy()  # .squeeze()
-                
                 # ### calculate metrics with only active power, BSH
-                # active_power = torch.unsqueeze(outputs[:, :, 0], 2)
-                # active_power_gt = torch.unsqueeze(batch_y[:, :, 0], 2)
                 ### Last column is active power
                 active_power = outputs[:, :, -1]
                 active_power_gt = batch_y[:, :, -1]
@@ -338,8 +322,6 @@ class Exp_Main(Exp_Basic):
 
         # result save
         folder_path = './results/' + exp_id+ '/' + setting + '/'
-        # if not os.path.exists(folder_path):
-        #     os.makedirs(folder_path)
         os.makedirs(folder_path, exist_ok=True)
 
         # mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
