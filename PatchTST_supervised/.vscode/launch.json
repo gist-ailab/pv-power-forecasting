@@ -15,7 +15,7 @@
                      "--is_training", "1",  // 0: test, 1: train
                      "--root_path", "./dataset/pv",
                      "--data_path", "91-Site_DKA-M9_B-Phase.csv",
-                     "--model_id", "pv_DKASC_exp2",
+                     "--model_id", "240102_1A_336_24",
                      "--model", "PatchTST",
                      "--data", "pv_DKASC",
                      "--features", "M",
@@ -36,11 +36,12 @@
                      "--train_epochs", "1", // 100
                      "--patience", "20",
                      "--embed", "timeF",
+                     "--exp_id", "240102_1A",
                      "--itr", "1",
-                     "--batch_size", "128",
+                     "--batch_size", "128", // 16
                     //  "--batch_size", "16",
                      "--learning_rate", "0.0001",
-                     "--exp_id", "2",
+                     
         ],
             "console": "integratedTerminal",
             "justMyCode": true
