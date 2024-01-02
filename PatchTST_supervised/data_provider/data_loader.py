@@ -450,10 +450,6 @@ class Dataset_pv_DKASC(Dataset):
             train_border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][0]}-01-01 00:00:00'].index.tolist()[0]
             train_border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[self.data_path][1]}-12-31 23:00:00'].index.tolist()[-1]+1
             train_data = df_data[train_border1:train_border2]
-            # self.scaler.fit(train_data.values)
-            # # print(self.scaler.mean_)
-            # # exit()
-            # data = self.scaler.transform(df_data.values)
             
             train_data_values = train_data.values
             df_data_values = df_data.values
