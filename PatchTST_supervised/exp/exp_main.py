@@ -233,12 +233,16 @@ class Exp_Main(Exp_Basic):
 
         return self.model
 
-    def test(self, setting, exp_id, test=0):
+    def test(self, setting, exp_id, model_path=None, test=0):
         test_data, test_loader = self._get_data(flag='test')
         
         if test:
             print('loading model')
-            self.model.load_state_dict(torch.load(os.path.join('./checkpoints/', exp_id, setting, 'checkpoint.pth')))
+            if model_path != None:
+                self.model.load_state_dict(torch.load(model_path))
+            else:
+                self.model.load_state_dict(torch.load(os.path.join('./checkpoints/', f'exp{exp_id}', setting, 'checkpoint.pth')))
+            
 
         preds = []
         trues = []
@@ -291,14 +295,15 @@ class Exp_Main(Exp_Basic):
                 # true = batch_y  # batch_y.detach().cpu().numpy()  # .squeeze()
                 
                 # ### calculate metrics with only active power, BSH
-                active_power = outputs[:, :, 0]
-                active_power_gt = batch_y[:, :, 0]
+                active_power = torch.unsqueeze(outputs[:, :, 0], 2)
+                active_power_gt = torch.unsqueeze(batch_y[:, :, 0], 2)
                 
                 active_power_np = active_power.detach().cpu().numpy()
                 active_power_gt_np = active_power_gt.detach().cpu().numpy()
                 
                 pred = active_power_np
-                true = active_power_gt_np             
+                true = active_power_gt_np           
+                # ### calculate metrics with only active power, BSH  
 
                 preds.append(pred)
                 trues.append(true)
