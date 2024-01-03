@@ -1,13 +1,13 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240103_G'
+model_id_name='240103_G_01'
 
 if [ ! -d "./logs/$model_id_name" ]; then
     mkdir ./logs/$model_id_name
 fi
 
-seq_len=336
+seq_len=24
 model_name=PatchTST
 
 root_path_name=./dataset/GIST_dataset/
@@ -29,6 +29,7 @@ do
       --data $data_name \
       --features M \
       --seq_len $seq_len \
+      --label_len 0 \
       --pred_len $pred_len \
       --enc_in 21 \
       --e_layers 3 \

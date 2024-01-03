@@ -1,17 +1,17 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240103_1A'
+model_id_name='240103_1B_01'
 
 if [ ! -d "./logs/$model_id_name" ]; then
     mkdir ./logs/$model_id_name
 fi
 
-seq_len=336
+seq_len=24
 model_name=PatchTST
 
 root_path_name=./dataset/pv/
-data_path_name='91-Site_DKA-M9_B-Phase.csv'
+data_path_name='87-Site_DKA-M9_A+C-Phases.csv'
 data_name=pv_DKASC
 
 random_seed=2021
@@ -29,6 +29,7 @@ do
       --data $data_name \
       --features M \
       --seq_len $seq_len \
+      --label_len 0 \
       --pred_len $pred_len \
       --enc_in 21 \
       --e_layers 3 \
