@@ -1,10 +1,10 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-exp_id='231229_A1toG_01'
+model_id_name='240103_1AtoG'
 
-if [ ! -d "./logs/$exp_id" ]; then
-    mkdir ./logs/$exp_id
+if [ ! -d "./logs/$model_id_name" ]; then
+    mkdir ./logs/$model_id_name
 fi
 
 seq_len=336
@@ -12,13 +12,11 @@ model_name=PatchTST
 
 root_path_name=./dataset/GIST_dataset/
 data_path_name=GIST_sisuldong.csv
-model_id_name=pv_GIST_$exp_id'_'
 data_name=pv_GIST
 
 random_seed=2021
 # for pred_len in 96 192 336 720
-# for pred_len in 24 48 96 192
-for pred_len in 96
+for pred_len in 24 48 192
 do
     python -u run_longExp.py \
       --gpu 0 \
@@ -46,7 +44,7 @@ do
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --exp_id $exp_id \
+      --exp_id $model_id_name \
       --resume  \
-      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$exp_id/GIST_$exp_id'_'$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
+      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$model_id_name/$model_id_name'_'$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
 done

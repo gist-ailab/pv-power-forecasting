@@ -1,7 +1,7 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240102_1A'
+model_id_name='240103_1A'
 
 if [ ! -d "./logs/$model_id_name" ]; then
     mkdir ./logs/$model_id_name
@@ -16,8 +16,7 @@ data_name=pv_DKASC
 
 random_seed=2021
 # for pred_len in 96 192 336 720
-# for pred_len in 24 48 96 192
-for pred_len in 96
+for pred_len in 24 48 96 192
 do
     python -u run_longExp.py \
       --gpu 0 \
