@@ -110,7 +110,11 @@ class Exp_Main(Exp_Basic):
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
 
-        path = os.path.join(self.args.checkpoints, exp_id, setting)
+        if 'checkpoint.pth' in self.args.checkpoints.split('/'):
+            path = self.args.checkpoints
+        else:
+            path = os.path.join(self.args.checkpoints, exp_id, setting)
+
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -234,6 +238,9 @@ class Exp_Main(Exp_Basic):
     def test(self, setting, exp_id, model_path=None, test=0):
         test_data, test_loader = self._get_data(flag='test')
         
+        pv_max = test_loader.sampler.data_source.pv_max
+        pv_min = test_loader.sampler.data_source.pv_min
+        
         if test:
             print('loading model')
             if model_path != None:
@@ -334,13 +341,14 @@ class Exp_Main(Exp_Basic):
         # f.close()
         
         # calculate metrics with only generated power
-        mae, mse, rmse = metric(preds, trues)
-        print('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))
+        
+        mae, mse, rmse, nrmse = metric(preds, trues, pv_max, pv_min)
+        print('mse:{}, mae:{}, rmse:{}, nrmse:{}'.format(mse, mae, rmse, nrmse))
         txt_save_path = os.path.join(folder_path,
                                      f"{self.args.seq_len}_{self.args.pred_len}_result.txt")
         f = open(txt_save_path, 'a')
         f.write(setting + "  \n")
-        f.write('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))
+        f.write('mse:{}, mae:{}, rmse:{}, nrmse:{}'.format(mse, mae, rmse, nrmse))
         f.write('\n')
         f.write('\n')
         f.close()
