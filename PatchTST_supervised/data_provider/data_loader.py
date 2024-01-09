@@ -402,6 +402,10 @@ class Dataset_pv_DKASC(Dataset):
         assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
         assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
         assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
+        
+        ### get maximum and minimum value of 'Active_Power'
+        self.pv_max = np.max(df_raw['Active_Power'].values)
+        self.pv_min = np.min(df_raw['Active_Power'].values)
 
         ### remove minus temperature
         print(len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()), end='  ')
@@ -661,6 +665,10 @@ class Dataset_pv_GIST(Dataset):
         assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
         assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
         assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
+        
+        ### get maximum and minimum value of 'Active_Power'
+        self.pv_max = np.max(df_raw['Active_Power'].values)
+        self.pv_min = np.min(df_raw['Active_Power'].values)
         
         num_train = int(len(df_raw) * 0.7)
         num_test = int(len(df_raw) * 0.2)
