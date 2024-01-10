@@ -1,13 +1,13 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240103_1AtoG'
+model_id_name='240103_1BtoG_01'
 
 if [ ! -d "./logs/$model_id_name" ]; then
     mkdir ./logs/$model_id_name
 fi
 
-seq_len=336
+seq_len=24
 model_name=PatchTST
 
 root_path_name=./dataset/GIST_dataset/
@@ -16,7 +16,8 @@ data_name=pv_GIST
 
 random_seed=2021
 # for pred_len in 96 192 336 720
-for pred_len in 24 48 192
+# for pred_len in 24 48 96 192
+for pred_len in 192
 do
     python -u run_longExp.py \
       --gpu 0 \
@@ -29,6 +30,7 @@ do
       --data $data_name \
       --features M \
       --seq_len $seq_len \
+      --label_len 0 \
       --pred_len $pred_len \
       --enc_in 21 \
       --e_layers 3 \
