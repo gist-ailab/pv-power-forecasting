@@ -587,6 +587,320 @@ class Dataset_pv_DKASC(Dataset):
 
     def inverse_transform(self, data):
         return self.scaler_4.inverse_transform(data)
+class Dataset_pv_DKASC_multi(Dataset):
+    def __init__(self, root_path, flag='train', size=None,
+                 features='S', data_path='',
+                 target='Active_Power', scale=True, timeenc=0, freq='h'):
+        # size [seq_len, label_len, pred_len]
+        # info
+        if size == None:
+            self.seq_len = 24 * 4 * 4
+            self.label_len = 24 * 4
+            self.pred_len = 24 * 4
+        else:
+            self.seq_len = size[0]
+            self.label_len = size[1]
+            self.pred_len = size[2]
+        # init
+        assert flag in ['train', 'test', 'val']
+        type_map = {'train': 0, 'val': 1, 'test': 2}
+        self.set_type = type_map[flag]
+
+        self.features = features
+        self.target = 'Active_Power'
+        self.scale = scale
+        self.timeenc = timeenc
+        self.freq = freq
+
+        self.root_path = root_path
+        self.data_path = data_path
+
+        self.DATASET_SPLIT_YEAR = {
+            '1A-91-Site_DKA-M9_B-Phase.csv'     : [2014, 2020,  2021, 2021,  2022, 2023],    # 
+            '1B-87-Site_DKA-M9_A+C-Phases.csv'  : [2014, 2020,  2021, 2021,  2022, 2023],    # 
+            '2-78-Site_DKA-M11_3-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '3-70-Site_DKA-M5_A-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '4-86-Site_DKA-M2_B-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '5-89-Site_DKA-M3_B-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '6-95-Site_DKA-M3_C-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '7-79-Site_DKA-M6_A-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '8-93-Site_DKA-M4_A-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '9A-218-Site_DKA-M4_C-Phase_II.csv' : [2018, 2020,  2021, 2021,  2022, 2023],    # 
+            '10-85-Site_DKA-M7_A-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '11-106-Site_DKA-M5_C-Phase.csv'    : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '12-84-Site_DKA-M5_B-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '13-92-Site_DKA-M6_B-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '14-90-Site_DKA-M3_A-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '16A-100-Site_DKA-M1_A-Phase.csv'   : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '16B-103-Site_DKA-M1_B-Phase.csv'   : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '16C-105-Site_DKA-M1_C-Phase.csv'   : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '16D-81-Site_DKA-M2_A-Phase.csv'    : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '17-69-Site_DKA-M4_B-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '18-71-Site_DKA-M2_C-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
+            '19-98-Site_DKA-M8_B-Phase.csv'     : [2010, 2020,  2021, 2021,  2022, 2023],    # 
+            '20-68-Site_DKA-M8_C-Phase.csv'     : [2010, 2020,  2021, 2021,  2022, 2023],    # 
+            '21-67-Site_DKA-M8_A-Phase.csv'     : [2010, 2020,  2021, 2021,  2022, 2023],    # 
+            '22-97-Site_DKA-M10_B+C-Phases.csv' : [2011, 2020,  2021, 2021,  2022, 2023],    # 
+            '23-61-Site_DKA-M15_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
+            '24-213-Site_DKA-M16_A-Phase_II.csv': [2017, 2020,  2021, 2021,  2022, 2023],    # 
+            '25-212-Site_DKA-M15_C-Phase_II.csv': [2017, 2020,  2021, 2021,  2022, 2023],    # 
+            '26-72-Site_DKA-M15_B-Phase.csv'    : [2014, 2020,  2021, 2021,  2022, 2023],    # 
+            '29-55-Site_DKA-M20_B-Phase.csv'    : [2014, 2020,  2021, 2021,  2022, 2023],    # 
+            '30-56-Site_DKA-M20_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
+            '31-74-Site_DKA-M18_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
+            '32-214-Site_DKA-M18_B-Phase_II.csv': [2017, 2020,  2021, 2021,  2022, 2023],    # 
+            '33-52-Site_DKA-M16_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
+            '34-63-Site_DKA-M17_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
+            '35-73-Site_DKA-M19_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
+            '36-58-Site_DKA-M17_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
+            '37-64-Site_DKA-M17_B-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
+            '38-59-Site_DKA-M19_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
+        }
+        self.__read_data__()
+
+    def __read_data__(self):
+        data_path_list = os.listdir(self.root_path)
+        data_path_list = ['25-212-Site_DKA-M15_C-Phase_II.csv', '10-85-Site_DKA-M7_A-Phase.csv']
+        for idx, data_path in enumerate(data_path_list):
+            df_raw = pd.read_csv(os.path.join(self.root_path, data_path))
+            
+            df_raw['date'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
+
+            '''
+            df_raw.columns: ['date', ...(other features), target feature]
+            '''
+            # Creae scaler for each feature
+            for i in range(len(df_raw.columns)):
+                setattr(self, f'scaler_{i}', StandardScaler())
+                
+            cols = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+            df_raw = df_raw[['date'] + cols + [self.target]]
+
+            ## pre-processing
+            df_date = pd.DataFrame()
+            df_date['date'] = pd.to_datetime(df_raw.date)
+            df_date['year'] = df_date.date.apply(lambda row: row.year, 1)
+            df_date['month'] = df_date.date.apply(lambda row: row.month, 1)
+            df_date['day'] = df_date.date.apply(lambda row: row.day, 1)
+            df_date['weekday'] = df_date.date.apply(lambda row: row.weekday(), 1)
+            df_date['hour'] = df_date.date.apply(lambda row: row.hour, 1)
+            
+            ### remove missing value of 'Active_Power'
+            print(df_raw['Active_Power'].isnull().sum(), end='  ')
+            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
+            df_raw, df_date = self.remove_null_value(df_raw, df_date, 'Active_Power')
+            print('-> ', df_raw['Active_Power'].isnull().sum())
+            ### remove missing value of 'Weather_Temperature_Celsius'
+            print(df_raw['Weather_Temperature_Celsius'].isnull().sum(), end='  ')
+            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
+            df_raw, df_date = self.remove_null_value(df_raw, df_date, 'Weather_Temperature_Celsius')
+            print('-> ', df_raw['Weather_Temperature_Celsius'].isnull().sum())
+            ### remove missing value of 'Global_Horizontal_Radiation'
+            print(df_raw['Global_Horizontal_Radiation'].isnull().sum(), end='  ')
+            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
+            df_raw, df_date = self.remove_null_value(df_raw, df_date, 'Global_Horizontal_Radiation')
+            print('-> ', df_raw['Global_Horizontal_Radiation'].isnull().sum())
+            ### remove missing value of 'Diffuse_Horizontal_Radiation'
+            print(df_raw['Diffuse_Horizontal_Radiation'].isnull().sum(), end='  ')
+            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
+            df_raw, df_date = self.remove_null_value(df_raw, df_date, 'Diffuse_Horizontal_Radiation')
+            print('-> ', df_raw['Diffuse_Horizontal_Radiation'].isnull().sum())
+            ### remove missing value of 'Weather_Relative_Humidity'
+            print(df_raw['Weather_Relative_Humidity'].isnull().sum(), end='  ')
+            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
+            df_raw, df_date = self.remove_null_value(df_raw, df_date, 'Weather_Relative_Humidity')
+            print('-> ', df_raw['Weather_Relative_Humidity'].isnull().sum())
+            
+            assert df_raw['Active_Power'].isnull().sum() == 0
+            assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
+            assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
+            assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
+            assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
+            
+            ### get maximum and minimum value of 'Active_Power'
+            self.pv_max = np.max(df_raw['Active_Power'].values)
+            self.pv_min = np.min(df_raw['Active_Power'].values)
+
+            ### remove minus temperature
+            print(len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()), end='  ')
+            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
+            df_raw, df_date = self.remove_minus_temperature(df_raw, df_date)
+            print('-> ', len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()))
+
+            ### remove minus radiation
+            print(len(df_raw[df_raw['Global_Horizontal_Radiation'] < 0].index.tolist()), end='  ')
+            print(len(df_raw[df_raw['Diffuse_Horizontal_Radiation'] < 0].index.tolist()))
+            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
+            df_raw, df_date = self.remove_minus_radiation(df_raw, df_date)
+            print('-> ', len(df_raw[df_raw['Global_Horizontal_Radiation'] < 0].index.tolist()))
+            print('-> ', len(df_raw[df_raw['Diffuse_Horizontal_Radiation'] < 0].index.tolist()))
+
+            ### clip over 100 humidity
+            print(len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()), end='  ')
+            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
+            df_raw, df_date = self.clip_over_hundred_humidity(df_raw, df_date)
+            print('-> ', len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()))
+
+            # del df_date
+            border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][2*(self.set_type)]}-01-01 00:00:00'].index[0]
+            border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[self.data_path][2*(self.set_type)+1]}-12-31 23:00:00'].index[-1]+1
+            
+            df_stamp = df_raw[['date']][border1:border2]
+
+            if self.timeenc == 0:
+                data_stamp = pd.DataFrame()
+                data_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
+                data_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
+                data_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
+                data_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
+            elif self.timeenc == 1:
+                data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
+                data_stamp = data_stamp.transpose(1, 0)
+
+
+            if self.features == 'M' or self.features == 'MS':
+                cols_data = df_raw.columns[1:] 
+                df_data = df_raw[cols_data]
+            elif self.features == 'S':
+                df_data = df_raw[[self.target]]
+
+            if self.scale:
+                train_border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][0]}-01-01 00:00:00'].index.tolist()[0]
+                train_border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[self.data_path][1]}-12-31 23:00:00'].index.tolist()[-1]+1
+                train_data = df_data[train_border1:train_border2]
+                
+                train_data_values = train_data.values
+                df_data_values = df_data.values
+                transformed_data = []  # List to store each transformed feature
+                for i in range(5):
+                    train_features = train_data_values[:, i].reshape(-1, 1)
+                    getattr(self, f'scaler_{i}').fit(train_features)
+                    
+                    df_data_features = df_data_values[:, i].reshape(-1, 1)
+                    transformed_feature = getattr(self, f'scaler_{i}').transform(df_data_features)
+                    transformed_data.append(transformed_feature)
+                data = np.concatenate(transformed_data, axis=1)
+                
+            else:
+                data = df_data.values
+
+        self.data_x = data[border1:border2]
+        self.data_y = data[border1:border2]
+        if self.timeenc == 0:
+            self.data_stamp = data_stamp[['month', 'day', 'weekday', 'hour']].values
+        elif self.timeenc == 1:
+            self.data_stamp = data_stamp
+        
+
+    def remove_successive_missing_value(self, pv, df_stamp):
+        df_stamp_org = copy.deepcopy(df_stamp)
+        missing_idx = pv[pv['Active_Power'].isnull()]['Active_Power'].index.tolist()
+        successive, count = True, 1
+        front, rear = 0, 0
+
+        for i in range(len(missing_idx)-1, 0, -1):
+            front, rear = missing_idx[i-1], missing_idx[i]
+            # print(successive, count)
+            if successive:
+                if front == rear-1:
+                    count += 1
+                else:
+                    if count >= 4:
+                        year, month, day = df_stamp_org.iloc[rear]['year'], df_stamp_org.iloc[rear]['month'], df_stamp_org.iloc[rear]['day']
+                        # print('[', rear, ']', year, month, day)
+                        has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                        if has_index:
+                            pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                            df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                    successive = False
+                    count = 1
+            else:
+                if front == rear-1:
+                    successive = True
+                    count += 1
+                else:
+                    pass
+        
+        if successive and count >= 4:
+            year, month, day = df_stamp_org.iloc[rear]['year'], df_stamp_org.iloc[rear]['month'], df_stamp_org.iloc[rear]['day']
+            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+            if has_index:
+                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+
+        return pv, df_stamp
+        
+    def remove_null_value(self, pv, df_stamp, column):   # pv = df_raw
+        df_stamp_org = copy.deepcopy(df_stamp)
+        missing_idx = pv[pv[column].isnull()][column].index.tolist()
+        for i in range(len(missing_idx)-1, -1, -1):
+            idx = missing_idx[i]
+            year, month, day = df_stamp_org.iloc[idx]['year'], df_stamp_org.iloc[idx]['month'], df_stamp_org.iloc[idx]['day']
+            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+            if has_index:
+                # print('year, month, day: ', year, month, day)
+                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+
+        return pv, df_stamp
+    
+    def remove_minus_temperature(self, pv, df_stamp):   # pv = df_raw
+        df_stamp_org = copy.deepcopy(df_stamp)
+        minus_idx = pv[pv['Weather_Temperature_Celsius'] < 0].index.tolist()
+        for i in range(len(minus_idx)-1, 1, -1):
+            idx = minus_idx[i]
+            year, month, day = df_stamp_org.iloc[idx]['year'], df_stamp_org.iloc[idx]['month'], df_stamp_org.iloc[idx]['day']
+            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+            if has_index:
+                # print('year, month, day: ', year, month, day)
+                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+
+        return pv, df_stamp
+
+    def remove_minus_radiation(self, pv, df_stamp):
+        df_stamp_org = copy.deepcopy(df_stamp)
+        minus_idx = pv[pv['Global_Horizontal_Radiation'] < 0].index.tolist()
+        minus_idx.extend(pv[pv['Diffuse_Horizontal_Radiation'] < 0].index.tolist())
+        for i in range(len(minus_idx)-1, -1, -1):
+            idx = minus_idx[i]
+            year, month, day = df_stamp_org.iloc[idx]['year'], df_stamp_org.iloc[idx]['month'], df_stamp_org.iloc[idx]['day']
+            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+            if has_index:
+                # print('year, month, day: ', year, month, day)
+                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
+            
+        return pv, df_stamp
+
+
+    def clip_over_hundred_humidity(self, pv, df_stamp):
+        over_idx = pv[pv['Weather_Relative_Humidity'] > 100].index.tolist()
+        pv.loc[over_idx, 'Weather_Relative_Humidity'] = 100
+        
+        return pv, df_stamp
+
+
+    def __getitem__(self, index):
+        s_begin = index
+        s_end = s_begin + self.seq_len
+        r_begin = s_end - self.label_len
+        r_end = r_begin + self.label_len + self.pred_len
+
+        seq_x = self.data_x[s_begin:s_end]
+        seq_y = self.data_y[r_begin:r_end]
+        seq_x_mark = self.data_stamp[s_begin:s_end]
+        seq_y_mark = self.data_stamp[r_begin:r_end]
+        
+        assert seq_x.shape == (self.seq_len, 5)
+
+        return seq_x, seq_y, seq_x_mark, seq_y_mark
+
+    def __len__(self):
+        return len(self.data_x) - self.seq_len - self.pred_len + 1
+
+    def inverse_transform(self, data):
+        return self.scaler_4.inverse_transform(data)
    
 class Dataset_pv_GIST(Dataset):
     def __init__(self, root_path, flag='train', size=None,
