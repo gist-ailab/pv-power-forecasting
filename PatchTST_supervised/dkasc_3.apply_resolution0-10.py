@@ -16,6 +16,8 @@ if __name__ == '__main__':
     print()
     
     for i, data_path in enumerate(data_path_list[:10]):
+        if i < 3: continue
+        print(i, data_path)
         stop_flag = False
         # data_path = '0-96-Site_DKA-MasterMeter1.csv'
         df_raw = pd.read_csv(os.path.join(root_path, data_path))
@@ -44,6 +46,7 @@ if __name__ == '__main__':
             
             j += (last_idx - first_idx +1)
             if j >= len(df_raw)-1: break
+            
             
             
         df.to_csv(os.path.join(save_path, data_path), index=False)

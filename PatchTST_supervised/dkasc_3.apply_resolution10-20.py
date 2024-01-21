@@ -13,7 +13,7 @@ if __name__ == '__main__':
     save_path = './dataset/DKASC_cpr'
     data_path_list = os.listdir(root_path)
     data_path_list.sort()
-    print(data_path_list[10:20])
+    print()
     
     for i, data_path in enumerate(data_path_list[10:20]):
         stop_flag = False
@@ -44,6 +44,7 @@ if __name__ == '__main__':
             
             j += (last_idx - first_idx +1)
             if j >= len(df_raw)-1: break
+            
             
             
         df.to_csv(os.path.join(save_path, data_path), index=False)
