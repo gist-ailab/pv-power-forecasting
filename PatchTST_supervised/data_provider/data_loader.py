@@ -699,6 +699,8 @@ class Dataset_pv_DKASC_multi(Dataset):
             # self.ap_max_list.append(df_raw['Active_Power'].max())
             # self.ap_min_list.append(df_raw['Active_Power'].min())
             print(data_path, '\tmax: ', round(df_raw['Active_Power'].max(),2), '\tmin: ', round(df_raw['Active_Power'].min(),2))
+            for column in df_raw.columns:
+                print(df_raw[column].describe())
 
             border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[data_path][2*(self.set_type)]}-01-01 00:00:00'].index[0]
             border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[data_path][2*(self.set_type)+1]}-12-31 23:00:00'].index[-1]+1
