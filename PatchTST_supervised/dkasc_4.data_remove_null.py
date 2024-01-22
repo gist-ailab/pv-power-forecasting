@@ -12,12 +12,12 @@ if __name__ == '__main__':
     save_path = './dataset/DKASC_cprn'
     data_path_list = os.listdir(root_path)
     data_path_list.sort()
+    remove_path_list = os.listdir(save_path)
+    for remove_path in remove_path_list:
+        data_path_list.remove(remove_path)
+        
     print()
-    
-    data_path_list = ['1A-91-Site_DKA-M9_B-Phase.csv',
-                      '1B-87-Site_DKA-M9_A+C-Phases.csv',
-                      '25-212-Site_DKA-M15_C-Phase_II.csv',
-                      ]
+    print(data_path_list)
     
     for i, data_path in enumerate(data_path_list):
         start_time = time.time()
