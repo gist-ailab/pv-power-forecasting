@@ -1,7 +1,7 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240122_3s_01'
+model_id_name='240122_3s_03'
 
 if [ ! -d "./logs/$model_id_name" ]; then
     mkdir ./logs/$model_id_name
@@ -11,7 +11,11 @@ seq_len=24
 model_name=PatchTST
 
 root_path_name=./dataset/DKASC_cprn/
-data_path_name='a'
+data_path_name="
+'1A-91-Site_DKA-M9_B-Phase.csv'
+'1B-87-Site_DKA-M9_A+C-Phases.csv'
+'25-212-Site_DKA-M15_C-Phase_II.csv'
+"
 data_name=pv_DKASC_multi
 
 random_seed=2021

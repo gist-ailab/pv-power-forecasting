@@ -19,7 +19,7 @@
                 "--exp_id", "debug",
                 
                 "--root_path", "./dataset/DKASC_cprn",
-                "--data_path", "",
+                "--data_path", "1A-91-Site_DKA-M9_B-Phase.csv,1B-87-Site_DKA-M9_A+C-Phases.csv,25-212-Site_DKA-M15_C-Phase_II.csv",
                 "--data", "pv_DKASC_multi",
                 "--enc_in", "9",
                 "--dec_in", "9",

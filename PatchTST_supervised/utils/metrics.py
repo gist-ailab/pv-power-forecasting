@@ -39,11 +39,11 @@ def metric(pred, true, x_max=None, x_min=None):
     mae = MAE(pred, true)
     mse = MSE(pred, true)
     rmse = RMSE(pred, true)
-    nrmse = nRMSE(pred, true, x_max, x_min)
+    # nrmse = nRMSE(pred, true, x_max, x_min)
     # mape = MAPE(pred, true)
     # mspe = MSPE(pred, true)
     # rse = RSE(pred, true)
     # corr = CORR(pred, true)
 
     # return mae, mse, rmse, mape, mspe, rse, corr
-    return mae, mse, rmse, nrmse
+    return mae, mse, rmse

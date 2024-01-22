@@ -611,8 +611,8 @@ class Dataset_pv_DKASC_multi(Dataset):
         self.freq = freq
 
         self.root_path = root_path
-        self.data_path = data_path
-
+        self.data_path_list = data_path.split(',')
+        
         self.DATASET_SPLIT_YEAR = {
             '1A-91-Site_DKA-M9_B-Phase.csv'     : [2014, 2020,  2021, 2021,  2022, 2023],    # 
             '1B-87-Site_DKA-M9_A+C-Phases.csv'  : [2014, 2020,  2021, 2021,  2022, 2023],    # 
@@ -658,14 +658,14 @@ class Dataset_pv_DKASC_multi(Dataset):
         self.x_list = []
         self.y_list = []
         self.ds_list = []
-        self.ap_max_list = []
+        # self.ap_max_list = []
+        # self.ap_min_list = []
         
         self.__read_data__()
 
     def __read_data__(self):
-        data_path_list = os.listdir(self.root_path)
         # data_path_list = ['25-212-Site_DKA-M15_C-Phase_II.csv', '10-85-Site_DKA-M7_A-Phase.csv']
-        for idx, data_path in enumerate(data_path_list):
+        for idx, data_path in enumerate(self.data_path_list):
             df_raw = pd.read_csv(os.path.join(self.root_path, data_path))
             
             df_raw['date'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
@@ -696,9 +696,9 @@ class Dataset_pv_DKASC_multi(Dataset):
             assert (df_raw.isnull().sum()).sum() == 0
             
             ### get maximum and minimum value of 'Active_Power'
-            self.pv_max = df_raw['Active_Power'].max()
-            self.pv_min = df_raw['Active_Power'].min()
-            self.ap_max_list.append(self.pv_max)
+            # self.ap_max_list.append(df_raw['Active_Power'].max())
+            # self.ap_min_list.append(df_raw['Active_Power'].min())
+            print(data_path, '\tmax: ', round(df_raw['Active_Power'].max(),2), '\tmin: ', round(df_raw['Active_Power'].min(),2))
 
             border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[data_path][2*(self.set_type)]}-01-01 00:00:00'].index[0]
             border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[data_path][2*(self.set_type)+1]}-12-31 23:00:00'].index[-1]+1
@@ -765,8 +765,11 @@ class Dataset_pv_DKASC_multi(Dataset):
         seq_y = self.y_list[i][r_begin:r_end]
         seq_x_mark = self.ds_list[i][s_begin:s_end]
         seq_y_mark = self.ds_list[i][r_begin:r_end]
+        # pv_max = self.ap_max_list[i]
+        # pv_min = self.ap_min_list[i]
         
         return seq_x, seq_y, seq_x_mark, seq_y_mark
+        return seq_x, seq_y, seq_x_mark, seq_y_mark, pv_max, pv_min
 
     def __len__(self):
         total_len = 0
