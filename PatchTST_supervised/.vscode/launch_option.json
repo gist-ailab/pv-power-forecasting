@@ -17,7 +17,17 @@
 
                 "--model_id", "debug",
                 "--exp_id", "debug",
-                
+
+                /////----- DATASET -----/////
+                //  //  DKASC  //
+                //  "--root_path", "./dataset/DKASC",
+                //  "--data_path", "87-Site_DKA-M9_A+C-Phases.csv",
+                //  "--data", "pv_DKASC",
+                //  "--enc_in", "5",
+                //  "--dec_in", "5",
+                //  "--c_out", "5",
+
+                //  DKASC_multi  //
                 "--root_path", "./dataset/DKASC_cprn",
                 "--data_path", "",
                 "--data", "pv_DKASC_multi",
@@ -25,6 +35,17 @@
                 "--dec_in", "9",
                 "--c_out", "9",
 
+                //  //  SolarDB  //
+                //  "--root_path", "./dataset/pv",
+                //  "--data_path", "87-Site_DKA-M9_A+C-Phases.csv",
+                //  "--data", "pv_DKASC",
+                //  "--enc_in", "5",
+                //  "--dec_in", "5",
+                //  "--c_out", "5",
+
+
+                /////----- MODEL -----/////
+                //  PatchTST  //
                 "--model", "PatchTST",     //  PatchTST, DLinear, Transformer
                 "--embed", "timeF",
                 "--features", "M",
