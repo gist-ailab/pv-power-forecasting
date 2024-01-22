@@ -343,13 +343,13 @@ class Exp_Main(Exp_Basic):
         # calculate metrics with only generated power
         
         mae, mse, rmse = metric(preds, trues)
-        print('mse:{}, mae:{}, rmse:{}, nrmse:{}'.format(mse, mae, rmse))
+        print('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))
         txt_save_path = os.path.join(folder_path,
                                      f"{self.args.seq_len}_{self.args.pred_len}_result.txt")
         f = open(txt_save_path, 'a')
         f.write(exp_id + "  \n")
         f.write(setting + "  \n")
-        f.write('mse:{}, mae:{}, rmse:{}, nrmse:{}'.format(mse, mae, rmse))
+        f.write('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))
         f.write('\n')
         f.write('\n')
         f.close()
