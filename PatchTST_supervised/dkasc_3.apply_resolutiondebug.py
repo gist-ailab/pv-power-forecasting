@@ -34,9 +34,9 @@ if __name__ == '__main__':
         while True:
             date = df_raw.iloc[j]['timestamp'].split(' ')[0]
             hour = df_raw.iloc[j]['timestamp'].split(' ')[1].split(':')[0]
-            first_idx = df_raw[(f'{date} {str(hour).zfill(2)}:00:00' <= df_raw['timestamp'])].index[0]
-            last_idx = df_raw[(df_raw['timestamp'] <= f'{date} {str(hour).zfill(2)}:55:00')].index[-1]
-            new_row = [f'{date} {str(hour).zfill(2)}:00:00']
+            first_idx = df_raw[(f'{date} {hour}:00:00' <= df_raw['timestamp'])].index[0]
+            last_idx = df_raw[(df_raw['timestamp'] <= f'{date} {hour}:55:00')].index[-1]
+            new_row = [f'{date} {hour}:00:00']
             
             small_df = df_raw.loc[first_idx:last_idx, :].drop(columns=['timestamp'])
             new_row.extend(small_df.mean().to_list())
