@@ -15,7 +15,9 @@ if __name__ == '__main__':
     root_path = './dataset/SolarDB/pre-process'
     save_path = './dataset/SolarDB/pre-process'
 
+    ##             power_ac / temp / humidity / sun_irradiance
     palette = ['', 'limegreen', 'orange', 'dodgerblue', 'red']
+    unit    = ['', '[W]', '[°C]', '[%]', '[W/m²]']
     
     for i in range(1, 17):
         if i != 8: continue
@@ -54,10 +56,10 @@ if __name__ == '__main__':
                 plt.clf()
                 fig = plt.figure(figsize=(20,9))
                 ax = fig.add_subplot(1, 1, 1)
-                ax.set_title(f'{_first_date} ~ {_last_date}   {column}')
+                ax.set_title(f'{_first_date} ~ {_last_date}   {column} {unit[j]}')
                 ax.grid(True, linestyle=':', axis='x')
 
-                ax.plot(_hour, _values, label=column, color=palette[j])
+                ax.plot(_hour, _values, label=f'{column} {unit[j]}', color=palette[j])
                 ax.set_xticks([k for k in range(0, 7*24+1,12)])
                 ax.set_xlabel(f'mean: {round(df.loc[first_idx:last_idx, column].mean(), 2)}\nstd: {round(df.loc[first_idx:last_idx, column].std(), 2)}')
                 
@@ -77,7 +79,7 @@ if __name__ == '__main__':
 
                 _values = df.loc[first_idx:last_idx, column]
 
-                ax.plot(_hour, (_values - _values.min()) / (_values.max() - _values.min()), label=column, color=palette[j])
+                ax.plot(_hour, (_values - _values.min()) / (_values.max() - _values.min()), label=f'{column} {unit[j]}', color=palette[j])
                 ax.set_xticks([k for k in range(0, 7*24+1,12)])
 
             plt.legend()
