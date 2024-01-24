@@ -585,6 +585,8 @@ class Dataset_pv_DKASC(Dataset):
 
     def inverse_transform(self, data):
         return self.scaler_4.inverse_transform(data)
+    
+    
 class Dataset_pv_DKASC_multi(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                  features='S', data_path='',
@@ -785,6 +787,154 @@ class Dataset_pv_DKASC_multi(Dataset):
         ## change the scaler number .. if num of features changes
         return self.scaler_8.inverse_transform(data)
    
+class Dataset_pv_SolarDB(Dataset):
+    def __init__(self, root_path, flag='train', size=None,
+                 features='S', data_path='',
+                 target='power_ac', scale=True, timeenc=0, freq='h'):
+        # size [seq_len, label_len, pred_len]
+        # info
+        if size == None:
+            self.seq_len = 24 * 4 * 4
+            self.label_len = 24 * 4
+            self.pred_len = 24 * 4
+        else:
+            self.seq_len = size[0]
+            self.label_len = size[1]
+            self.pred_len = size[2]
+        # init
+        assert flag in ['train', 'test', 'val']
+        type_map = {'train': 0, 'val': 1, 'test': 2}
+        self.set_type = type_map[flag]
+
+        self.features = features
+        self.target = 'power_ac'
+        self.scale = scale
+        self.timeenc = timeenc
+        self.freq = freq
+
+        self.root_path = root_path
+        self.data_path = data_path
+        
+        self.__read_data__()
+
+    def __read_data__(self):
+        # data_path_list = ['25-212-Site_DKA-M15_C-Phase_II.csv', '10-85-Site_DKA-M7_A-Phase.csv']
+        df_raw = pd.read_csv(os.path.join(self.root_path, self.data_path))
+        
+        df_raw['date'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
+
+        '''
+        df_raw.columns: ['date', ...(other features), target feature]
+        '''
+        cols = df_raw.columns.tolist()
+        cols.remove('timestamp')
+        cols.remove('date')
+        cols.remove('power_ac')
+        df_raw = df_raw[['date'] + cols + [self.target]]            
+
+        ## Creae scaler for each feature
+        self.num_cols = len(df_raw.columns)-1
+        for i in range(self.num_cols):
+            setattr(self, f'scaler_{i}', StandardScaler())
+        
+        ## pre-processing
+        df_date = pd.DataFrame()
+        df_date['date'] = pd.to_datetime(df_raw.date)
+        df_date['year'] = df_date.date.apply(lambda row: row.year, 1)
+        df_date['month'] = df_date.date.apply(lambda row: row.month, 1)
+        df_date['day'] = df_date.date.apply(lambda row: row.day, 1)
+        df_date['weekday'] = df_date.date.apply(lambda row: row.weekday(), 1)
+        df_date['hour'] = df_date.date.apply(lambda row: row.hour, 1)
+        
+        ## check for not null
+        assert (df_raw.isnull().sum()).sum() == 0
+        
+        ### get maximum and minimum value of 'Active_Power'
+        # self.ap_max_list.append(df_raw['Active_Power'].max())
+        # self.ap_min_list.append(df_raw['Active_Power'].min())
+        print(self.data_path, '\tmax: ', round(df_raw['power_ac'].max(),2), '\tmin: ', round(df_raw['power_ac'].min(),2))
+        
+        for column in df_raw.columns:
+            if column == 'date': continue
+            print(column, '\tmean:', round(df_raw[column].mean(),2),'\tstd:', round(df_raw[column].std(),2))
+
+
+        num_train = int(len(df_raw) * 0.7)
+        num_test = int(len(df_raw) * 0.2)
+        num_vali = len(df_raw) - num_train - num_test
+        border1s = [0, num_train - self.seq_len, len(df_raw) - num_test - self.seq_len]
+        border2s = [num_train, num_train + num_vali, len(df_raw)]
+        border1 = border1s[self.set_type]
+        border2 = border2s[self.set_type]
+
+        df_stamp = df_raw[['date']]
+
+        if self.timeenc == 0:
+            data_stamp = pd.DataFrame()
+            data_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
+            data_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
+            data_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
+            data_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
+        elif self.timeenc == 1:
+            data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
+            data_stamp = data_stamp.transpose(1, 0)
+
+
+        if self.features == 'M' or self.features == 'MS':
+            cols_data = df_raw.columns[1:] 
+            df_data = df_raw[cols_data]
+        elif self.features == 'S':
+            df_data = df_raw[[self.target]]
+
+        if self.scale:
+            train_border1 = border1s[0]
+            train_border2 = border2s[0]
+            train_data = df_data[train_border1:train_border2]
+            
+            train_data_values = train_data.values
+            df_data_values = df_data.values
+            transformed_data = []  # List to store each transformed feature
+            for i in range(self.num_cols):
+                train_features = train_data_values[:, i].reshape(-1, 1)
+                getattr(self, f'scaler_{i}').fit(train_features)
+                
+                df_data_features = df_data_values[:, i].reshape(-1, 1)
+                transformed_feature = getattr(self, f'scaler_{i}').transform(df_data_features)
+                transformed_data.append(transformed_feature)
+            data = np.concatenate(transformed_data, axis=1)
+            
+        else:
+            data = df_data.values
+
+        self.data_x = data[border1:border2]
+        self.data_y = data[border1:border2]
+        if self.timeenc == 0:
+            self.data_stamp = df_stamp[border1:border2][['month', 'day', 'weekday', 'hour']].values
+        elif self.timeenc == 1:
+            self.data_stamp = data_stamp[border1:border2]
+
+            
+    def __getitem__(self, index):
+        s_begin = index
+        s_end = s_begin + self.seq_len
+        r_begin = s_end - self.label_len
+        r_end = r_begin + self.label_len + self.pred_len
+
+        seq_x = self.data_x[s_begin:s_end]
+        seq_y = self.data_y[r_begin:r_end]
+        seq_x_mark = self.data_stamp[s_begin:s_end]
+        seq_y_mark = self.data_stamp[r_begin:r_end]
+
+        return seq_x, seq_y, seq_x_mark, seq_y_mark
+
+    def __len__(self):
+        return len(self.data_x) - self.seq_len - self.pred_len + 1
+
+    def inverse_transform(self, data):
+        ## change the scaler number .. if num of features changes
+        return getattr(self, f'scaler_{self.num_cols-1}').inverse_transform(data)
+        return self.scaler_3.inverse_transform(data)
+
 class Dataset_pv_GIST(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                  features='S', data_path='',

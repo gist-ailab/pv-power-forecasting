@@ -45,7 +45,7 @@ if __name__ == '__main__':
         date = start_date = datetime.datetime(year, month, day)
 
         finish_date_week  = start_date + datetime.timedelta(days=7)
-        finish_date_month = start_date + relativedelta(months=3)
+        finish_date_month = start_date + relativedelta(months=1)
         finish_date_year  = start_date + relativedelta(years=1)
 
         df_idx = 0

@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "args": [
-                "--gpu", "0",
+                "--gpu", "2",
                 "--random_seed", "2021",
                 "--is_training", "1",  // 0: test, 1: train
 
@@ -44,7 +44,7 @@
                 "--train_epochs", "100",
                 "--patience", "20",
                 "--itr", "1",
-                "--batch_size", "64",
+                "--batch_size", "128",
                 "--learning_rate", "0.0001",
                 
         ],

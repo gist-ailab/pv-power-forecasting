@@ -1,7 +1,7 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240103_G_01'
+model_id_name='240123_G_04'
 
 if [ ! -d "./logs/$model_id_name" ]; then
     mkdir ./logs/$model_id_name
@@ -16,10 +16,13 @@ data_name=pv_GIST
 
 random_seed=2021
 # for pred_len in 96 192 336 720
+for seq_len in 24 336
+do
 for pred_len in 24 48 96 192
 do
     python -u run_longExp.py \
-      --gpu 0 \
+      --use_multi_gpu   \
+      --devices '1,2,3,4' \
       --random_seed $random_seed \
       --is_training 1 \
       --root_path $root_path_name \
@@ -47,4 +50,5 @@ do
       --embed 'timeF' \
       --exp_id $model_id_name \
       --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$model_id_name/$model_id_name'_'$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
+done
 done

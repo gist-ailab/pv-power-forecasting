@@ -1,7 +1,7 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240123_10s_05'
+model_id_name='240123_SO_05'
 
 if [ ! -d "./logs/$model_id_name" ]; then
     mkdir ./logs/$model_id_name
@@ -10,9 +10,9 @@ fi
 seq_len=24
 model_name=PatchTST
 
-root_path_name=./dataset/DKASC_cprn/
-data_path_name="10-85-Site_DKA-M7_A-Phase.csv,11-106-Site_DKA-M5_C-Phase.csv,12-84-Site_DKA-M5_B-Phase.csv,13-92-Site_DKA-M6_B-Phase.csv,14-90-Site_DKA-M3_A-Phase.csv,16A-100-Site_DKA-M1_A-Phase.csv,16B-103-Site_DKA-M1_B-Phase.csv,1A-91-Site_DKA-M9_B-Phase.csv,1B-87-Site_DKA-M9_A+C-Phases.csv,25-212-Site_DKA-M15_C-Phase_II.csv"
-data_name=pv_DKASC_multi
+root_path_name=./dataset/SolarDB/pre-process/
+data_path_name='pp8_year.csv'
+data_name=pv_SolarDB
 
 random_seed=2021
 # for pred_len in 96 192 336 720
