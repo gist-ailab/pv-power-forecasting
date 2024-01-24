@@ -830,6 +830,7 @@ class Dataset_pv_SolarDB(Dataset):
         cols.remove('timestamp')
         cols.remove('date')
         cols.remove('power_ac')
+        cols.remove('sun_irradiance')       ##
         df_raw = df_raw[['date'] + cols + [self.target]]            
 
         ## Creae scaler for each feature
@@ -933,7 +934,7 @@ class Dataset_pv_SolarDB(Dataset):
     def inverse_transform(self, data):
         ## change the scaler number .. if num of features changes
         return getattr(self, f'scaler_{self.num_cols-1}').inverse_transform(data)
-        return self.scaler_3.inverse_transform(data)
+
 
 class Dataset_pv_GIST(Dataset):
     def __init__(self, root_path, flag='train', size=None,

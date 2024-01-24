@@ -306,14 +306,14 @@ class Exp_Main(Exp_Basic):
                 preds.append(pred)
                 trues.append(true[:,-self.args.pred_len:])
                 inputx.append(batch_x.detach().cpu().numpy())
-                if i % 20 == 0:
-                    visualize_input_length = outputs.shape[1]*3 # visualize three times of the prediction length
+                if i % 10 == 0:
+                    # visualize_input_length = outputs.shape[1]*3 # visualize three times of the prediction length
                     input_np = batch_x[:, :, -1].detach().cpu().numpy()
                     
                     input_inverse_transform = test_data.inverse_transform(input_np)
-                    input_seq = input_inverse_transform[0, -visualize_input_length:]
+                    input_seq = input_inverse_transform[0,:]
                     gt = true[0, -self.args.pred_len:]
-                    pd = pred[0, -visualize_input_length:]
+                    pd = pred[0, :]
                     visual(input_seq, gt, pd, os.path.join(folder_path, str(i) + '.png'))
 
         if self.args.test_flop:

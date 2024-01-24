@@ -1,7 +1,7 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240123_SO_05'
+model_id_name='240124_SO_01'
 
 if [ ! -d "./logs/$model_id_name" ]; then
     mkdir ./logs/$model_id_name
