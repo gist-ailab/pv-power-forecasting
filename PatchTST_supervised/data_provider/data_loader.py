@@ -826,11 +826,12 @@ class Dataset_pv_SolarDB(Dataset):
         '''
         df_raw.columns: ['date', ...(other features), target feature]
         '''
-        cols = df_raw.columns.tolist()
-        cols.remove('timestamp')
-        cols.remove('date')
-        cols.remove('power_ac')
-        cols.remove('sun_irradiance')       ##
+        # cols = df_raw.columns.tolist()
+        # cols.remove('timestamp')
+        # cols.remove('date')
+        # cols.remove('power_ac')
+        cols = ['temp', 'humidity']
+        # cols.remove('sun_irradiance')       ##
         df_raw = df_raw[['date'] + cols + [self.target]]            
 
         ## Creae scaler for each feature

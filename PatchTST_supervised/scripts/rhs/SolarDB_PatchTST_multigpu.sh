@@ -1,7 +1,7 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240124_SO_01'
+model_id_name='240125_SO_02'
 
 if [ ! -d "./logs/$model_id_name" ]; then
     mkdir ./logs/$model_id_name
@@ -10,7 +10,7 @@ fi
 seq_len=24
 model_name=PatchTST
 
-root_path_name=./dataset/SolarDB/pre-process/
+root_path_name=./dataset/SolarDB/kW_allWeather/
 data_path_name='pp8_year.csv'
 data_name=pv_SolarDB
 

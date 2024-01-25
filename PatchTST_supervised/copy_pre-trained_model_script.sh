@@ -1,6 +1,6 @@
 ##
 src_exp_id='240122_3s_04'
-tgt_exp_id='240125_3stoSO_01'
+tgt_exp_id='240125_3stoSO_02'
 
 if [ ! -d 'checkpoints/'$tgt_exp_id ]; then
     mkdir 'checkpoints/'$tgt_exp_id
