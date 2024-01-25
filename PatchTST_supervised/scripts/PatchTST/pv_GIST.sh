@@ -10,8 +10,8 @@ fi
 seq_len=336
 model_name=PatchTST
 
-root_path_name=./dataset/GIST_dataset/
-data_path_name=GIST_sisuldong.csv
+root_path_name=./dataset/GIST/
+data_path_name=sisuldong.csv
 model_id_name=pv_GIST_$exp_id'_'
 data_name=pv_GIST
 

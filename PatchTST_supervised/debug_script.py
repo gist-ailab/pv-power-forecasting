@@ -13,8 +13,8 @@
     args.c_out = 4
     
     # ## debug GIST
-    # args.root_path = './dataset/GIST_dataset/'
-    # args.data_path = 'GIST_sisuldong.csv'
+    # args.root_path = './dataset/GIST/'
+    # args.data_path = 'sisuldong.csv'
     # args.data = 'pv_GIST'
     # args.enc_in = 4
     # args.dec_in = 4

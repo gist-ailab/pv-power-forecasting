@@ -8,7 +8,7 @@ import pandas as pd
 def wrapup(file_list, save_name):
     df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Weather_Temperature_Celsius', 'Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Relative_Humidity'])
     
-    weather_info = pd.read_csv('dataset/GIST_dataset/GIST_AWS_TIM_2022.csv', encoding='unicode_escape')
+    weather_info = pd.read_csv('dataset/GIST/GIST_AWS_TIM_2022.csv', encoding='unicode_escape')
     weather_info.columns = ['spot', 'spot_name', 'date', 'temperature', 'wind_speed', 'precipitation', 'humidity']
     # print(weather_info)
     
@@ -108,12 +108,12 @@ def wrapup(file_list, save_name):
         
 
 if __name__ == '__main__':
-    path = 'dataset/GIST_dataset/일보/'
+    path = 'dataset/GIST/일보/'
     file_list = [path + _ for _ in os.listdir(path)]
     file_list.sort()
     # print(file_list)
     
-    wrapup(file_list, 'dataset/GIST_dataset/GIST_sisuldong.csv')
+    wrapup(file_list, 'dataset/GIST/sisuldong.csv')
     
 
 

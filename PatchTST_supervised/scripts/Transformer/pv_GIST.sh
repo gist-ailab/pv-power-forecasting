@@ -19,8 +19,8 @@ do
     --gpu 0 \
     --random_seed $random_seed \
     --is_training 1 \
-    --root_path ./dataset/GIST_dataset/ \
-    --data_path GIST_sisuldong.csv \
+    --root_path ./dataset/GIST/ \
+    --data_path sisuldong.csv \
     --model_id pv_GIST_$exp_id'_96_'$pred_len \
     --model $model_name \
     --data pv_GIST \

@@ -10,8 +10,8 @@ fi
 seq_len=24
 model_name=PatchTST
 
-root_path_name=./dataset/GIST_dataset/
-data_path_name=GIST_sisuldong.csv
+root_path_name=./dataset/GIST/
+data_path_name=sisuldong.csv
 data_name=pv_GIST
 
 random_seed=2021

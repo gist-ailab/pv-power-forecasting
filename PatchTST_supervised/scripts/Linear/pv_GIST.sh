@@ -18,8 +18,8 @@ do
   python -u run_longExp.py \
     --gpu 0 \
     --is_training 1 \
-    --root_path ./dataset/GIST_dataset/ \
-    --data_path GIST_sisuldong.csv \
+    --root_path ./dataset/GIST/ \
+    --data_path sisuldong.csv \
     --model_id pv_GIST_$exp_id'_'$seq_len'_'$pred_len \
     --model $model_name \
     --data pv_GIST \
