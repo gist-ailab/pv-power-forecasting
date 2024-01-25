@@ -9,13 +9,19 @@ warnings.filterwarnings('ignore')
 
 
 if __name__ == '__main__':
-    root_path = './dataset/DKASC_cp'
-    save_path = './dataset/DKASC_cpr'
+    root_path = 'dataset/DKASC_cp'
+    save_path = 'dataset/DKASC_cpr'
     data_path_list = os.listdir(root_path)
     data_path_list.sort()
+    data_path_list = data_path_list[20:30]        ##
+    
+    remove_path_list = os.listdir(save_path)
+    for remove_path in remove_path_list:
+        data_path_list.remove(remove_path)
+        
     print()
     
-    for i, data_path in enumerate(data_path_list[20:30]):
+    for i, data_path in enumerate(data_path_list):
         # data_path = '0-96-Site_DKA-MasterMeter1.csv'
         df_raw = pd.read_csv(os.path.join(root_path, data_path))
         print('-'*5, data_path, '-'*5)

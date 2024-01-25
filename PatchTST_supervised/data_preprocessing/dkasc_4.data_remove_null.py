@@ -8,8 +8,8 @@ import time
 warnings.filterwarnings('ignore')
 
 if __name__ == '__main__':
-    root_path = './dataset/DKASC_cpr'
-    save_path = './dataset/DKASC_cprn'
+    root_path = 'dataset/DKASC_cpr'
+    save_path = 'dataset/DKASC_cprn'
     data_path_list = os.listdir(root_path)
     data_path_list.sort()
     remove_path_list = os.listdir(save_path)
