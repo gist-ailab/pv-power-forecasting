@@ -1,12 +1,12 @@
 import os
 import sys
-
+import numpy as np
 import pandas as pd
 
 
 
 def wrapup(file_list, save_name):
-    df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Weather_Temperature_Celsius', 'Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Relative_Humidity'])
+    df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Weather_Temperature_Celsius', 'Global_Horizontal_Radiation', 'Weather_Relative_Humidity'])
     
     weather_info = pd.read_csv('dataset/GIST/GIST_AWS_TIM_2022.csv', encoding='unicode_escape')
     weather_info.columns = ['spot', 'spot_name', 'date', 'temperature', 'wind_speed', 'precipitation', 'humidity']
@@ -98,10 +98,19 @@ def wrapup(file_list, save_name):
         df.loc[24*i:24*(i+1)-1,'Active_Power']                  = pv_info.iloc[5:29]['6_sisuldong_hourly_power'].values
         df.loc[24*i:24*(i+1)-1,'Weather_Temperature_Celsius']   = pv_info.iloc[5:29]['temperature_outdoor'].values
         df.loc[24*i:24*(i+1)-1,'Global_Horizontal_Radiation']   = pv_info.iloc[5:29]['radiation_horizontal'].values
-        df.loc[24*i:24*(i+1)-1,'Diffuse_Horizontal_Radiation']  = pv_info.iloc[5:29]['radiation_incline'].values
+        # df.loc[24*i:24*(i+1)-1,'Diffuse_Horizontal_Radiation']  = pv_info.iloc[5:29]['radiation_incline'].values
         df.loc[24*i:24*(i+1)-1,'Weather_Relative_Humidity']     = weather_data['humidity'].values
             
-            
+    
+    df.drop(['date', 'time'], axis=1, inplace=True)
+    
+    for i, column in enumerate(df.columns):
+        if column == 'timestamp': continue
+        missing_indices = df[df[column] == '-'].index.tolist()
+        df.loc[missing_indices, column] = np.nan
+        
+        df[column] = pd.to_numeric(df[column], errors='coerce')
+        df[column] = df[column].interpolate()
     
     with open(save_name, 'w') as f:
         df.to_csv(f, index=False)

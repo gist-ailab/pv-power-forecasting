@@ -1,5 +1,6 @@
 import os
 import sys
+import datetime
 
 import pandas as pd
 
@@ -15,16 +16,29 @@ if __name__ == '__main__':
     vis_path = f'visualize/GIST/raw/'
     os.makedirs(vis_path, exist_ok=True)
 
+    palette = ['', 'limegreen', 'orange', 'dodgerblue', 'red']
+    unit    = ['', '[W]', '[°C]', '[%]', '[W/m²]']
+    
+    
+    
     for pp in ['sisuldong']:
         df = pd.read_csv(os.path.join(root_path, f'{pp}.csv'))
+        
+        for i in range(2, len(df.columns)-1):
+            df[df.columns[i]] = df[df.columns[i]].astype(float)
+        
         print('='*30)
         print(pp, 'null', df.isnull().sum().sum())
 
         ## get mean & std of each variable
         _mean, _std = [''], ['']
-        _mean.extend(df.loc[:, df.columns[1:]].mean().tolist())
-        _std.extend(df.loc[:, df.columns[1:]].std().tolist())
+        _mean.extend(df.loc[:, df.columns[2:-1]].mean().tolist())
+        _std.extend(df.loc[:, df.columns[2:-1]].std().tolist())
         print()
     
+        ## get start & finish date
+        _start_date     = df.loc[0, 'timestamp'].split(' ')[0]
+        year,month,day  = list(map(int, _start_date.split('-')))
+        date            = datetime.datetime(year, month, day)
 
 

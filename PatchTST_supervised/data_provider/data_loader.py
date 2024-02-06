@@ -997,18 +997,6 @@ class Dataset_pv_GIST(Dataset):
             data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
             data_stamp = data_stamp.transpose(1, 0)
 
-        ## pre-processing
-        missing_indices = []
-        for i, column in enumerate(df_raw.columns):
-            missing_indices.extend(df_raw[df_raw[column] == '-'].index.tolist())
-        df_raw = df_raw.drop(missing_indices)
-        
-        ## convert str to float
-        df_raw['Active_Power'] = pd.to_numeric(df_raw['Active_Power'], errors='coerce')
-        df_raw['Weather_Temperature_Celsius'] = pd.to_numeric(df_raw['Weather_Temperature_Celsius'], errors='coerce')
-        df_raw['Global_Horizontal_Radiation'] = pd.to_numeric(df_raw['Global_Horizontal_Radiation'], errors='coerce')
-        df_raw['Weather_Relative_Humidity'] = pd.to_numeric(df_raw['Weather_Relative_Humidity'], errors='coerce')
-        
         ## check if there is missing value
         assert df_raw['Active_Power'].isnull().sum() == 0
         assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
