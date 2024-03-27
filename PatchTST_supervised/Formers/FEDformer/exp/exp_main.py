@@ -1,7 +1,7 @@
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
 from models import FEDformer, Autoformer, Informer, Transformer
-from utils.tools import EarlyStopping, adjust_learning_rate, visual
+from utils.tools import EarlyStopping, adjust_learning_rate, visual, visual_out
 from utils.metrics import metric
 
 import numpy as np
@@ -224,9 +224,12 @@ class Exp_Main(Exp_Basic):
 
         preds = []
         trues = []
-        folder_path = './test_results/' + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+        folder_path_inout = './test_results/' + setting + '/input+output/'
+        folder_path_out = './test_results/' + setting + '/output/'
+        if not os.path.exists(folder_path_inout):
+            os.makedirs(folder_path_inout)
+        if not os.path.exists(folder_path_out):
+            os.makedirs(folder_path_out)
         self.model.eval()
         with torch.no_grad():
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
@@ -264,11 +267,12 @@ class Exp_Main(Exp_Basic):
 
                 preds.append(pred)
                 trues.append(true)
-                if i % 20 == 0:
-                    input = batch_x.detach().cpu().numpy()
-                    gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
-                    pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-                    visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+                # if i % 20 == 0:
+                input = batch_x.detach().cpu().numpy()
+                gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
+                pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
+                visual(gt, pd, os.path.join(folder_path_inout, str(i) + '.png'))
+                visual_out(gt, pd, os.path.join(folder_path_out, str(i) + '.png'))
 
         preds = np.array(preds)
         trues = np.array(trues)

@@ -92,6 +92,80 @@ class StandardScaler():
         return (data * self.std) + self.mean
 
 
+def visual_out(input_seq, true, preds=None, name='./pic/test.pdf'):
+    """
+    Results visualization
+    """
+    # Sample data
+    gt_values = true        # Replace with your 'gt' data starting right after 'x'
+    pd_values = preds       # Replace with your 'pd' data starting right after 'gt'
+
+    # Create the figure and axis
+    plt.figure(figsize=(10, 5))
+    ax = plt.subplot(111)
+
+    # Plot the data
+    total_length = len(gt_values)
+    # x_positions = range(1, len(x_values) + 1)
+    # gt_positions = range(len(x_values) + 1, len(x_values) + len(gt_values) + 1)
+    # pd_positions = range(len(x_values) + 1, len(x_values) + len(pd_values) + 1)
+    # x_positions = range(0, len(x_values))
+    gt_positions = range(len(gt_values))
+    pd_positions = range(len(pd_values))
+
+    ax.plot(gt_positions, gt_values, label='ground truth')  # gt is plotted right after x ends
+    ax.plot(pd_positions, pd_values, label='prediction')    # pd is plotted right after gt ends
+
+    # Adjust the x-axis to show sequential numbers
+    tick_interval = max(0, total_length // 10)  # Adjust this value as needed to reduce overlap
+    ax.set_xticks(range(0, total_length, tick_interval))
+    ax.set_xticklabels(range(0, total_length, tick_interval))
+
+    # Additional customization (optional)
+    plt.title('Prediction of PV power Generation')
+    plt.xlabel(f'Time (hours), prediction length: {len(gt_values)} hours')
+    plt.ylabel('Active Power[W]')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(name, bbox_inches='tight')
+    
+    
+    """
+    Results visualization (GT and Pred only). temporary added for reporting @240327
+    """
+    # Sample data
+    gt_values = true        # Replace with your 'gt' data starting right after 'x'
+    pd_values = preds       # Replace with your 'pd' data starting right after 'gt'
+
+    # Create the figure and axis
+    plt.figure(figsize=(20, 5))
+    ax = plt.subplot(111)
+
+    # Plot the data
+    total_length = len(gt_values)
+    # x_positions = range(1, len(x_values) + 1)
+    # gt_positions = range(len(x_values) + 1, len(x_values) + len(gt_values) + 1)
+    # pd_positions = range(len(x_values) + 1, len(x_values) + len(pd_values) + 1)
+    gt_positions = range(len(gt_values))
+    pd_positions = range(len(pd_values))
+
+    ax.plot(gt_positions, gt_values, label='ground truth')  # gt is plotted right after x ends
+    ax.plot(pd_positions, pd_values, label='prediction')    # pd is plotted right after gt ends
+
+    # Adjust the x-axis to show sequential numbers
+    tick_interval = max(0, total_length // 10)  # Adjust this value as needed to reduce overlap
+    ax.set_xticks(range(0, total_length, tick_interval))
+    ax.set_xticklabels(range(0, total_length, tick_interval))
+
+    # Additional customization (optional)
+    plt.title('Prediction of PV power Generation')
+    plt.xlabel(f'Time (hours), prediction length: {len(gt_values)} hours')
+    plt.ylabel('Active Power[kW]')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(name, bbox_inches='tight')
+    
+    
 def visual(input_seq, true, preds=None, name='./pic/test.pdf'):
     """
     Results visualization
