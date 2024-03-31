@@ -2,7 +2,7 @@ from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
 from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, PatchTST
 from models.Stat_models import Naive_repeat, Arima
-from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop
+from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop, visual_out
 from utils.metrics import metric
 
 import numpy as np
@@ -254,9 +254,12 @@ class Exp_Main(Exp_Basic):
         preds = []
         trues = []
         inputx = []
-        folder_path = './test_results/' + exp_id + '/' + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+        folder_path_inout = './test_results/' + exp_id + '/in+out/' + setting + '/'
+        folder_path_out = './test_results/' + exp_id + '/out/' + setting + '/'
+        if not os.path.exists(folder_path_inout):
+            os.makedirs(folder_path_inout)
+        if not os.path.exists(folder_path_out):
+            os.makedirs(folder_path_out)
 
         self.model.eval()
         with torch.no_grad():
@@ -317,7 +320,8 @@ class Exp_Main(Exp_Basic):
                     input_seq = input_inverse_transform[0,:]
                     gt = true[0, -self.args.pred_len:]
                     pd = pred[0, :]
-                    visual(input_seq, gt, pd, os.path.join(folder_path, str(i) + '.png'))
+                    visual(input_seq, gt, pd, os.path.join(folder_path_inout, str(i) + '.png'))
+                    visual_out(input_seq, gt, pd, os.path.join(folder_path_out, str(i) + '.png'))
 
         if self.args.test_flop:
             test_params_flop((batch_x.shape[1],batch_x.shape[2]))

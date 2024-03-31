@@ -1,13 +1,13 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240327_1A'
+model_id_name='240328_1A'
 
 if [ ! -d "./logs/$model_id_name" ]; then
     mkdir ./logs/$model_id_name
 fi
 
-seq_len=336
+seq_len=24
 model_name=Arima
 
 root_path_name=./dataset/DKASC/
@@ -15,7 +15,7 @@ data_path_name='91-Site_DKA-M9_B-Phase.csv'
 data_name=pv_DKASC
 
 random_seed=2021
-for pred_len in 24 48 96 192
+for pred_len in 1 2 3 4
 do
     python -u run_longExp.py \
         --gpu 0 \
