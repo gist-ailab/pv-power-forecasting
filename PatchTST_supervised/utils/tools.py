@@ -113,13 +113,13 @@ def visual_out(input_seq, true, preds=None, name='./pic/test.pdf'):
     gt_positions = range(len(gt_values))
     pd_positions = range(len(pd_values))
 
-    ax.plot(gt_positions, gt_values, label='ground truth', fmt='o')  # gt is plotted right after x ends
-    ax.plot(pd_positions, pd_values, label='prediction', fmt='o')    # pd is plotted right after gt ends
+    ax.plot(gt_positions, gt_values, 'cs', label='ground truth')  # gt is plotted right after x ends
+    ax.plot(pd_positions, pd_values, 'rx', label='prediction')    # pd is plotted right after gt ends
 
-    # Adjust the x-axis to show sequential numbers
-    tick_interval = max(0, total_length // 10)  # Adjust this value as needed to reduce overlap
-    ax.set_xticks(range(0, total_length, tick_interval))
-    ax.set_xticklabels(range(0, total_length, tick_interval))
+    # # Adjust the x-axis to show sequential numbers
+    # tick_interval = max(0, total_length // 10)  # Adjust this value as needed to reduce overlap
+    # ax.set_xticks(range(0, total_length, tick_interval))
+    # ax.set_xticklabels(range(0, total_length, tick_interval))
 
     # Additional customization (optional)
     plt.title('Prediction of PV power Generation')
@@ -189,13 +189,13 @@ def visual(input_seq, true, preds=None, name='./pic/test.pdf'):
     pd_positions = range(len(x_values), len(x_values) + len(pd_values))
 
     ax.plot(x_positions, x_values, label='input data')      # x is plotted at its position
-    ax.plot(gt_positions, gt_values, label='ground truth', fmt='o')  # gt is plotted right after x ends
-    ax.plot(pd_positions, pd_values, label='prediction', fmt='o')    # pd is plotted right after gt ends
+    ax.plot(gt_positions, gt_values, 'cs', label='ground truth')  # gt is plotted right after x ends
+    ax.plot(pd_positions, pd_values, 'rx', label='prediction')    # pd is plotted right after gt ends
 
-    # Adjust the x-axis to show sequential numbers
-    tick_interval = max(0, total_length // 10)  # Adjust this value as needed to reduce overlap
-    ax.set_xticks(range(0, total_length, tick_interval))
-    ax.set_xticklabels(range(0, total_length, tick_interval))
+    # # Adjust the x-axis to show sequential numbers
+    # tick_interval = max(0, total_length // 10)  # Adjust this value as needed to reduce overlap
+    # ax.set_xticks(range(0, total_length, tick_interval))
+    # ax.set_xticklabels(range(0, total_length, tick_interval))
 
     # Additional customization (optional)
     plt.title('Prediction of PV power Generation')

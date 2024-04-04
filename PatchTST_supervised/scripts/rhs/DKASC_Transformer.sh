@@ -1,21 +1,21 @@
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240331_1A'
+model_id_name='240401_1A'
 
 if [ ! -d "./logs/$model_id_name" ]; then
     mkdir ./logs/$model_id_name
 fi
 
-seq_len=24
 model_name=Transformer
-
 root_path_name=./dataset/DKASC/
 data_path_name='91-Site_DKA-M9_B-Phase.csv'
 data_name=pv_DKASC
-
 random_seed=2021
-for pred_len in 1 2 3 4
+
+for seq_len in 24 48 96 336
+do
+for pred_len in 24
 do
     python -u run_longExp.py \
         --gpu 0 \
@@ -42,4 +42,5 @@ do
         --embed 'timeF' \
         --exp_id $model_id_name \
         --itr 1 >logs/$model_id_name/$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
+done
 done
