@@ -352,6 +352,7 @@ class Dataset_pv_DKASC(Dataset):
         # Creae scaler for each feature
         for i in range(5):
             setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
+            # TODO: scaler instance들을 만들 때, 맨뒤는 active power니까 변수 이름을 active power꺼는 숫자가 아니라 이름을 붙여주자.
             
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
@@ -816,7 +817,7 @@ class CrossDomain_Dataset(Dataset):
                  target_data_path='GIST_sisuldong.csv',
                  target='Active_Power', scale=True, timeenc=0, freq='h'):
         # size [seq_len, label_len, pred_len]
-        # info
+        # info        
         if size == None:
             self.seq_len = 24 * 4 * 4
             self.label_len = 24 * 4
@@ -846,44 +847,49 @@ class CrossDomain_Dataset(Dataset):
                                     features=features, data_path=source_data_path, target=target,
                                     scale=scale, timeenc=timeenc, freq=freq, domain='source')
         pv_DKASC.__read_data__()
-        self.seq_len_source = pv_DKASC.seq_len
         
         pv_GIST = Dataset_pv_GIST(root_path=target_root_path, flag=flag, size=size,
                                   features=features, data_path=target_data_path, target=target,
                                   scale=scale, timeenc=timeenc, freq=freq, domain='target')
         pv_GIST.__read_data__()
         
-        # TODO: source & target dataset에 대한 data loader instance를 만들어서 활용해보자.
-        # 일단 지금은 __red_data__ 를 따로 만들어서 사용
-        # 아니면 __read_source_data__ 에서만 self 변수명을 달리하고 target은 그대로 사용하여 getitem에서 source, target을 구분하여 사용하는 것도 고려
-        # DKASC 쪽의 변수 이름을 수정하고 여기에서는 instance를 생성해서 불러오기만 하면 될 듯 ㅋㅋㅋ
+        self.data_x_source = pv_DKASC.data_x
+        self.data_y_source = pv_DKASC.data_y
+        self.data_stamp_source = pv_DKASC.data_stamp
+        self.data_x_target = pv_GIST.data_x
+        self.data_y_target = pv_GIST.data_y
+        self.data_stamp_target = pv_GIST.data_stamp
         
-    def __getitem__(self, index):
-        # BSH 위에서 instance 만든 거로 self가 생성되려나...? instance 통해서 따로 만들어야 할 것 같다.
-        
-        
+    def __getitem__(self, index):       
         s_begin = index        
-        # source domain
+        s_end = s_begin + self.seq_len
+        r_begin = s_end - self.label_len
+        r_end = r_begin + self.label_len + self.pred_len
+        # TODO: 위의 구간을 source / target domain으로 나눌지는 한번 고려해볼 것      
+
+        seq_x_source = self.data_x_source[s_begin:s_end]
+        seq_y_source = self.data_y_source[r_begin:r_end]
+        seq_x_mark_source = self.data_stamp_source[s_begin:s_end]
+        seq_y_mark_source = self.data_stamp_source[r_begin:r_end]
+        seq_x_target = self.data_x_target[s_begin:s_end]
+        seq_y_target = self.data_y_target[r_begin:r_end]
+        seq_x_mark_target = self.data_stamp_target[s_begin:s_end]
+        seq_y_mark_target = self.data_stamp_target[r_begin:r_end]
         
-        s_end_source = s_begin + self.seq_len_source
-        r_begin_source = s_end_source - self.label_len_source
-        r_end_source = r_begin_source + self.label_len_source + self.pred_len_target
-
-        # target domain
-
-
-        seq_x = self.data_x[s_begin:s_end]
-        seq_y = self.data_y[r_begin:r_end]
-        seq_x_mark = self.data_stamp[s_begin:s_end]
-        seq_y_mark = self.data_stamp[r_begin:r_end]
+        return seq_x_source, seq_y_source, seq_x_mark_source, seq_y_mark_source, seq_x_target, seq_y_target, seq_x_mark_target, seq_y_mark_target
         
-        return seq_x, seq_y, seq_x_mark, seq_y_mark
 
     def __len__(self):
-        return len(self.data_x) - self.seq_len - self.pred_len + 1
+        return len(self.data_x_source) - self.seq_len - self.pred_len + 1
+        # TODO: source, target domain의 길이가 다를 경우에 대한 처리 필요
 
     def inverse_transform(self, data):
-        return self.scaler_4.inverse_transform(data)
+        source_active_power = getattr(self, f'scaler_{self.domain}_4').inverse_transform(data)
+        target_active_power = getattr(self, f'scaler_{self.domain}_3').inverse_transform(data)
+        # TODO: scaler instance들을 만들 때, 맨뒤는 active power니까 변수 이름을 active power꺼는 숫자가 아니라 이름을 붙여주자.
+        # TODO: 위 같이 read_data에 주석을 써 두었으니, 수정한다면 inverse transform에도 반영될 수 있도록 하자.
+        # TODO: 혹은 active power에 해당하는 index를 고정 시키고 scaler를 만들 때, 역순으로 변수이름을 만들어 사용하는 방법도 있을 것 같다.
+        return source_active_power, target_active_power
         
    
 class Dataset_pv_SolarDB(Dataset):
