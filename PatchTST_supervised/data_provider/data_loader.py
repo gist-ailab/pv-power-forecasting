@@ -294,15 +294,21 @@ class Dataset_Custom(Dataset):
 ####################################################
 class Dataset_pv_DKASC(Dataset):
     def __init__(self, root_path, flag='train', size=None,
-                 features='S', data_path='91-Site_DKA-M9_B-Phase.csv',
-                 target='Active_Power', scale=True, timeenc=0, freq='h'):
+                 features='MS', data_path='91-Site_DKA-M9_B-Phase.csv', target='Active_Power',
+                 scale=True, timeenc=0, freq='h', domain='source'):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
+            # setattr(self, f'seq_len_{domain}', 24 * 4 * 4)
+            # setattr(self, f'label_len_{domain}', 24 * 4)
+            # setattr(self, f'pred_len_{domain}', 24 * 4)
             self.seq_len = 24 * 4 * 4
             self.label_len = 24 * 4
             self.pred_len = 24 * 4
         else:
+            # setattr(self, f'seq_len_{domain}', size[0])
+            # setattr(self, f'label_len_{domain}', size[1])
+            # setattr(self, f'pred_len_{domain}', size[2])
             self.seq_len = size[0]
             self.label_len = size[1]
             self.pred_len = size[2]
@@ -316,6 +322,7 @@ class Dataset_pv_DKASC(Dataset):
         self.scale = scale
         self.timeenc = timeenc
         self.freq = freq
+        self.domain = domain
 
         self.root_path = root_path
         self.data_path = data_path
@@ -344,7 +351,7 @@ class Dataset_pv_DKASC(Dataset):
     def __read_data__(self):
         # Creae scaler for each feature
         for i in range(5):
-            setattr(self, f'scaler_{i}', StandardScaler())
+            setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
             
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
@@ -404,8 +411,10 @@ class Dataset_pv_DKASC(Dataset):
         assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
         
         ### get maximum and minimum value of 'Active_Power'
-        self.pv_max = np.max(df_raw['Active_Power'].values)
-        self.pv_min = np.min(df_raw['Active_Power'].values)
+        setattr(self, f'pv_{self.domain}_max', np.max(df_raw['Active_Power'].values))   # save the maximum value of 'Active_Power' as a source/target domain
+        setattr(self, f'pv_{self.domain}_min', np.min(df_raw['Active_Power'].values))   # save the minimum value of 'Active_Power' as a source/target domain
+        # self.pv_max = np.max(df_raw['Active_Power'].values)
+        # self.pv_min = np.min(df_raw['Active_Power'].values)
 
         ### remove minus temperature
         print(len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()), end='  ')
@@ -460,24 +469,27 @@ class Dataset_pv_DKASC(Dataset):
             transformed_data = []  # List to store each transformed feature
             for i in range(5):
                 train_features = train_data_values[:, i].reshape(-1, 1)
-                getattr(self, f'scaler_{i}').fit(train_features)
+                getattr(self, f'scaler_{self.domain}_{i}').fit(train_features)
                 
                 df_data_features = df_data_values[:, i].reshape(-1, 1)
-                transformed_feature = getattr(self, f'scaler_{i}').transform(df_data_features)
+                transformed_feature = getattr(self, f'scaler_{self.domain}_{i}').transform(df_data_features)
                 transformed_data.append(transformed_feature)
             data = np.concatenate(transformed_data, axis=1)
             
         else:
             data = df_data.values
-
+        
+        # setattr(self, f'data_x_{self.domain}', data[border1:border2])
+        # setattr(self, f'data_y_{self.domain}', data[border1:border2])
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
         if self.timeenc == 0:
+            # setattr(self, f'data_stamp_{self.domain}', data_stamp[['month', 'day', 'weekday', 'hour']].values)
             self.data_stamp = data_stamp[['month', 'day', 'weekday', 'hour']].values
         elif self.timeenc == 1:
+            # setattr(self, f'data_stamp_{self.domain}', data_stamp)
             self.data_stamp = data_stamp
         
-
     def remove_successive_missing_value(self, pv, df_stamp):
         df_stamp_org = copy.deepcopy(df_stamp)
         missing_idx = pv[pv['Active_Power'].isnull()]['Active_Power'].index.tolist()
@@ -567,11 +579,18 @@ class Dataset_pv_DKASC(Dataset):
 
 
     def __getitem__(self, index):
+        # self.seq_len = getattr(self, f'seq_len_{self.domain}')
+        # self.label_len = getattr(self, f'label_len_{self.domain}')
+        # self.pred_len = getattr(self, f'pred_len_{self.domain}')
         s_begin = index
         s_end = s_begin + self.seq_len
         r_begin = s_end - self.label_len
         r_end = r_begin + self.label_len + self.pred_len
 
+        # seq_x = getattr(self, f'data_x_{self.domain}')[s_begin:s_end]
+        # seq_y = getattr(self, f'data_y_{self.domain}')[r_begin:r_end]
+        # seq_x_mark = getattr(self, f'data_stamp_{self.domain}')[s_begin:s_end]
+        # seq_y_mark = getattr(self, f'data_stamp_{self.domain}')[r_begin:r_end]        
         seq_x = self.data_x[s_begin:s_end]
         seq_y = self.data_y[r_begin:r_end]
         seq_x_mark = self.data_stamp[s_begin:s_end]
@@ -580,10 +599,12 @@ class Dataset_pv_DKASC(Dataset):
         return seq_x, seq_y, seq_x_mark, seq_y_mark
 
     def __len__(self):
+        # return len(getattr(self, f'data_x_{self.domain}')) - self.seq_len - self.pred_len + 1
         return len(self.data_x) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
-        return self.scaler_4.inverse_transform(data)
+        return getattr(self, f'scaler_{self.domain}_4').inverse_transform(data)
+        # return self.scaler_DKASC_4.inverse_transform(data)
     
     
 class Dataset_pv_DKASC_multi(Dataset):
@@ -787,7 +808,7 @@ class Dataset_pv_DKASC_multi(Dataset):
         return self.scaler_8.inverse_transform(data)
 
 
-class Cross_Dataset(Dataset):
+class CrossDomain_Dataset(Dataset):
     # Dataloader for cross-validation
     def __init__(self, source_root_path, target_root_path,
                  flag='train', size=None, features='S',
@@ -820,12 +841,50 @@ class Cross_Dataset(Dataset):
         self.target_root_path = target_root_path
         self.target_data_path = target_data_path
         
-        dataset_pv_DKASC = Dataset_pv_DKASC()
-        dataset_pv_GIST = Dataset_pv_GIST()
+        # TODO: We have to designate the source/target domain for each dataset with Cross_Dataset args, not the way below, like typing directly.
+        pv_DKASC = Dataset_pv_DKASC(root_path=source_root_path, flag=flag, size=size,
+                                    features=features, data_path=source_data_path, target=target,
+                                    scale=scale, timeenc=timeenc, freq=freq, domain='source')
+        pv_DKASC.__read_data__()
+        self.seq_len_source = pv_DKASC.seq_len
+        
+        pv_GIST = Dataset_pv_GIST(root_path=target_root_path, flag=flag, size=size,
+                                  features=features, data_path=target_data_path, target=target,
+                                  scale=scale, timeenc=timeenc, freq=freq, domain='target')
+        pv_GIST.__read_data__()
+        
         # TODO: source & target dataset에 대한 data loader instance를 만들어서 활용해보자.
+        # 일단 지금은 __red_data__ 를 따로 만들어서 사용
+        # 아니면 __read_source_data__ 에서만 self 변수명을 달리하고 target은 그대로 사용하여 getitem에서 source, target을 구분하여 사용하는 것도 고려
+        # DKASC 쪽의 변수 이름을 수정하고 여기에서는 instance를 생성해서 불러오기만 하면 될 듯 ㅋㅋㅋ
+        
+    def __getitem__(self, index):
+        # BSH 위에서 instance 만든 거로 self가 생성되려나...? instance 통해서 따로 만들어야 할 것 같다.
+        
+        
+        s_begin = index        
+        # source domain
+        
+        s_end_source = s_begin + self.seq_len_source
+        r_begin_source = s_end_source - self.label_len_source
+        r_end_source = r_begin_source + self.label_len_source + self.pred_len_target
+
+        # target domain
 
 
+        seq_x = self.data_x[s_begin:s_end]
+        seq_y = self.data_y[r_begin:r_end]
+        seq_x_mark = self.data_stamp[s_begin:s_end]
+        seq_y_mark = self.data_stamp[r_begin:r_end]
+        
+        return seq_x, seq_y, seq_x_mark, seq_y_mark
 
+    def __len__(self):
+        return len(self.data_x) - self.seq_len - self.pred_len + 1
+
+    def inverse_transform(self, data):
+        return self.scaler_4.inverse_transform(data)
+        
    
 class Dataset_pv_SolarDB(Dataset):
     def __init__(self, root_path, flag='train', size=None,
@@ -979,15 +1038,21 @@ class Dataset_pv_SolarDB(Dataset):
 
 class Dataset_pv_GIST(Dataset):
     def __init__(self, root_path, flag='train', size=None,
-                 features='S', data_path='GIST_sisuldong.csv',
-                 target='Active_Power', scale=True, timeenc=0, freq='h'):
+                 features='MS', data_path='GIST_sisuldong.csv', target='Active_Power',
+                 scale=True, timeenc=0, freq='h', domain='target'):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
+            # setattr(self, f'seq_len_{domain}', 24 * 4 * 4)
+            # setattr(self, f'label_len_{domain}', 24 * 4)
+            # setattr(self, f'pred_len_{domain}', 24 * 4)
             self.seq_len = 24 * 4 * 4
             self.label_len = 24 * 4
             self.pred_len = 24 * 4
         else:
+            # setattr(self, f'seq_len_{domain}', size[0])
+            # setattr(self, f'label_len_{domain}', size[1])
+            # setattr(self, f'pred_len_{domain}', size[2])
             self.seq_len = size[0]
             self.label_len = size[1]
             self.pred_len = size[2]
@@ -1001,6 +1066,7 @@ class Dataset_pv_GIST(Dataset):
         self.scale = scale
         self.timeenc = timeenc
         self.freq = freq
+        self.domain = domain
 
         self.root_path = root_path
         self.data_path = data_path
@@ -1010,7 +1076,7 @@ class Dataset_pv_GIST(Dataset):
     def __read_data__(self):
         # Creae scaler for each feature
         for i in range(4):
-            setattr(self, f'scaler_{i}', StandardScaler())
+            setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
             
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
@@ -1044,6 +1110,8 @@ class Dataset_pv_GIST(Dataset):
         assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
         
         ### get maximum and minimum value of 'Active_Power'
+        setattr(self, f'pv_{self.domain}_max', np.max(df_raw['Active_Power'].values))   # save the maximum value of 'Active_Power' as a source/target domain
+        setattr(self, f'pv_{self.domain}_min', np.min(df_raw['Active_Power'].values))   # save the minimum value of 'Active_Power' as a source/target domain
         self.pv_max = np.max(df_raw['Active_Power'].values)
         self.pv_min = np.min(df_raw['Active_Power'].values)
         
@@ -1071,21 +1139,24 @@ class Dataset_pv_GIST(Dataset):
             transformed_data = []  # List to store each transformed feature
             for i in range(4):
                 train_features = train_data_values[:, i].reshape(-1, 1)
-                getattr(self, f'scaler_{i}').fit(train_features)
+                getattr(self, f'scaler_{self.domain}_{i}').fit(train_features)
                 
                 df_data_features = df_data_values[:, i].reshape(-1, 1)
-                transformed_feature = getattr(self, f'scaler_{i}').transform(df_data_features)
+                transformed_feature = getattr(self, f'scaler_{self.domain}_{i}').transform(df_data_features)
                 transformed_data.append(transformed_feature)
             data = np.concatenate(transformed_data, axis=1)
         else:
             data = df_data.values
 
-
+        # setattr(self, f'data_x_{self.domain}', data[border1:border2])
+        # setattr(self, f'data_y_{self.domain}', data[border1:border2])
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
         if self.timeenc == 0:
+            # setattr(self, f'data_stamp_{self.domain}', df_stamp[border1:border2][['month', 'day', 'weekday', 'hour']].values)
             self.data_stamp = df_stamp[border1:border2][['month', 'day', 'weekday', 'hour']].values
         elif self.timeenc == 1:
+            # setattr(self, f'data_stamp_{self.domain}', data_stamp[border1:border2])
             self.data_stamp = data_stamp[border1:border2]
 
         # # 13. check if there is missing value
@@ -1097,11 +1168,18 @@ class Dataset_pv_GIST(Dataset):
 
 
     def __getitem__(self, index):
+        # self.seq_len = getattr(self, f'seq_len_{self.domain}')
+        # self.label_len = getattr(self, f'label_len_{self.domain}')
+        # self.pred_len = getattr(self, f'pred_len_{self.domain}')
         s_begin = index
         s_end = s_begin + self.seq_len
         r_begin = s_end - self.label_len
         r_end = r_begin + self.label_len + self.pred_len
-
+        
+        # seq_x = getattr(self, f'data_x_{self.domain}')[s_begin:s_end]
+        # seq_y = getattr(self, f'data_y_{self.domain}')[r_begin:r_end]
+        # seq_x_mark = getattr(self, f'data_stamp_{self.domain}')[s_begin:s_end]
+        # seq_y_mark = getattr(self, f'data_stamp_{self.domain}')[r_begin:r_end]  
         seq_x = self.data_x[s_begin:s_end]
         seq_y = self.data_y[r_begin:r_end]
         seq_x_mark = self.data_stamp[s_begin:s_end]
@@ -1110,10 +1188,12 @@ class Dataset_pv_GIST(Dataset):
         return seq_x, seq_y, seq_x_mark, seq_y_mark
 
     def __len__(self):
+        # return len(getattr(self, f'data_x_{self.domain}')) - self.seq_len - self.pred_len + 1
         return len(self.data_x) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
-        return self.scaler_3.inverse_transform(data)
+        return getattr(self, f'scaler_{self.domain}_3').inverse_transform(data)
+        # return self.scaler_3.inverse_transform(data)
    
 class Dataset_Pred(Dataset):
     def __init__(self, root_path, flag='pred', size=None,
