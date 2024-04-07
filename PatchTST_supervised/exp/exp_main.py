@@ -1,9 +1,10 @@
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
-from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, PatchTST
+from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, PatchTST, PatchCDTST
 from models.Stat_models import Naive_repeat, Arima
 from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop, visual_out
 from utils.metrics import metric
+from utils.mmd_loss import MMDLoss
 
 import numpy as np
 import torch
@@ -33,6 +34,7 @@ class Exp_Main(Exp_Basic):
             'NLinear': NLinear,
             'Linear': Linear,
             'PatchTST': PatchTST,
+            'PatchCDTST': PatchCDTST,
             'Naive_repeat': Naive_repeat,
             'Arima': Arima
         }
@@ -52,6 +54,9 @@ class Exp_Main(Exp_Basic):
 
     def _select_criterion(self):
         criterion = nn.MSELoss()
+        cross_criterion = MMDLoss()
+        if self.args.model == 'PatchCDTST' and self.args.is_training:
+            return criterion, cross_criterion
         return criterion
 
     def vali(self, vali_data, vali_loader, criterion):
@@ -127,7 +132,10 @@ class Exp_Main(Exp_Basic):
         early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
 
         model_optim = self._select_optimizer()
-        criterion = self._select_criterion()
+        if self.args.model == 'PatchCDTST' and self.args.is_training:
+            criterion, cross_criterion = self._select_criterion()
+        else:
+            criterion = self._select_criterion()
         
         if self.args.use_amp:
             scaler = torch.cuda.amp.GradScaler()
