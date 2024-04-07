@@ -559,7 +559,6 @@ class Dataset_pv_DKASC(Dataset):
             
         return pv, df_stamp
 
-
     def clip_over_hundred_humidity(self, pv, df_stamp):
         over_idx = pv[pv['Weather_Relative_Humidity'] > 100].index.tolist()
         pv.loc[over_idx, 'Weather_Relative_Humidity'] = 100
@@ -786,6 +785,47 @@ class Dataset_pv_DKASC_multi(Dataset):
     def inverse_transform(self, data):
         ## change the scaler number .. if num of features changes
         return self.scaler_8.inverse_transform(data)
+
+
+class Cross_Dataset(Dataset):
+    # Dataloader for cross-validation
+    def __init__(self, source_root_path, target_root_path,
+                 flag='train', size=None, features='S',
+                 source_data_path='91-Site_DKA-M9_B-Phase.csv',
+                 target_data_path='GIST_sisuldong.csv',
+                 target='Active_Power', scale=True, timeenc=0, freq='h'):
+        # size [seq_len, label_len, pred_len]
+        # info
+        if size == None:
+            self.seq_len = 24 * 4 * 4
+            self.label_len = 24 * 4
+            self.pred_len = 24 * 4
+        else:
+            self.seq_len = size[0]
+            self.label_len = size[1]
+            self.pred_len = size[2]
+        # init
+        assert flag in ['train', 'test', 'val']
+        type_map = {'train': 0, 'val': 1, 'test': 2}
+        self.set_type = type_map[flag]
+        
+        self.features = features
+        self.target = target
+        self.scale = scale
+        self.timeenc = timeenc
+        self.freq = freq
+        
+        self.source_root_path = source_root_path
+        self.source_data_path = source_data_path
+        self.target_root_path = target_root_path
+        self.target_data_path = target_data_path
+        
+        dataset_pv_DKASC = Dataset_pv_DKASC()
+        dataset_pv_GIST = Dataset_pv_GIST()
+        # TODO: source & target dataset에 대한 data loader instance를 만들어서 활용해보자.
+
+
+
    
 class Dataset_pv_SolarDB(Dataset):
     def __init__(self, root_path, flag='train', size=None,
@@ -939,7 +979,7 @@ class Dataset_pv_SolarDB(Dataset):
 
 class Dataset_pv_GIST(Dataset):
     def __init__(self, root_path, flag='train', size=None,
-                 features='S', data_path='',
+                 features='S', data_path='GIST_sisuldong.csv',
                  target='Active_Power', scale=True, timeenc=0, freq='h'):
         # size [seq_len, label_len, pred_len]
         # info
