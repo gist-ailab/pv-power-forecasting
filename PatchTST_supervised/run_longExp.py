@@ -15,7 +15,7 @@ if __name__ == '__main__':
     parser.add_argument('--is_training', type=int, default=1, help='status')
     parser.add_argument('--model_id', type=str, default='test', help='model id')
     parser.add_argument('--model', type=str, default='Autoformer',
-                        help='model name, options: [Autoformer, Informer, Transformer]')
+                        help='model name, options: [Autoformer, Informer, Transformer, DLinear, NLinear, Linear, PatchTST, PatchCDTST, Naive_repeat, Arima]')
 
     # data loader
     parser.add_argument('--data', type=str, default='ETTm1', help='dataset type')
