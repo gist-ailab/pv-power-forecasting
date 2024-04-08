@@ -41,8 +41,9 @@ class Model(nn.Module):
         self.out, self.encoder_hidden = self.lstm_encoder(x, self.encoder_hidden)
 
 
-        outputs = torch.zeros(self.pred_len, x.size(0), x.size(2))
-        decoder_input = x[-1, :, :]
+        # outputs = torch.zeros(self.pred_len, x.size(0), x.size(2))
+        outputs = torch.zeros(x.size(0), self.pred_len , x.size(2))
+        decoder_input = x[:, -1, :].unsqueeze(1)
 
         # Train: use teacher forcing
         if teacher_forcing is not None:
@@ -50,8 +51,8 @@ class Model(nn.Module):
 
             for t in range(self.pred_len): 
                 decoder_output, self.decoder_hidden = self.lstm_decoder(decoder_input, self.decoder_hidden)
-                outputs[t] = decoder_output
-                decoder_input = teacher_forcing[t, :, :]
+                outputs[:,t,:] = decoder_output
+                decoder_input = teacher_forcing[:, t, :].unsqueeze(1)
 
         # Test: predict recursively
         else:
@@ -59,8 +60,9 @@ class Model(nn.Module):
 
             for t in range(self.pred_len): 
                 decoder_output, self.decoder_hidden = self.lstm_decoder(decoder_input, self.decoder_hidden)
-                outputs[t] = decoder_output
-                decoder_input = decoder_output
+                outputs[:,t,:] = decoder_output
+                decoder_input = outputs[:,:t+1,:].to(self.device)
+
         return outputs
         # # use_teacher forcing
         # for t in range(self.pred_len): 
@@ -127,7 +129,7 @@ class LSTMDecoder(nn.Module):
 
         self.lstm = nn.LSTM(input_size = input_size, hidden_size = hidden_size,
                             num_layers = num_layers, batch_first = batch_first, bidirectional = bidirectional)
-        self.linear = nn.Linear(hidden_size, 1)           
+        self.linear = nn.Linear(hidden_size*2, self.input_size)           
 
     def forward(self, x_input, encoder_hidden_states):
         
@@ -140,10 +142,13 @@ class LSTMDecoder(nn.Module):
  
         '''
         lstm_out, self.hidden = self.lstm(x_input, encoder_hidden_states)
+        out_f = lstm_out[:, -1, :self.hidden_size]
+        out_b = lstm_out[:, 0, self.hidden_size:]
+        out = torch.cat((out_f, out_b), dim=1)
 
 
         # lstm_out, self.hidden = self.lstm(x_input.unsqueeze(0), encoder_hidden_states)
-        output = self.linear(lstm_out.squeeze(0))     
+        output = self.linear(out)     
         
         return output, self.hidden
     

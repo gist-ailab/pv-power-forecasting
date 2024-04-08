@@ -2,7 +2,7 @@ from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
 from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, PatchTST, PatchCDTST, LSTM
 from models.Stat_models import Naive_repeat, Arima
-from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop, visual_out
+from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop, visual_out, visual_original
 from utils.metrics import metric
 from utils.mmd_loss import MMDLoss
 
@@ -113,6 +113,7 @@ class Exp_Main(Exp_Basic):
             epoch_time = time.time()
             # for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
             for i, data in enumerate(train_loader):
+                
                 iter_count += 1
                 model_optim.zero_grad()
                 
@@ -181,7 +182,7 @@ class Exp_Main(Exp_Basic):
                 f_dim = -1 if self.args.features == 'MS' else 0
                 
                 # loss for source domain
-                source_outputs = source_outputs[:, -self.args.pred_len:, f_dim:]
+                source_outputs = source_outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
                 batch_y_s = batch_y_s[:, -self.args.pred_len:, f_dim:].to(self.device)
                 loss_s = criterion(source_outputs, batch_y_s)
                 # train_loss_s.append(loss_s.item())
@@ -292,18 +293,25 @@ class Exp_Main(Exp_Basic):
                 f_dim = -1 if self.args.features == 'MS' else 0
                 
                 # ### calculate metrics with only active power
-                outputs = outputs[:, -self.args.pred_len:, f_dim:]
+                outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                active_power = outputs[:, :, -1].detach().cpu()
-                active_power_gt = batch_y[:, :, -1].detach().cpu()
+                if self.args.model != 'LSTM':
+                    active_power = outputs[:, :, -1].detach().cpu()
+                    active_power_gt = batch_y[:, :, -1].detach().cpu()
 
                 # de-normalize the data and prediction values
-                active_power_np = vali_data.inverse_transform(active_power)
-                active_power_gt_np = vali_data.inverse_transform(active_power_gt)
-                
-                pred = torch.from_numpy(active_power_np)
-                gt = torch.from_numpy(active_power_gt_np)
-                
+                    active_power_np = vali_data.inverse_transform(active_power)
+                    active_power_gt_np = vali_data.inverse_transform(active_power_gt)
+                    
+                    pred = torch.from_numpy(active_power_np)
+                    gt = torch.from_numpy(active_power_gt_np)
+                else:
+                    pred_np = vali_data.inverse_transform(outputs.detach().cpu().numpy())
+                    gt_np = vali_data.inverse_transform(batch_y.detach().cpu().numpy())
+
+                    pred = torch.from_numpy(pred_np)
+                    gt = torch.from_numpy(gt_np)
+
                 loss = criterion(pred, gt)
 
                 total_loss.append(loss)
@@ -373,30 +381,51 @@ class Exp_Main(Exp_Basic):
                 
                 # ### calculate metrics with only active power, BSH
                 ### Last column is active power
-                active_power = outputs[:, :, -1]
-                active_power_gt = batch_y[:, :, -1]
+                if self.args.model != 'LSTM':
+                    active_power = outputs[:, :, -1]
+                    active_power_gt = batch_y[:, :, -1]
                 
-                active_power_np = active_power.detach().cpu().numpy()
-                active_power_gt_np = active_power_gt.detach().cpu().numpy()
-                
-                # de-normalize the data and prediction values
-                pred = test_data.inverse_transform(active_power_np)
-                true = test_data.inverse_transform(active_power_gt_np)
-                # ### calculate metrics with only active power, BSH  
+                    # active_power = outputs[:, :, -1].detach().cpu()
+                    # active_power_gt = batch_y[:, :, -1].detach().cpu()
 
+                    active_power_np = active_power.detach().cpu().numpy()
+                    active_power_gt_np = active_power_gt.detach().cpu().numpy()
+                    
+                # de-normalize the data and prediction values
+                    pred = test_data.inverse_transform(active_power_np)
+                    true = test_data.inverse_transform(active_power_gt_np)
+                # ### calculate metrics with only active power, BSH  
+# de-normalize the data and prediction values
+                else:
+                    pred_np = test_data.inverse_transform(outputs.detach().cpu().numpy())
+                    gt_np = test_data.inverse_transform(batch_y.detach().cpu().numpy())
+
+                    pred = torch.from_numpy(pred_np)
+                    gt = torch.from_numpy(gt_np)
+                    
                 preds.append(pred)
                 trues.append(true[:,-self.args.pred_len:])
                 inputx.append(batch_x.detach().cpu().numpy())
+
+
                 if i % 10 == 0:
                     # visualize_input_length = outputs.shape[1]*3 # visualize three times of the prediction length
-                    input_np = batch_x[:, :, -1].detach().cpu().numpy()
+                    if self.args.model == 'LSTM':
+                        input_np = batch_x.detach().cpu().numpy()
+                        input_inverse_transform = test_data.inverse_transform(input_np)
+
+                        gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
+                        pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
+                        visual_original(gt, pd, os.path.join(folder_path, str(i) + '.png'))
+                    else: 
+                        input_np = batch_x[:, :, -1].detach().cpu().numpy()
                     
-                    input_inverse_transform = test_data.inverse_transform(input_np)
-                    input_seq = input_inverse_transform[0,:]
-                    gt = true[0, -self.args.pred_len:]
-                    pd = pred[0, :]
-                    visual(input_seq, gt, pd, os.path.join(folder_path_inout, str(i) + '.png'))
-                    visual_out(input_seq, gt, pd, os.path.join(folder_path_out, str(i) + '.png'))
+                        input_inverse_transform = test_data.inverse_transform(input_np)
+                        input_seq = input_inverse_transform[0,:]
+                        gt = true[0, -self.args.pred_len:]
+                        pd = pred[0, :]
+                        visual(input_seq, gt, pd, os.path.join(folder_path_inout, str(i) + '.png'))
+                        visual_out(input_seq, gt, pd, os.path.join(folder_path_out, str(i) + '.png'))
 
         if self.args.test_flop:
             test_params_flop((batch_x.shape[1],batch_x.shape[2]))

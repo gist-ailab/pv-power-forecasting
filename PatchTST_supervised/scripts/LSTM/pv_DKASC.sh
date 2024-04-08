@@ -27,9 +27,10 @@ do
       --model_id $model_id_name'_'$seq_len'_'$pred_len \
       --model $model_name \
       --data $data_name \
-      --target 'Active_Power' \
       --features M \
+      --target Actvie_Power \
       --seq_len $seq_len \
+      --label_len 1 \
       --pred_len $pred_len \
       --input_dim 5\
       --hidden_dim 128 \
