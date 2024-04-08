@@ -11,7 +11,7 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.input_dim = configs.input_dim
         self.hidden_dim = configs.hidden_dim
-        self.num_layers = 2
+        self.num_layers = configs.num_layers
         
         self.seq_len = configs.seq_len
         self.pred_len = configs.pred_len
