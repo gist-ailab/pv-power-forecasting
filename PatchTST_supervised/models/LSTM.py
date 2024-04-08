@@ -12,11 +12,12 @@ class Model(nn.Module):
         self.input_dim = configs.input_dim
         self.hidden_dim = configs.hidden_dim
         self.num_layers = configs.num_layers
+        self.bidirectional = configs.bidirectional
         
         self.seq_len = configs.seq_len
         self.pred_len = configs.pred_len
 
-        self.lstm = nn.LSTM(self.input_dim, self.hidden_dim, batch_first=True, num_layers=self.num_layers, bidirectional=configs.bidirectional)
+        self.lstm = nn.LSTM(self.input_dim, self.hidden_dim, batch_first=True, num_layers=self.num_layers, bidirectional=self.bidirectional)
         self.Linear = nn.Linear(self.seq_len, self.pred_len)
         # Use this line if you want to visualize the weights
         # self.Linear.weight = nn.Parameter((1/self.seq_len)*torch.ones([self.pred_len,self.seq_len]))

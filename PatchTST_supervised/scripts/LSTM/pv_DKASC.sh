@@ -27,6 +27,7 @@ do
       --model_id $model_id_name'_'$seq_len'_'$pred_len \
       --model $model_name \
       --data $data_name \
+      --target 'Active_Power' \
       --features M \
       --seq_len $seq_len \
       --pred_len $pred_len \
@@ -37,7 +38,6 @@ do
       --des 'Exp' \
       --train_epochs 100\
       --patience 20\
-    #   --embed 'timeF' \
       --exp_id $model_id_name \
       --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$model_id_name/$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
 done
