@@ -18,12 +18,14 @@ if __name__ == '__main__':
                         help='model name, options: [Autoformer, Informer, Transformer, DLinear, NLinear, Linear, PatchTST, PatchCDTST, Naive_repeat, Arima]')
 
     # data loader
-    parser.add_argument('--data', type=str, default='ETTm1', help='dataset type')
-    parser.add_argument('--root_path', type=str, default='./data/ETT/', help='root path of the data file')
-    parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')
-    parser.add_argument('--features', type=str, default='M',
+    parser.add_argument('--data', type=str, default='CrossDomain', help='dataset type')
+    parser.add_argument('--source_root_path', type=str, default='./data/DKASC/', help='root path of the source domain data file')
+    parser.add_argument('--target_root_path', type=str, default='./data/GIST_dataset/', help='root path of the target domain data file')
+    parser.add_argument('--source_data_path', type=str, default='91-Site_DKA-M9_B-Phase.csv', help='source domain data file')
+    parser.add_argument('--target_data_path', type=str, default='GIST_sisuldong.csv', help='target domain data file')
+    parser.add_argument('--features', type=str, default='MS',
                         help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
-    parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
+    parser.add_argument('--target', type=str, default='Active_Power', help='target feature in S or MS task')
     parser.add_argument('--freq', type=str, default='h',
                         help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
@@ -168,7 +170,7 @@ if __name__ == '__main__':
                                                                                                     args.factor,
                                                                                                     args.embed,
                                                                                                     args.distil,
-                                                                                                    args.des, ii)
+                                                                                                    args.des, ii)    
 
         exp = Exp(args)  # set experiments
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
