@@ -317,8 +317,8 @@ class Exp_Main(Exp_Basic):
                     pred_np = vali_data.inverse_transform(source_outputs.detach().cpu().numpy())
                     gt_np = vali_data.inverse_transform(batch_y_s.detach().cpu().numpy())
 
-                    pred = torch.from_numpy(pred_np)
-                    gt = torch.from_numpy(gt_np)
+                    pred_s = torch.from_numpy(pred_np)
+                    gt_s = torch.from_numpy(gt_np)
 
                 loss_s = criterion(pred_s, gt_s)
                 
@@ -450,15 +450,15 @@ class Exp_Main(Exp_Basic):
                     # active_power = outputs[:, :, -1].detach().cpu()
                     # active_power_gt = batch_y[:, :, -1].detach().cpu()
 
-                    active_power_np = active_power.detach().cpu().numpy()
-                    active_power_gt_np = active_power_gt.detach().cpu().numpy()
+                    # active_power_np = active_power.detach().cpu().numpy()
+                    # active_power_gt_np = active_power_gt.detach().cpu().numpy()
                     
                 # de-normalize the data and prediction values
                     pred_s = test_data.inverse_transform(active_power_np_s)
                     true_s = test_data.inverse_transform(active_power_gt_np_s)
                
                 else:
-                    pred_np = test_data.inverse_transform(outputs.detach().cpu().numpy())
+                    pred_np = test_data.inverse_transform(source_outputs.detach().cpu().numpy())
                     gt_np = test_data.inverse_transform(batch_y_s.detach().cpu().numpy())
 
                     pred_s = torch.from_numpy(pred_np)
