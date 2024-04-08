@@ -13,14 +13,14 @@
             "program": "${file}",
             "args": ["--gpu", "0",
                      "--random_seed", "2021",
-                     "--is_training", "0",  // 0: test, 1: train
+                     "--is_training", "1",  // 0: test, 1: train
                      "--root_path", "./dataset/pv", // "./dataset/pv", "./dataset/GIST_dataset"
                      "--data_path", "91-Site_DKA-M9_B-Phase.csv",   // 91-Site_DKA-M9_B-Phase.csv GIST_sisuldong.csv
-                     "--model_id", "240102_pv_336_24_PatchTST",    // 240102_GIST_336_24, 240102_pv_336_24_PatchTST
-                     "--model", "PatchTST",
+                     "--model_id", "PatchCDTST_test",    // 240102_GIST_336_24, 240102_pv_336_24_PatchTST
+                     "--model", "PatchCDTST", // PatchCDTST, PatchTST
                      "--data", "pv_DKASC",  // pv_GIST, pv_DKASC
-                     "--features", "M",
-                     "--checkpoints", "/HDD/pv/seongho/PatchTST/PatchTST_supervised/checkpoints/240103_1A/240103_1A_336_24_PatchTST_pv_DKASC_ftM_sl336_ll48_pl24_dm128_nh16_el3_dl1_df256_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth",
+                     "--features", "MS",
+                    //  "--checkpoints", "/HDD/pv/seongho/PatchTST/PatchTST_supervised/checkpoints/240103_1A/240103_1A_336_24_PatchTST_pv_DKASC_ftM_sl336_ll48_pl24_dm128_nh16_el3_dl1_df256_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth",
                      "--seq_len", "336",
                      "--pred_len", "24",
                      "--enc_in", "21",
