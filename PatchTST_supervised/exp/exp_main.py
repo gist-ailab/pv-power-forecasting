@@ -143,7 +143,6 @@ class Exp_Main(Exp_Basic):
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y_s[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y_s[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-
                 # encoder - decoder
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
@@ -151,7 +150,7 @@ class Exp_Main(Exp_Basic):
                             if 'CD' in self.args.model:
                                 source_outputs, target_outputs, target_feat, cross_feat = self.model(batch_x_s, batch_x_t)
                             elif  'LSTM' in self.args.model:
-                                source_outputs = self.model(batch_x_s, batch_y_s)
+                                source_outputs = self.model(batch_x_s, dec_inp)
                             else:
                                 source_outputs = self.model(batch_x_s)
             
@@ -166,7 +165,7 @@ class Exp_Main(Exp_Basic):
                         if 'CD' in self.args.model:
                             source_outputs, target_outputs, target_feat, cross_feat = self.model(batch_x_s, batch_x_t)
                         elif 'LSTM' in self.args.model:
-                            source_outputs = self.model(batch_x_s, batch_y_s)
+                            source_outputs = self.model(batch_x_s, dec_inp)
                         else:
                             source_outputs = self.model(batch_x_s)
             

@@ -597,7 +597,7 @@ class Dataset_pv_DKASC(Dataset):
         seq_x_mark = self.data_stamp[s_begin:s_end]
         seq_y_mark = self.data_stamp[r_begin:r_end]
         
-        return seq_x, seq_y, seq_x_mark, seq_y_mark
+        return (seq_x, seq_y, seq_x_mark, seq_y_mark)
 
     def __len__(self):
         # return len(getattr(self, f'data_x_{self.domain}')) - self.seq_len - self.pred_len + 1

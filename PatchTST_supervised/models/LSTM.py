@@ -19,9 +19,9 @@ class Model(nn.Module):
         self.pred_len = configs.pred_len
 
         self.lstm_encoder = LSTMEncoder(self.input_dim, self.hidden_dim, self.num_layers, 
-                                        batch_first=True, bidirectional=self.bidirectional, device=self.device)
+                                        batch_first=True, bidirectional=self.bidirectional)
         self.lstm_decoder = LSTMDecoder(self.input_dim, self.hidden_dim, self.num_layers,
-                                        batch_first=True, bidirectional=self.bidirectional, device=self.device)
+                                        batch_first=True, bidirectional=self.bidirectional)
         # # self.lstm = nn.LSTM(self.input_dim, self.hidden_dim, batch_first=True, num_layers=self.num_layers, bidirectional=self.bidirectional)
         # self.fc = nn.Linear(self.hidden_dim * 2, 1)
         # self.Linear = nn.Linear(self.seq_len, self.pred_len)
@@ -35,6 +35,7 @@ class Model(nn.Module):
 
 
     def forward(self, x, teacher_forcing = None):
+        
 
         self.encoder_hidden = self.init_hidden(x)
         self.out, self.encoder_hidden = self.lstm_encoder(x, self.encoder_hidden)
@@ -75,7 +76,7 @@ class Model(nn.Module):
 class LSTMEncoder(nn.Module):
     ''' Encodes time-series sequence '''
 
-    def __init__(self, input_size, hidden_size, num_layers = 1, batch_first = True, bidirectional = False, device = None):
+    def __init__(self, input_size, hidden_size, num_layers = 1, batch_first = True, bidirectional = False):
         
         '''
         : param input_size:     the number of features in the input X
@@ -85,7 +86,6 @@ class LSTMEncoder(nn.Module):
         '''
         
         super(LSTMEncoder, self).__init__()
-        self.device = device
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -110,7 +110,7 @@ class LSTMEncoder(nn.Module):
 class LSTMDecoder(nn.Module):
     ''' Decodes hidden state output by encoder '''
     
-    def __init__(self, input_size, hidden_size, num_layers = 1, batch_first = True, bidirectional = False, device=None):
+    def __init__(self, input_size, hidden_size, num_layers = 1, batch_first = True, bidirectional = False):
 
         '''
         : param input_size:     the number of features in the input X
