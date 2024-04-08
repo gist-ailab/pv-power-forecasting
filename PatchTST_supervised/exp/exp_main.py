@@ -483,8 +483,8 @@ class Exp_Main(Exp_Basic):
                         input_np = batch_x_s.detach().cpu().numpy()
                         input_inverse_transform = test_data.inverse_transform(input_np)
 
-                        gt = np.concatenate((input_inverse_transform[0, :, -1], true[0, :, -1]), axis=0)
-                        pd = np.concatenate((input_inverse_transform[0, :, -1], pred[0, :, -1]), axis=0)
+                        gt = np.concatenate((input_inverse_transform[0, :, -1], true_s[0, :, -1]), axis=0)
+                        pd = np.concatenate((input_inverse_transform[0, :, -1], pred_s[0, :, -1]), axis=0)
                         visual_original(gt, pd, os.path.join(folder_path, str(i) + '.png'))
                 
                 if 'CDTST' in self.args.model:
