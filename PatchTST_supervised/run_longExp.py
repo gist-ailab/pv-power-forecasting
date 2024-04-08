@@ -71,7 +71,13 @@ if __name__ == '__main__':
     parser.add_argument('--activation', type=str, default='gelu', help='activation')
     parser.add_argument('--output_attention', action='store_true', help='whether to output attention in ecoder')
     parser.add_argument('--do_predict', action='store_true', help='whether to predict unseen future data')
-
+    
+    #LSTM
+    parser.add_argument('--input_dim', type=int, default=5, help='input dimension')
+    parser.add_argument('--hidden_dim', type=int, default=128, help='hidden dimension')
+    parser.add_argument('--num_layers', type=int, default=2, help='number of layers')
+    parser.add_argument('--bidirectional', type=bool, default=True, help='bidirectional')
+    
     # optimization
     parser.add_argument('--num_workers', type=int, default=10, help='data loader num workers')
     parser.add_argument('--itr', type=int, default=2, help='experiments times')

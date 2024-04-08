@@ -19,7 +19,7 @@ random_seed=2021
 for pred_len in 24 48 96 192
 do
     python -u run_longExp.py \
-      --gpu 0 \
+      --gpu 6 \
       --random_seed $random_seed \
       --is_training 1 \
       --root_path $root_path_name \
@@ -37,7 +37,7 @@ do
       --des 'Exp' \
       --train_epochs 100\
       --patience 20\
-      --embed 'timeF' \
+    #   --embed 'timeF' \
       --exp_id $model_id_name \
       --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$model_id_name/$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
 done
