@@ -85,19 +85,25 @@ class Model(nn.Module):
             tgt_res_init, tgt_trend_init = self.decomp_module(tgt_domain)
             tgt_res_init, tgt_trend_init = tgt_res_init.permute(0,2,1), tgt_trend_init.permute(0,2,1)  # tgt_domain: [Batch, Channel, Input length]
             
-            src_res, tgt_res, cross_res = self.model_res(src_res_init, tgt_res_init)
-            src_trend, tgt_trend, cross_trend = self.model_trend(src_trend_init, tgt_res_init)
+            src_res, tgt_res, tgt_res_feat, cross_res_feat = self.model_res(src_res_init, tgt_res_init)
+            src_trend, tgt_trend, tgt_trend_feat, cross_trend_feat = self.model_trend(src_trend_init, tgt_res_init)
             
             src_domain = src_res + src_trend
             tgt_domain = tgt_res + tgt_trend
+            tgt_feat = tgt_res_feat + tgt_trend_feat
+            cross_feat = cross_res_feat + cross_trend_feat
+            # TODO: 위 방식이 정확히 어떤 의미를 가질 지 잘 모르겠음. 우선 코드 작동하는데 문제 없도록만 해둠.            
             
             src_domain = src_domain.permute(0,2,1)      # src_domain: [Batch, Input length, Channel]
             tgt_domain = tgt_domain.permute(0,2,1)      # tgt_domain: [Batch, Input length, Channel]
         else:
             src_domain = src_domain.permute(0,2,1)      # src_domain: [Batch, Channel, Input length]
             tgt_domain = tgt_domain.permute(0,2,1)      # tgt_domain: [Batch, Channel, Input length]
-            src_domain, tgt_domain, cross_feat = self.model(src_domain, tgt_domain)
+            src_domain, tgt_domain, tgt_feat, cross_feat = self.model(src_domain, tgt_domain)
             src_domain = src_domain.permute(0,2,1)      # src_domain: [Batch, Input length, Channel]
             tgt_domain = tgt_domain.permute(0,2,1)      # tgt_domain: [Batch, Input length, Channel]
+            tgt_feat = tgt_feat.permute(0,2,1)          # tgt_feat: [Batch, Input length, Channel]
+            cross_feat = cross_feat.permute(0,2,1)      # cross_feat: [Batch, Input length, Channel]
             
-        return src_domain, tgt_domain, cross_feat
+        return src_domain, tgt_domain, tgt_feat, cross_feat
+    
