@@ -104,7 +104,7 @@ class Exp_Main(Exp_Basic):
 
         for epoch in range(self.args.train_epochs):
             iter_count = 0
-            train_loss = []
+            train_losses = []
 
             self.model.train()
             epoch_time = time.time()
@@ -192,7 +192,7 @@ class Exp_Main(Exp_Basic):
                 else:
                     total_loss = loss_s
                     
-                train_loss.append(total_loss.item())
+                train_losses.append(total_loss.item())
                     
 
                 if (i + 1) % 100 == 0:
@@ -221,7 +221,7 @@ class Exp_Main(Exp_Basic):
 
             print(f"Epoch: {epoch + 1} | cost time: {time.time() - epoch_time}")
             
-            train_loss = np.average(train_loss)
+            train_losses = np.average(train_losses)
             if 'CDTST' in self.args.model:
                 vali_loss = self.vali(vali_data, vali_loader, criterion, cross_criterion)
                 test_loss = self.vali(test_data, test_loader, criterion, cross_criterion)
@@ -229,7 +229,7 @@ class Exp_Main(Exp_Basic):
                 vali_loss = self.vali(vali_data, vali_loader, criterion)
                 test_loss = self.vali(test_data, test_loader, criterion)
             
-            print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
+            print(f"Epoch: {epoch + 1} | Train Loss: {train_losses:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
             early_stopping(vali_loss, self.model, path)
             if early_stopping.early_stop:
                 print("Early stopping")
@@ -247,7 +247,7 @@ class Exp_Main(Exp_Basic):
         return self.model
 
     def vali(self, vali_data, vali_loader, criterion, cross_criterion=None):
-        total_loss = []
+        total_losses = []
         self.model.eval()
         with torch.no_grad():
             for i, data in enumerate(vali_loader):
@@ -346,10 +346,10 @@ class Exp_Main(Exp_Basic):
                 else:
                     total_loss = loss_s
 
-                total_loss.append(total_loss.item())
-        total_loss = np.average(total_loss)
+                total_losses.append(total_loss.item())
+        total_losses = np.average(total_losses)
         self.model.train()
-        return total_loss
+        return total_losses
 
 
 
