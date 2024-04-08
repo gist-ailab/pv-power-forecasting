@@ -137,7 +137,7 @@ class Exp_Main(Exp_Basic):
                 # encoder - decoder
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
-                        if 'Linear' in self.args.model or 'TST' in self.args.model:
+                        if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
                             if 'CDTST' in self.args.model:
                                 source_outputs, target_outputs, target_feat, cross_feat = self.model(batch_x_s, batch_x_t)
                             elif  'LSTM' in self.args.model:
@@ -152,7 +152,7 @@ class Exp_Main(Exp_Basic):
                                 source_outputs = self.model(batch_x_s, batch_x_mark_s, dec_inp, batch_y_mark_s)
 
                 else:
-                    if 'Linear' in self.args.model or 'TST' in self.args.model:
+                    if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
                         if 'CDTST' in self.args.model:
                             source_outputs, target_outputs, target_feat, cross_feat = self.model(batch_x_s, batch_x_t)
                         elif 'LSTM' in self.args.model:

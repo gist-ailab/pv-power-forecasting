@@ -52,6 +52,8 @@ def data_provider(args, flag):
             freq=freq
         )
     else:
+        args.root_path = args.source_root_path
+        args.data_path = args.source_data_path
         data_set = Data(
             root_path=args.root_path,
             data_path=args.data_path,
