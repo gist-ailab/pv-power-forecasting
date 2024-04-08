@@ -103,7 +103,7 @@ def visual_original(true, preds=None, name='./pic/test.pdf'):
     plt.savefig(name, bbox_inches='tight')
 
 
-def visual_out(input_seq, true, preds=None, name='./pic/test.pdf'):
+def visual_out(true, preds=None, name='./pic/test.pdf'):
     """
     Results visualization
     """
@@ -135,7 +135,7 @@ def visual_out(input_seq, true, preds=None, name='./pic/test.pdf'):
     # Additional customization (optional)
     plt.title('Prediction of PV power Generation')
     plt.xlabel(f'Time (hours), prediction length: {len(gt_values)} hours')
-    plt.ylabel('Active Power[W]')
+    plt.ylabel('Active Power[kW]')
     plt.grid(True)
     plt.legend()
     plt.savefig(name, bbox_inches='tight')
@@ -211,7 +211,7 @@ def visual(input_seq, true, preds=None, name='./pic/test.pdf'):
     # Additional customization (optional)
     plt.title('Prediction of PV power Generation')
     plt.xlabel(f'Time (hours), prediction length: {len(gt_values)} hours')
-    plt.ylabel('Active Power[W]')
+    plt.ylabel('Active Power[kW]')
     plt.grid(True)
     plt.legend()
     plt.savefig(name, bbox_inches='tight')

@@ -14,12 +14,18 @@
             "args": ["--gpu", "0",
                      "--random_seed", "2021",
                      "--is_training", "1",  // 0: test, 1: train
-                     "--root_path", "./dataset/pv", // "./dataset/pv", "./dataset/GIST_dataset"
-                     "--data_path", "91-Site_DKA-M9_B-Phase.csv",   // 91-Site_DKA-M9_B-Phase.csv GIST_sisuldong.csv
-                     "--model_id", "PatchCDTST_test",    // 240102_GIST_336_24, 240102_pv_336_24_PatchTST
+                     "--source_root_path", "./dataset/DKASC", // "./dataset/DKASC", "./dataset/GIST_dataset"
+                     "--target_root_path", "./dataset/GIST_dataset", // "./dataset/DKASC", "./dataset/GIST_dataset"
+                     "--source_data_path", "91-Site_DKA-M9_B-Phase.csv",   // 91-Site_DKA-M9_B-Phase.csv GIST_sisuldong.csv
+                     "--target_data_path", "GIST_sisuldong.csv",   // 91-Site_DKA-M9_B-Phase.csv GIST_sisuldong.csv
+                     "--model_id", "240409_336_24_PatchCDTST",    // 240102_GIST_336_24, 240102_pv_336_24_PatchTST
                      "--model", "PatchCDTST", // PatchCDTST, PatchTST
-                     "--data", "pv_DKASC",  // pv_GIST, pv_DKASC
+                    //  "--source_data", "91-Site_DKA-M9_B-Phase.csv",  // pv_GIST, pv_DKASC
+                    //  "--target_data", "GIST_sisuldong.csv",  // GIST, pv_DKASC
+                    //  "--source_data", "pv_DKASC",  // pv_GIST, pv_DKASC
+                    //  "--target_data", "GIST",  // GIST, pv_DKASC
                      "--features", "MS",
+                     "--target", "Active_Power",
                     //  "--checkpoints", "/HDD/pv/seongho/PatchTST/PatchTST_supervised/checkpoints/240103_1A/240103_1A_336_24_PatchTST_pv_DKASC_ftM_sl336_ll48_pl24_dm128_nh16_el3_dl1_df256_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth",
                      "--seq_len", "336",
                      "--pred_len", "24",
@@ -37,7 +43,7 @@
                      "--train_epochs", "100", // 100, 1
                      "--patience", "20",
                      "--embed", "timeF",
-                     "--exp_id", "debug_240327",
+                     "--exp_id", "first_CD_train_240409",
                      "--itr", "1",
                      "--batch_size", "16", // 16, 128
                     //  "--batch_size", "16",

@@ -1,5 +1,5 @@
 from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
-     Dataset_pv_DKASC, Dataset_pv_DKASC_multi,Dataset_pv_SolarDB, Dataset_pv_GIST
+     Dataset_pv_DKASC, Dataset_pv_DKASC_multi,Dataset_pv_SolarDB, Dataset_pv_GIST, CrossDomain_Dataset
 from torch.utils.data import DataLoader
 
 data_dict = {
@@ -12,6 +12,7 @@ data_dict = {
     'pv_DKASC_multi': Dataset_pv_DKASC_multi,
     'pv_SolarDB': Dataset_pv_SolarDB,
     'pv_GIST': Dataset_pv_GIST,
+    'CrossDomain': CrossDomain_Dataset,
 }
 
 
