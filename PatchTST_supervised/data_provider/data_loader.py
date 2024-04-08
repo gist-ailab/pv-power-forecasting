@@ -606,7 +606,7 @@ class Dataset_pv_DKASC(Dataset):
     def inverse_transform(self, data):
         for i in range(5):
             data[:,:, i] = getattr(self, f'scaler_{self.domain}_{i}').inverse_transform(data[:,:, i])
-        return getattr(self, f'scaler_{self.domain}_4').inverse_transform(data)
+        return data
         # return self.scaler_DKASC_4.inverse_transform(data)
     
     
