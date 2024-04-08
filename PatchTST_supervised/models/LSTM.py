@@ -7,8 +7,9 @@ class Model(nn.Module):
     """
     Just one Linear layer
     """
-    def __init__(self, configs):
+    def __init__(self, configs, device):
         super(Model, self).__init__()
+        self.device = device
         self.input_dim = configs.input_dim
         self.hidden_dim = configs.hidden_dim
         self.num_layers = configs.num_layers
@@ -23,8 +24,8 @@ class Model(nn.Module):
         # self.Linear.weight = nn.Parameter((1/self.seq_len)*torch.ones([self.pred_len,self.seq_len]))
 
     def init_hidden(self, x):
-        h0 = torch.zeros((self.num_layers * (2 if self.bidirectional else 1), x.size(0), self.hidden_dim)).cuda()
-        c0 = torch.zeros((self.num_layers * (2 if self.bidirectional else 1), x.size(0), self.hidden_dim)).cuda()
+        h0 = torch.zeros((self.num_layers * (2 if self.bidirectional else 1), x.size(0), self.hidden_dim)).to(self.device)
+        c0 = torch.zeros((self.num_layers * (2 if self.bidirectional else 1), x.size(0), self.hidden_dim)).to(self.device)
         
         return h0, c0
 
