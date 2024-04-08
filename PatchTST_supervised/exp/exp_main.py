@@ -85,10 +85,7 @@ class Exp_Main(Exp_Basic):
             criterion = self._select_criterion()
             
         if self.args.use_amp:
-            scaler_s = torch.cuda.amp.GradScaler()
-            if self.args.model == 'PatchCDTST':
-                scaler_t = torch.cuda.amp.GradScaler()
-                scaler_mmd = torch.cuda.amp.GradScaler()            
+            scaler = torch.cuda.amp.GradScaler()
             
         scheduler = lr_scheduler.OneCycleLR(optimizer = model_optim,
                                             steps_per_epoch = train_steps,
@@ -107,6 +104,7 @@ class Exp_Main(Exp_Basic):
             train_loss_s = []
             train_loss_t = []            
             train_mmd_loss = []
+            train_loss = []
 
             self.model.train()
             epoch_time = time.time()
@@ -178,26 +176,34 @@ class Exp_Main(Exp_Basic):
                 source_outputs = source_outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y_s = batch_y_s[:, -self.args.pred_len:, f_dim:].to(self.device)
                 loss_s = criterion(source_outputs, batch_y_s)
-                train_loss_s.append(loss_s.item())
+                # train_loss_s.append(loss_s.item())
                 
-                # loss for target domain
-                target_outputs = target_outputs[:, -self.args.pred_len:, f_dim:]
-                batch_y_t = batch_y_t[:, -self.args.pred_len:, f_dim:].to(self.device)
-                loss_t = criterion(target_outputs, batch_y_t)
-                train_loss_t.append(loss_t.item())                
+             
                 
-                if self.args.model == 'PatchCDTST': # loss for cross-domain
+                if 'CDTST' in self.args.model:
+                    # loss for target domain
+                    target_outputs = target_outputs[:, -self.args.pred_len:, f_dim:]
+                    batch_y_t = batch_y_t[:, -self.args.pred_len:, f_dim:].to(self.device)
+                    loss_t = criterion(target_outputs, batch_y_t)
+                    # train_loss_t.append(loss_t.item())
+                    
+                    # loss for cross-domain
                     target_feat = target_feat[:, -self.args.pred_len:, f_dim:]
                     cross_feat = cross_feat[:, -self.args.pred_len:, f_dim:]
                     mmd_loss = cross_criterion(target_feat, cross_feat)
-                    train_mmd_loss.append(mmd_loss.item())
-
+                    # train_mmd_loss.append(mmd_loss.item())
+                    total_loss = loss_s + loss_t + mmd_loss
+                else:
+                    total_loss = loss_s
+                    
+                train_loss.append(total_loss.item())
+                    
+                                    
+                
                 if (i + 1) % 100 == 0:
-                    if 'CDTST' in self.args.model:                        
-                        print(f"\titers: {i+1}, epoch: {epoch+1}")
+                    print(f"\titers: {i+1}, epoch: {epoch+1} | loss: {total_loss.item():.7f}, ")
+                    if 'CDTST' in self.args.model:
                         print(f"loss_source: {loss_s.item():.7f}, loss_target: {loss_t.item():.7f}, mmd_loss: {mmd_loss.item():.7f} \n")
-                    else:
-                        print("\titers: {0}, epoch: {1} | loss: {2:.7f}, ".format(i + 1, epoch + 1, loss_s.item()))
                     
                     speed = (time.time() - time_now) / iter_count
                     left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
@@ -206,25 +212,25 @@ class Exp_Main(Exp_Basic):
                     time_now = time.time()
 
                 if self.args.use_amp:
-                    scaler_s.scale(loss_s).backward()
-                    scaler_s.step(model_optim)
-                    scaler_s.update()
+                    scaler.scale(total_loss).backward()
+                    scaler.step(model_optim)
+                    scaler.update()
                     
                 else:
-                    loss_s.backward()
+                    total_loss.backward()
                     model_optim.step()
                     
                 if self.args.lradj == 'TST':
                     adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=False)
                     scheduler.step()
 
-            print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+            print(f"Epoch: {epoch + 1} | cost time: {time.time() - epoch_time}")
+            
             train_loss = np.average(train_loss)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             test_loss = self.vali(test_data, test_loader, criterion)
             
-            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
-                epoch + 1, train_steps, train_loss, vali_loss, test_loss))
+            print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
             early_stopping(vali_loss, self.model, path)
             if early_stopping.early_stop:
                 print("Early stopping")
