@@ -150,6 +150,8 @@ class Exp_Main(Exp_Basic):
                         if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
                             if 'CD' in self.args.model:
                                 source_outputs, target_outputs, target_feat, cross_feat = self.model(batch_x_s, batch_x_t)
+                            elif  'LSTM' in self.args.model:
+                                source_outputs = self.model(batch_x_s, batch_y_s)
                             else:
                                 source_outputs = self.model(batch_x_s)
             
@@ -163,7 +165,8 @@ class Exp_Main(Exp_Basic):
                     if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
                         if 'CD' in self.args.model:
                             source_outputs, target_outputs, target_feat, cross_feat = self.model(batch_x_s, batch_x_t)
-
+                        elif 'LSTM' in self.args.model:
+                            source_outputs = self.model(batch_x_s, batch_y_s)
                         else:
                             source_outputs = self.model(batch_x_s)
             
