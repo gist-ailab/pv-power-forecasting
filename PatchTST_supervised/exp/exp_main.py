@@ -59,6 +59,188 @@ class Exp_Main(Exp_Basic):
             return criterion, cross_criterion
         return criterion
 
+    def train(self, setting, exp_id, resume):
+        train_data, train_loader = self._get_data(flag='train')
+        vali_data, vali_loader = self._get_data(flag='val')
+        test_data, test_loader = self._get_data(flag='test')
+
+        if 'checkpoint.pth' in self.args.checkpoints.split('/'):
+            path = self.args.checkpoints
+        else:
+            path = os.path.join(self.args.checkpoints, exp_id, setting)
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        time_now = time.time()
+
+        train_steps = len(train_loader)
+        early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
+
+        model_optim = self._select_optimizer()
+        
+        if self.args.model == 'PatchCDTST':
+            criterion, cross_criterion = self._select_criterion()
+        else:
+            criterion = self._select_criterion()
+            
+        if self.args.use_amp:
+            scaler_s = torch.cuda.amp.GradScaler()
+            if self.args.model == 'PatchCDTST':
+                scaler_t = torch.cuda.amp.GradScaler()
+                scaler_mmd = torch.cuda.amp.GradScaler()            
+            
+        scheduler = lr_scheduler.OneCycleLR(optimizer = model_optim,
+                                            steps_per_epoch = train_steps,
+                                            pct_start = self.args.pct_start,
+                                            epochs = self.args.train_epochs,
+                                            max_lr = self.args.learning_rate)
+
+        if resume:
+            latest_model_path = path + '/' + 'model_latest.pth'
+            self.model.load_state_dict(torch.load(latest_model_path))
+            print('model loaded from {}'.format(latest_model_path))
+
+
+        for epoch in range(self.args.train_epochs):
+            iter_count = 0
+            train_loss_s = []
+            train_loss_t = []            
+            train_mmd_loss = []
+
+            self.model.train()
+            epoch_time = time.time()
+            # for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
+            for i, data in enumerate(train_loader):
+                iter_count += 1
+                model_optim.zero_grad()
+                
+                if len(data) == 4: # Original data loader
+                    batch_x_s, batch_y_s, batch_x_mark_s, batch_y_mark_s = data
+                    batch_x_s = batch_x_s.float().to(self.device)
+                    batch_y_s = batch_y_s.float().to(self.device)
+                    batch_x_mark_s = batch_x_mark_s.float().to(self.device)
+                    batch_y_mark_s = batch_y_mark_s.float().to(self.device)
+                
+                elif len(data) == 8: # Data loader for PatchCDTST
+                    batch_x_s, batch_y_s, batch_x_mark_s, batch_y_mark_s, batch_x_t, batch_y_t, batch_x_mark_t, batch_y_mark_t = data   # s for source, t for target
+                    batch_x_s = batch_x_s.float().to(self.device)
+                    batch_y_s = batch_y_s.float().to(self.device)
+                    batch_x_mark_s = batch_x_mark_s.float().to(self.device)
+                    batch_y_mark_s = batch_y_mark_s.float().to(self.device)
+                    batch_x_t = batch_x_t.float().to(self.device)
+                    batch_y_t = batch_y_t.float().to(self.device)
+                    batch_x_mark_t = batch_x_mark_t.float().to(self.device)
+                    batch_y_mark_t = batch_y_mark_t.float().to(self.device)
+                    
+                # 원래 있던 것.
+                # batch_x = batch_x.float().to(self.device)
+                # batch_y = batch_y.float().to(self.device)
+                # batch_x_mark = batch_x_mark.float().to(self.device)
+                # batch_y_mark = batch_y_mark.float().to(self.device)
+
+                # decoder input
+                dec_inp = torch.zeros_like(batch_y_s[:, -self.args.pred_len:, :]).float()
+                dec_inp = torch.cat([batch_y_s[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
+
+                # encoder - decoder
+                if self.args.use_amp:
+                    with torch.cuda.amp.autocast():
+                        if 'Linear' in self.args.model or 'TST' in self.args.model:
+                            if 'CD' in self.args.model:
+                                source_outputs, target_outputs, target_feat, cross_feat = self.model(batch_x_s, batch_x_t)
+                            else:
+                                source_outputs = self.model(batch_x_s)
+                        else:
+                            if self.args.output_attention:
+                                source_outputs = self.model(batch_x_s, batch_x_mark_s, dec_inp, batch_y_mark_s)[0]
+                            else:
+                                source_outputs = self.model(batch_x_s, batch_x_mark_s, dec_inp, batch_y_mark_s)
+
+                else:
+                    if 'Linear' in self.args.model or 'TST' in self.args.model:
+                        if 'CD' in self.args.model:
+                            source_outputs, target_outputs, target_feat, cross_feat = self.model(batch_x_s, batch_x_t)
+                        else:
+                            source_outputs = self.model(batch_x_s)
+                    else:
+                        if self.args.output_attention:
+                            source_outputs = self.model(batch_x_s, batch_x_mark_s, dec_inp, batch_y_mark_s)[0]
+                            
+                        else:
+                            source_outputs = self.model(batch_x_s, batch_x_mark_s, dec_inp, batch_y_mark_s, batch_y_s)
+                            # TODO: batch_y_s 의 역할이 뭐지??? TST 계열에선 안 쓰긴 한다.
+                            # print(outputs.shape,batch_y.shape)
+                            
+                f_dim = -1 if self.args.features == 'MS' else 0
+                
+                # loss for source domain
+                source_outputs = source_outputs[:, -self.args.pred_len:, f_dim:]
+                batch_y_s = batch_y_s[:, -self.args.pred_len:, f_dim:].to(self.device)
+                loss_s = criterion(source_outputs, batch_y_s)
+                train_loss_s.append(loss_s.item())
+                
+                # loss for target domain
+                target_outputs = target_outputs[:, -self.args.pred_len:, f_dim:]
+                batch_y_t = batch_y_t[:, -self.args.pred_len:, f_dim:].to(self.device)
+                loss_t = criterion(target_outputs, batch_y_t)
+                train_loss_t.append(loss_t.item())                
+                
+                if self.args.model == 'PatchCDTST': # loss for cross-domain
+                    target_feat = target_feat[:, -self.args.pred_len:, f_dim:]
+                    cross_feat = cross_feat[:, -self.args.pred_len:, f_dim:]
+                    mmd_loss = cross_criterion(target_feat, cross_feat)
+                    train_mmd_loss.append(mmd_loss.item())
+
+                if (i + 1) % 100 == 0:
+                    if 'CDTST' in self.args.model:                        
+                        print(f"\titers: {i+1}, epoch: {epoch+1}")
+                        print(f"loss_source: {loss_s.item():.7f}, loss_target: {loss_t.item():.7f}, mmd_loss: {mmd_loss.item():.7f} \n")
+                    else:
+                        print("\titers: {0}, epoch: {1} | loss: {2:.7f}, ".format(i + 1, epoch + 1, loss_s.item()))
+                    
+                    speed = (time.time() - time_now) / iter_count
+                    left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
+                    print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
+                    iter_count = 0
+                    time_now = time.time()
+
+                if self.args.use_amp:
+                    scaler_s.scale(loss_s).backward()
+                    scaler_s.step(model_optim)
+                    scaler_s.update()
+                    
+                else:
+                    loss_s.backward()
+                    model_optim.step()
+                    
+                if self.args.lradj == 'TST':
+                    adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=False)
+                    scheduler.step()
+
+            print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+            train_loss = np.average(train_loss)
+            vali_loss = self.vali(vali_data, vali_loader, criterion)
+            test_loss = self.vali(test_data, test_loader, criterion)
+            
+            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
+                epoch + 1, train_steps, train_loss, vali_loss, test_loss))
+            early_stopping(vali_loss, self.model, path)
+            if early_stopping.early_stop:
+                print("Early stopping")
+                break
+
+            if self.args.lradj != 'TST':
+                adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args)
+            else:
+                print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
+            
+
+        best_model_path = path + '/' + 'checkpoint.pth'
+        self.model.load_state_dict(torch.load(best_model_path))
+
+        return self.model
+
     def vali(self, vali_data, vali_loader, criterion):
         total_loss = []
         self.model.eval()
@@ -113,138 +295,7 @@ class Exp_Main(Exp_Basic):
         self.model.train()
         return total_loss
 
-    def train(self, setting, exp_id, resume):
-        train_data, train_loader = self._get_data(flag='train')
-        vali_data, vali_loader = self._get_data(flag='val')
-        test_data, test_loader = self._get_data(flag='test')
 
-        if 'checkpoint.pth' in self.args.checkpoints.split('/'):
-            path = self.args.checkpoints
-        else:
-            path = os.path.join(self.args.checkpoints, exp_id, setting)
-
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        time_now = time.time()
-
-        train_steps = len(train_loader)
-        early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
-
-        model_optim = self._select_optimizer()
-        if self.args.model == 'PatchCDTST' and self.args.is_training:
-            criterion, cross_criterion = self._select_criterion()
-        else:
-            criterion = self._select_criterion()
-        
-        if self.args.use_amp:
-            scaler = torch.cuda.amp.GradScaler()
-            
-        scheduler = lr_scheduler.OneCycleLR(optimizer = model_optim,
-                                            steps_per_epoch = train_steps,
-                                            pct_start = self.args.pct_start,
-                                            epochs = self.args.train_epochs,
-                                            max_lr = self.args.learning_rate)
-
-        if resume:
-            latest_model_path = path + '/' + 'model_latest.pth'
-            self.model.load_state_dict(torch.load(latest_model_path))
-            print('model loaded from {}'.format(latest_model_path))
-
-
-        for epoch in range(self.args.train_epochs):
-            iter_count = 0
-            train_loss = []
-
-            self.model.train()
-            epoch_time = time.time()
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
-                iter_count += 1
-                model_optim.zero_grad()
-                batch_x = batch_x.float().to(self.device)
-
-                batch_y = batch_y.float().to(self.device)
-                batch_x_mark = batch_x_mark.float().to(self.device)
-                batch_y_mark = batch_y_mark.float().to(self.device)
-
-                # decoder input
-                dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
-                dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-
-                # encoder - decoder
-                if self.args.use_amp:
-                    with torch.cuda.amp.autocast():
-                        if 'Linear' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
-                        else:
-                            if self.args.output_attention:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-                            else:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-
-                        f_dim = -1 if self.args.features == 'MS' else 0
-                        outputs = outputs[:, -self.args.pred_len:, f_dim:]
-                        batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                        loss = criterion(outputs, batch_y)
-                        train_loss.append(loss.item())
-                else:
-                    if 'Linear' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
-                    else:
-                        if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-                            
-                        else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, batch_y)
-                    # print(outputs.shape,batch_y.shape)
-                    f_dim = -1 if self.args.features == 'MS' else 0
-                    outputs = outputs[:, -self.args.pred_len:, f_dim:]
-                    batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                    loss = criterion(outputs, batch_y)
-                    train_loss.append(loss.item())
-
-                if (i + 1) % 100 == 0:
-                    print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
-                    speed = (time.time() - time_now) / iter_count
-                    left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
-                    print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
-                    iter_count = 0
-                    time_now = time.time()
-
-                if self.args.use_amp:
-                    scaler.scale(loss).backward()
-                    scaler.step(model_optim)
-                    scaler.update()
-                else:
-                    loss.backward()
-                    model_optim.step()
-                    
-                if self.args.lradj == 'TST':
-                    adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=False)
-                    scheduler.step()
-
-            print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
-            train_loss = np.average(train_loss)
-            vali_loss = self.vali(vali_data, vali_loader, criterion)
-            test_loss = self.vali(test_data, test_loader, criterion)
-            
-            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
-                epoch + 1, train_steps, train_loss, vali_loss, test_loss))
-            early_stopping(vali_loss, self.model, path)
-            if early_stopping.early_stop:
-                print("Early stopping")
-                break
-
-            if self.args.lradj != 'TST':
-                adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args)
-            else:
-                print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
-            
-
-        best_model_path = path + '/' + 'checkpoint.pth'
-        self.model.load_state_dict(torch.load(best_model_path))
-
-        return self.model
 
     def test(self, setting, exp_id, model_path=None, test=0):
         test_data, test_loader = self._get_data(flag='test')
