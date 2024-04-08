@@ -1,6 +1,6 @@
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
-from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, PatchTST, PatchCDTST
+from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, PatchTST, PatchCDTST, LSTM
 from models.Stat_models import Naive_repeat, Arima
 from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop, visual_out
 from utils.metrics import metric
@@ -36,7 +36,8 @@ class Exp_Main(Exp_Basic):
             'PatchTST': PatchTST,
             'PatchCDTST': PatchCDTST,
             'Naive_repeat': Naive_repeat,
-            'Arima': Arima
+            'Arima': Arima,
+            'LSTM': LSTM
         }
         model = model_dict[self.args.model].Model(self.args).float()
 
@@ -134,8 +135,13 @@ class Exp_Main(Exp_Basic):
                 # encoder - decoder
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
+<<<<<<< HEAD
                         if 'Linear' in self.args.model or 'TST' in self.args.model:
                             if 'CDTST' in self.args.model:
+=======
+                        if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
+                            if 'CD' in self.args.model:
+>>>>>>> 136ece94195015049f395c3996d36609dad16183
                                 source_outputs, target_outputs, target_feat, cross_feat = self.model(batch_x_s, batch_x_t)
                             else:
                                 source_outputs = self.model(batch_x_s)
@@ -146,8 +152,13 @@ class Exp_Main(Exp_Basic):
                                 source_outputs = self.model(batch_x_s, batch_x_mark_s, dec_inp, batch_y_mark_s)
 
                 else:
+<<<<<<< HEAD
                     if 'Linear' in self.args.model or 'TST' in self.args.model:
                         if 'CDTST' in self.args.model:
+=======
+                    if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
+                        if 'CD' in self.args.model:
+>>>>>>> 136ece94195015049f395c3996d36609dad16183
                             source_outputs, target_outputs, target_feat, cross_feat = self.model(batch_x_s, batch_x_t)
                         else:
                             source_outputs = self.model(batch_x_s)
