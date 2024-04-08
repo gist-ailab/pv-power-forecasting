@@ -318,7 +318,7 @@ class Dataset_pv_DKASC(Dataset):
         self.set_type = type_map[flag]
 
         self.features = features
-        self.target = 'Active_Power'
+        self.target = target
         self.scale = scale
         self.timeenc = timeenc
         self.freq = freq
@@ -628,7 +628,7 @@ class Dataset_pv_DKASC_multi(Dataset):
         self.set_type = type_map[flag]
 
         self.features = features
-        self.target = 'Active_Power'
+        self.target = target
         self.scale = scale
         self.timeenc = timeenc
         self.freq = freq
@@ -912,7 +912,7 @@ class Dataset_pv_SolarDB(Dataset):
         self.set_type = type_map[flag]
 
         self.features = features
-        self.target = 'power_ac'
+        self.target = target
         self.scale = scale
         self.timeenc = timeenc
         self.freq = freq
@@ -1068,7 +1068,7 @@ class Dataset_pv_GIST(Dataset):
         self.set_type = type_map[flag]
 
         self.features = features
-        self.target = 'Active_Power'
+        self.target = target
         self.scale = scale
         self.timeenc = timeenc
         self.freq = freq
