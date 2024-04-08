@@ -139,8 +139,10 @@ class LSTMDecoder(nn.Module):
         :                                   element in the sequence 
  
         '''
-        
-        lstm_out, self.hidden = self.lstm(x_input.unsqueeze(0), encoder_hidden_states)
+        lstm_out, self.hidden = self.lstm(x_input, encoder_hidden_states)
+
+
+        # lstm_out, self.hidden = self.lstm(x_input.unsqueeze(0), encoder_hidden_states)
         output = self.linear(lstm_out.squeeze(0))     
         
         return output, self.hidden
