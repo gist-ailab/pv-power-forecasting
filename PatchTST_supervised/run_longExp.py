@@ -2,6 +2,7 @@ import argparse
 import os
 import torch
 from exp.exp_main import Exp_Main
+from exp.exp_train import Exp_Train
 import random
 import numpy as np
 
@@ -123,7 +124,9 @@ if __name__ == '__main__':
     print('Args in experiment:')
     print(args)
 
-    Exp = Exp_Main
+    if 'CDTST' in args.model:
+        Exp = Exp_Main
+    else: Exp = Exp_Train
 
     if args.is_training:
         for ii in range(args.itr):

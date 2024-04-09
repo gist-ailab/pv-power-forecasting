@@ -373,6 +373,7 @@ class Exp_Main(Exp_Basic):
         trues_t = []
         inputx_t = []
         
+        folder_path = './test_results/' + exp_id + '/' + setting + '/'
         folder_path_inout = './test_results/' + exp_id + '/in+out/' + setting + '/'
         folder_path_out = './test_results/' + exp_id + '/out/' + setting + '/'
         if not os.path.exists(folder_path_inout):
@@ -459,10 +460,10 @@ class Exp_Main(Exp_Basic):
                
                 else:
                     pred_np = test_data.inverse_transform(source_outputs.detach().cpu().numpy())
-                    gt_np = test_data.inverse_transform(batch_y_s.detach().cpu().numpy())
+                    true_np = test_data.inverse_transform(batch_y_s.detach().cpu().numpy())
 
                     pred_s = torch.from_numpy(pred_np)
-                    gt_s = torch.from_numpy(gt_np)
+                    true_s = torch.from_numpy(true_np)
 
                 preds_s.append(pred_s)
                 trues_s.append(true_s[:,-self.args.pred_len:])
