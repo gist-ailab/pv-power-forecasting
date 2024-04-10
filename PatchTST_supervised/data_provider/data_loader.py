@@ -331,6 +331,7 @@ class Dataset_pv_DKASC(Dataset):
             '91-Site_DKA-M9_B-Phase.csv'    : [2014, 2020,  2021, 2021,  2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A
             '87-Site_DKA-M9_A+C-Phases.csv' : [2010, 2020,  2021, 2021,  2022, 2022],   # 23.4kW, mono-Si, Tracker: Dual              # 1B
             '78-Site_DKA-M11_3-Phase.csv'   : [2010, 2020,  2021, 2021,  2022, 2022],   # 26.5kW, mono-Si, Tracker: Dual              # 2
+            '79-Site_DKA-M6_A-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2022],  # 7.0kW, CdTe, Fixed, First-So  lar
             # '91-Site_DKA-M9_B-Phase.csv'    : [2020, 2021,  2020, 2021,  2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A, other papers
             # '87-Site_DKA-M9_A+C-Phases.csv' : [2014, 2017,  2018, 2018,  2018, 2018],   # 23.4kW, mono-Si, Tracker: Dual              # 1B
             # '78-Site_DKA-M11_3-Phase.csv'   : [2020, 2021,  2020, 2021,  2022, 2022],   # 26.5kW, mono-Si, Tracker: Dual              # 2
@@ -379,31 +380,15 @@ class Dataset_pv_DKASC(Dataset):
         df_date['weekday'] = df_date.date.apply(lambda row: row.weekday(), 1)
         df_date['hour'] = df_date.date.apply(lambda row: row.hour, 1)
         
-        ### remove missing value of 'Active_Power'
-        print(df_raw['Active_Power'].isnull().sum(), end='  ')
-        df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
-        df_raw, df_date = self.remove_null_value(df_raw, df_date, 'Active_Power')
-        print('-> ', df_raw['Active_Power'].isnull().sum())
-        ### remove missing value of 'Weather_Temperature_Celsius'
-        print(df_raw['Weather_Temperature_Celsius'].isnull().sum(), end='  ')
-        df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
-        df_raw, df_date = self.remove_null_value(df_raw, df_date, 'Weather_Temperature_Celsius')
-        print('-> ', df_raw['Weather_Temperature_Celsius'].isnull().sum())
-        ### remove missing value of 'Global_Horizontal_Radiation'
-        print(df_raw['Global_Horizontal_Radiation'].isnull().sum(), end='  ')
-        df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
-        df_raw, df_date = self.remove_null_value(df_raw, df_date, 'Global_Horizontal_Radiation')
-        print('-> ', df_raw['Global_Horizontal_Radiation'].isnull().sum())
-        ### remove missing value of 'Diffuse_Horizontal_Radiation'
-        print(df_raw['Diffuse_Horizontal_Radiation'].isnull().sum(), end='  ')
-        df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
-        df_raw, df_date = self.remove_null_value(df_raw, df_date, 'Diffuse_Horizontal_Radiation')
-        print('-> ', df_raw['Diffuse_Horizontal_Radiation'].isnull().sum())
-        ### remove missing value of 'Weather_Relative_Humidity'
-        print(df_raw['Weather_Relative_Humidity'].isnull().sum(), end='  ')
-        df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
-        df_raw, df_date = self.remove_null_value(df_raw, df_date, 'Weather_Relative_Humidity')
-        print('-> ', df_raw['Weather_Relative_Humidity'].isnull().sum())
+        print(f"Preprocess for {self.data_path} about missing and wrong values.")
+        print(f"Missing values: ")
+        for i in cols + [self.target]:
+            print(i, end='\t')
+            print(df_raw[i].isnull().sum(), end='  ')
+            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
+            df_raw, df_date = self.remove_null_value(df_raw, df_date, i)
+            print('-> ', df_raw[i].isnull().sum())
+        print('')
         
         assert df_raw['Active_Power'].isnull().sum() == 0
         assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
@@ -417,25 +402,33 @@ class Dataset_pv_DKASC(Dataset):
         # self.pv_max = np.max(df_raw['Active_Power'].values)
         # self.pv_min = np.min(df_raw['Active_Power'].values)
 
-        ### remove minus temperature
+        # remove minus temperature
+        print('Remove minus temperature.')
+        print('Weather_Temperature_Celsius', end='\t')
         print(len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()), end='  ')
         df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
         df_raw, df_date = self.remove_minus_temperature(df_raw, df_date)
         print('-> ', len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()))
+        print('')
 
-        ### remove minus radiation
-        print(len(df_raw[df_raw['Global_Horizontal_Radiation'] < 0].index.tolist()), end='  ')
-        print(len(df_raw[df_raw['Diffuse_Horizontal_Radiation'] < 0].index.tolist()))
-        df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
-        df_raw, df_date = self.remove_minus_radiation(df_raw, df_date)
-        print('-> ', len(df_raw[df_raw['Global_Horizontal_Radiation'] < 0].index.tolist()))
-        print('-> ', len(df_raw[df_raw['Diffuse_Horizontal_Radiation'] < 0].index.tolist()))
+        # remove minus radiation
+        print('Remove minus radiation.')
+        for i in ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation']:
+            print(i, end='\t')
+            print(len(df_raw[df_raw[i] < 0].index.tolist()), end='  ')
+            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
+            df_raw, df_date = self.remove_minus_radiation(df_raw, df_date)
+            print('-> ', len(df_raw[df_raw[i] < 0].index.tolist()))
+        print('')
 
         ### clip over 100 humidity
+        print('Clip over 100 humidity.')
+        print(f'Weather_Relative_Humidity', end='\t')
         print(len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()), end='  ')
         df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
         df_raw, df_date = self.clip_over_hundred_humidity(df_raw, df_date)
         print('-> ', len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()))
+        print('')
 
         # del df_date
         border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][2*(self.set_type)]}-01-01 00:00:00'].index[0]
@@ -452,7 +445,6 @@ class Dataset_pv_DKASC(Dataset):
         elif self.timeenc == 1:
             data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
             data_stamp = data_stamp.transpose(1, 0)
-
 
         if self.features == 'M' or self.features == 'MS':
             cols_data = df_raw.columns[1:] 
@@ -883,7 +875,8 @@ class CrossDomain_Dataset(Dataset):
 
     def __len__(self):
         return len(self.data_x_source) - self.seq_len - self.pred_len + 1
-        # TODO: source, target domain의 길이가 다를 경우에 대한 처리 필요
+        # TODO: source, target domain의 길이가 다르다. 위의 getitem과 같이 연결지어 len을 어떻게 할지 생각해보자.
+        # TODO: 한쪽 길이에 맞추어 epoch 를 맞추는 법도 생각해보자.
 
     def inverse_transform(self, data):
         source_active_power = getattr(self, f'scaler_{self.domain}_4').inverse_transform(data)
@@ -1094,9 +1087,10 @@ class Dataset_pv_GIST(Dataset):
         '''
         df_raw.columns: ['date', ...(other features), target feature]
         '''
-        # cols = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-        cols = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        cols = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        # cols = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
         df_raw = df_raw[['date'] + cols + [self.target]]
+        for i in cols: df_raw.astype({i: 'float64'}).dtypes
 
         # df_stamp = df_raw[['date']][border1:border2]
         df_stamp = pd.DataFrame()
@@ -1115,13 +1109,12 @@ class Dataset_pv_GIST(Dataset):
         assert df_raw['Active_Power'].isnull().sum() == 0
         assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
         assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
+        assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
         assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
         
         ### get maximum and minimum value of 'Active_Power'
         setattr(self, f'pv_{self.domain}_max', np.max(df_raw['Active_Power'].values))   # save the maximum value of 'Active_Power' as a source/target domain
         setattr(self, f'pv_{self.domain}_min', np.min(df_raw['Active_Power'].values))   # save the minimum value of 'Active_Power' as a source/target domain
-        self.pv_max = np.max(df_raw['Active_Power'].values)
-        self.pv_min = np.min(df_raw['Active_Power'].values)
         
         num_train = int(len(df_raw) * 0.7)
         num_test = int(len(df_raw) * 0.2)
