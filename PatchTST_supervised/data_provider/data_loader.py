@@ -6,8 +6,8 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import StandardScaler
 from utils.timefeatures import time_features
 import warnings
-
 import copy
+import pickle
 
 warnings.filterwarnings('ignore')
 
@@ -294,21 +294,15 @@ class Dataset_Custom(Dataset):
 ####################################################
 class Dataset_pv_DKASC(Dataset):
     def __init__(self, root_path, flag='train', size=None,
-                 features='MS', data_path='91-Site_DKA-M9_B-Phase.csv', target='Active_Power',
+                 features='MS', data_path='79-Site_DKA-M6_A-Phase.csv', target='Active_Power',
                  scale=True, timeenc=0, freq='h', domain='source'):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
-            # setattr(self, f'seq_len_{domain}', 24 * 4 * 4)
-            # setattr(self, f'label_len_{domain}', 24 * 4)
-            # setattr(self, f'pred_len_{domain}', 24 * 4)
             self.seq_len = 24 * 4 * 4
             self.label_len = 24 * 4
             self.pred_len = 24 * 4
         else:
-            # setattr(self, f'seq_len_{domain}', size[0])
-            # setattr(self, f'label_len_{domain}', size[1])
-            # setattr(self, f'pred_len_{domain}', size[2])
             self.seq_len = size[0]
             self.label_len = size[1]
             self.pred_len = size[2]
@@ -328,10 +322,10 @@ class Dataset_pv_DKASC(Dataset):
         self.data_path = data_path
 
         self.DATASET_SPLIT_YEAR = {
+            '79-Site_DKA-M6_A-Phase.csv'    : [2009, 2020,  2021, 2021,  2022, 2022],   # 7.0kW, CdTe, Fixed, First-Solar
             '91-Site_DKA-M9_B-Phase.csv'    : [2014, 2020,  2021, 2021,  2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A
             '87-Site_DKA-M9_A+C-Phases.csv' : [2010, 2020,  2021, 2021,  2022, 2022],   # 23.4kW, mono-Si, Tracker: Dual              # 1B
             '78-Site_DKA-M11_3-Phase.csv'   : [2010, 2020,  2021, 2021,  2022, 2022],   # 26.5kW, mono-Si, Tracker: Dual              # 2
-            '79-Site_DKA-M6_A-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2022],  # 7.0kW, CdTe, Fixed, First-So  lar
             # '91-Site_DKA-M9_B-Phase.csv'    : [2020, 2021,  2020, 2021,  2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A, other papers
             # '87-Site_DKA-M9_A+C-Phases.csv' : [2014, 2017,  2018, 2018,  2018, 2018],   # 23.4kW, mono-Si, Tracker: Dual              # 1B
             # '78-Site_DKA-M11_3-Phase.csv'   : [2020, 2021,  2020, 2021,  2022, 2022],   # 26.5kW, mono-Si, Tracker: Dual              # 2
@@ -347,14 +341,53 @@ class Dataset_pv_DKASC(Dataset):
             '59-Site_38-Q-CELLS.csv'        : [2017, 2020,  2021, 2021,  2022, 2022],   # 5.9kW, mono-Si, Fixed
             '212-Site_25-Hanwha-Solar.csv'  : [2017, 2020,  2021, 2021,  2022, 2022],   # 5.8kW, poly-Si, Fixed
         }
-        self.__read_data__()
-
-    def __read_data__(self):
-        # Creae scaler for each feature
-        for i in range(5):
+        
+        # Create scaler for each input_channels
+        self.input_channels = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        self.input_channels = self.input_channels + [self.target]
+        for i in self.input_channels:
             setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
-            # TODO: scaler instance들을 만들 때, 맨뒤는 active power니까 변수 이름을 active power꺼는 숫자가 아니라 이름을 붙여주자.
+        
+        self.seq_len = size[0]
+        self.label_len = size[1]
+        self.pred_len = size[2]
+        
+        self.__read_data__()
+        
+        # ###TODO: 저장해서 쓸 수 있어야 하는데 StandardScaler에서 문제 발생한다.
+        # # save preprocessed data
+        # processed_data = data_path.split('.')[0] + f'_{flag}.pkl'
+        # save_path = os.path.join(root_path,
+        #                          'preprocessed',
+        #                          f'{self.seq_len}_{self.label_len}_{self.pred_len}')
+        # os.makedirs(save_path, exist_ok=True)
+        # self.pkl_file = os.path.join(save_path, processed_data)
+        # if os.path.exists(self.pkl_file):
+        #     print(f'Load saved file {self.pkl_file}.')
             
+        #     with open(self.pkl_file, 'rb') as f:
+        #         save_data = pickle.load(f)
+                
+        #         self.data_x = save_data['data_x']
+        #         self.data_y = save_data['data_y']
+        #         self.data_stamp = save_data['data_stamp']
+                
+        # else:
+        #     print(f'Preprocessing {data_path} for {flag}...')
+        
+        #     self.__read_data__()
+            
+        #     # load preprocessed data
+        #     save_data = {
+        #         'data_x': self.data_x,
+        #         'data_y': self.data_y,
+        #         'data_stamp': self.data_stamp
+        #     }
+            
+        #     with open(self.pkl_file, 'wb') as f:
+        #         pickle.dump(save_data, f, pickle.HIGHEST_PROTOCOL)
+
+    def __read_data__(self):            
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
         
@@ -363,13 +396,12 @@ class Dataset_pv_DKASC(Dataset):
         df_raw = df_raw.drop(df_raw[df_raw['minute'] % 60 != 0].index)
         df_raw = df_raw.reset_index()
         
+        # Using specific columns
         df_raw['date'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
-
         '''
-        df_raw.columns: ['date', ...(other features), target feature]
+        df_raw.columns: ['date', ...(other features)]
         '''
-        cols = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-        df_raw = df_raw[['date'] + cols + [self.target]]
+        df_raw = df_raw[['date'] + self.input_channels]
 
         ## pre-processing
         df_date = pd.DataFrame()
@@ -378,11 +410,11 @@ class Dataset_pv_DKASC(Dataset):
         df_date['month'] = df_date.date.apply(lambda row: row.month, 1)
         df_date['day'] = df_date.date.apply(lambda row: row.day, 1)
         df_date['weekday'] = df_date.date.apply(lambda row: row.weekday(), 1)
-        df_date['hour'] = df_date.date.apply(lambda row: row.hour, 1)
-        
+        df_date['hour'] = df_date.date.apply(lambda row: row.hour, 1)        
         print(f"Preprocess for {self.data_path} about missing and wrong values.")
         print(f"Missing values: ")
-        for i in cols + [self.target]:
+
+        for i in df_raw.columns[1:]:    # except 'date' which is the first column
             print(i, end='\t')
             print(df_raw[i].isnull().sum(), end='  ')
             df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
@@ -390,17 +422,16 @@ class Dataset_pv_DKASC(Dataset):
             print('-> ', df_raw[i].isnull().sum())
         print('')
         
-        assert df_raw['Active_Power'].isnull().sum() == 0
-        assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
+        ## check if there is missing value
         assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
         assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
+        assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
         assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
+        assert df_raw['Active_Power'].isnull().sum() == 0
         
         ### get maximum and minimum value of 'Active_Power'
         setattr(self, f'pv_{self.domain}_max', np.max(df_raw['Active_Power'].values))   # save the maximum value of 'Active_Power' as a source/target domain
         setattr(self, f'pv_{self.domain}_min', np.min(df_raw['Active_Power'].values))   # save the minimum value of 'Active_Power' as a source/target domain
-        # self.pv_max = np.max(df_raw['Active_Power'].values)
-        # self.pv_min = np.min(df_raw['Active_Power'].values)
 
         # remove minus temperature
         print('Remove minus temperature.')
@@ -430,10 +461,9 @@ class Dataset_pv_DKASC(Dataset):
         print('-> ', len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()))
         print('')
 
-        # del df_date
+        # crop data for the year to be used train/val/test
         border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][2*(self.set_type)]}-01-01 00:00:00'].index[0]
         border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[self.data_path][2*(self.set_type)+1]}-12-31 23:00:00'].index[-1]+1
-        
         df_stamp = df_raw[['date']][border1:border2]
 
         if self.timeenc == 0:
@@ -460,20 +490,20 @@ class Dataset_pv_DKASC(Dataset):
             train_data_values = train_data.values
             df_data_values = df_data.values
             transformed_data = []  # List to store each transformed feature
-            for i in range(5):
-                train_features = train_data_values[:, i].reshape(-1, 1)
-                getattr(self, f'scaler_{self.domain}_{i}').fit(train_features)
+            
+            # Transform data
+            for idx, val in enumerate(df_raw.columns[1:]):  # except 'date' which is the first column
+                train_features = train_data_values[:, idx].reshape(-1, 1)
+                getattr(self, f'scaler_{self.domain}_{val}').fit(train_features)
                 
-                df_data_features = df_data_values[:, i].reshape(-1, 1)
-                transformed_feature = getattr(self, f'scaler_{self.domain}_{i}').transform(df_data_features)
+                df_data_features = df_data_values[:, idx].reshape(-1, 1)
+                transformed_feature = getattr(self, f'scaler_{self.domain}_{val}').transform(df_data_features)
                 transformed_data.append(transformed_feature)
             data = np.concatenate(transformed_data, axis=1)
             
         else:
             data = df_data.values
         
-        # setattr(self, f'data_x_{self.domain}', data[border1:border2])
-        # setattr(self, f'data_y_{self.domain}', data[border1:border2])
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
         if self.timeenc == 0:
@@ -572,18 +602,11 @@ class Dataset_pv_DKASC(Dataset):
 
 
     def __getitem__(self, index):
-        # self.seq_len = getattr(self, f'seq_len_{self.domain}')
-        # self.label_len = getattr(self, f'label_len_{self.domain}')
-        # self.pred_len = getattr(self, f'pred_len_{self.domain}')
         s_begin = index
         s_end = s_begin + self.seq_len
         r_begin = s_end - self.label_len
         r_end = r_begin + self.label_len + self.pred_len
 
-        # seq_x = getattr(self, f'data_x_{self.domain}')[s_begin:s_end]
-        # seq_y = getattr(self, f'data_y_{self.domain}')[r_begin:r_end]
-        # seq_x_mark = getattr(self, f'data_stamp_{self.domain}')[s_begin:s_end]
-        # seq_y_mark = getattr(self, f'data_stamp_{self.domain}')[r_begin:r_end]        
         seq_x = self.data_x[s_begin:s_end]
         seq_y = self.data_y[r_begin:r_end]
         seq_x_mark = self.data_stamp[s_begin:s_end]
@@ -592,14 +615,11 @@ class Dataset_pv_DKASC(Dataset):
         return (seq_x, seq_y, seq_x_mark, seq_y_mark)
 
     def __len__(self):
-        # return len(getattr(self, f'data_x_{self.domain}')) - self.seq_len - self.pred_len + 1
         return len(self.data_x) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
-        for i in range(5):
-            data[:,:, i] = getattr(self, f'scaler_{self.domain}_{i}').inverse_transform(data[:,:, i])
-        return data
-        # return self.scaler_DKASC_4.inverse_transform(data)
+        ''' active power만 예측하고 검증할 때는 이거만 씀 '''
+        return getattr(self, f'scaler_{self.domain}_Active_Power').inverse_transform(data)
     
     
 class Dataset_pv_DKASC_multi(Dataset):
@@ -840,12 +860,12 @@ class CrossDomain_Dataset(Dataset):
         pv_DKASC = Dataset_pv_DKASC(root_path=source_root_path, flag=flag, size=size,
                                     features=features, data_path=source_data_path, target=target,
                                     scale=scale, timeenc=timeenc, freq=freq, domain='source')
-        pv_DKASC.__read_data__()
+        pv_DKASC.__init__()
         
         pv_GIST = Dataset_pv_GIST(root_path=target_root_path, flag=flag, size=size,
                                   features=features, data_path=target_data_path, target=target,
                                   scale=scale, timeenc=timeenc, freq=freq, domain='target')
-        pv_GIST.__read_data__()
+        pv_GIST.__init__()
         
         self.data_x_source = pv_DKASC.data_x
         self.data_y_source = pv_DKASC.data_y
@@ -870,20 +890,20 @@ class CrossDomain_Dataset(Dataset):
         seq_x_mark_target = self.data_stamp_target[s_begin:s_end]
         seq_y_mark_target = self.data_stamp_target[r_begin:r_end]
         
+        a=seq_x_source.shape
+        b=seq_x_target.shape
+        
         return seq_x_source, seq_y_source, seq_x_mark_source, seq_y_mark_source, seq_x_target, seq_y_target, seq_x_mark_target, seq_y_mark_target
         
 
     def __len__(self):
-        return len(self.data_x_source) - self.seq_len - self.pred_len + 1
+        return len(self.data_x_target) - self.seq_len - self.pred_len + 1
         # TODO: source, target domain의 길이가 다르다. 위의 getitem과 같이 연결지어 len을 어떻게 할지 생각해보자.
         # TODO: 한쪽 길이에 맞추어 epoch 를 맞추는 법도 생각해보자.
 
     def inverse_transform(self, data):
-        source_active_power = getattr(self, f'scaler_{self.domain}_4').inverse_transform(data)
-        target_active_power = getattr(self, f'scaler_{self.domain}_3').inverse_transform(data)
-        # TODO: scaler instance들을 만들 때, 맨뒤는 active power니까 변수 이름을 active power꺼는 숫자가 아니라 이름을 붙여주자.
-        # TODO: 위 같이 read_data에 주석을 써 두었으니, 수정한다면 inverse transform에도 반영될 수 있도록 하자.
-        # TODO: 혹은 active power에 해당하는 index를 고정 시키고 scaler를 만들 때, 역순으로 변수이름을 만들어 사용하는 방법도 있을 것 같다.
+        source_active_power = getattr(self, f'scaler_source_Active_Power').inverse_transform(data)
+        target_active_power = getattr(self, f'scaler_target_Active_Power').inverse_transform(data)
         return source_active_power, target_active_power
         
    
@@ -1044,16 +1064,10 @@ class Dataset_pv_GIST(Dataset):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
-            # setattr(self, f'seq_len_{domain}', 24 * 4 * 4)
-            # setattr(self, f'label_len_{domain}', 24 * 4)
-            # setattr(self, f'pred_len_{domain}', 24 * 4)
             self.seq_len = 24 * 4 * 4
             self.label_len = 24 * 4
             self.pred_len = 24 * 4
         else:
-            # setattr(self, f'seq_len_{domain}', size[0])
-            # setattr(self, f'label_len_{domain}', size[1])
-            # setattr(self, f'pred_len_{domain}', size[2])
             self.seq_len = size[0]
             self.label_len = size[1]
             self.pred_len = size[2]
@@ -1071,14 +1085,46 @@ class Dataset_pv_GIST(Dataset):
 
         self.root_path = root_path
         self.data_path = data_path
-
-        self.__read_data__()
-
-    def __read_data__(self):
-        # Creae scaler for each feature
-        for i in range(4):
+        
+        # Create scaler for each input_channels
+        self.input_channels = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        self.input_channels = self.input_channels + [self.target]
+        for i in self.input_channels:
             setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
+
+        # save preprocessed data
+        processed_data = data_path.split('.')[0] + f'_{flag}.pkl'
+        save_path = os.path.join(root_path,
+                                 'preprocessed',
+                                 f'{self.seq_len}_{self.label_len}_{self.pred_len}')
+        os.makedirs(save_path, exist_ok=True)
+        self.pkl_file = os.path.join(save_path, processed_data)
+        if os.path.exists(self.pkl_file):
+            print(f'Load saved file {self.pkl_file}.')
             
+            with open(self.pkl_file, 'rb') as f:
+                save_data = pickle.load(f)
+                
+                self.data_x = save_data['data_x']
+                self.data_y = save_data['data_y']
+                self.data_stamp = save_data['data_stamp']                  
+        else:
+            print(f'Preprocessing {data_path} for {flag}...')
+
+            self.__read_data__()
+            
+            # load preprocessed data
+            save_data = {
+                'data_x': self.data_x,
+                'data_y': self.data_y,
+                'data_stamp': self.data_stamp
+            }
+            
+            with open(self.pkl_file, 'wb') as f:
+                pickle.dump(save_data, f, pickle.HIGHEST_PROTOCOL)
+        
+
+    def __read_data__(self):            
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
         
@@ -1088,11 +1134,10 @@ class Dataset_pv_GIST(Dataset):
         df_raw.columns: ['date', ...(other features), target feature]
         '''
         cols = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-        # cols = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-        df_raw = df_raw[['date'] + cols + [self.target]]
+        df_raw = df_raw[['date'] + self.input_channels]
         for i in cols: df_raw.astype({i: 'float64'}).dtypes
 
-        # df_stamp = df_raw[['date']][border1:border2]
+        # preprocessing
         df_stamp = pd.DataFrame()
         df_stamp['date'] = df_raw.date
         if self.timeenc == 0:
@@ -1106,18 +1151,18 @@ class Dataset_pv_GIST(Dataset):
             data_stamp = data_stamp.transpose(1, 0)
 
         ## check if there is missing value
-        assert df_raw['Active_Power'].isnull().sum() == 0
-        assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
         assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
         assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
+        assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
         assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
+        assert df_raw['Active_Power'].isnull().sum() == 0
         
         ### get maximum and minimum value of 'Active_Power'
         setattr(self, f'pv_{self.domain}_max', np.max(df_raw['Active_Power'].values))   # save the maximum value of 'Active_Power' as a source/target domain
         setattr(self, f'pv_{self.domain}_min', np.min(df_raw['Active_Power'].values))   # save the minimum value of 'Active_Power' as a source/target domain
         
         num_train = int(len(df_raw) * 0.7)
-        num_test = int(len(df_raw) * 0.2)
+        num_test = int(len(df_raw) * 0.1)
         num_vali = len(df_raw) - num_train - num_test
         border1s = [0, num_train - self.seq_len, len(df_raw) - num_test - self.seq_len]
         border2s = [num_train, num_train + num_vali, len(df_raw)]
@@ -1138,49 +1183,31 @@ class Dataset_pv_GIST(Dataset):
             train_data_values = train_data.values
             df_data_values = df_data.values
             transformed_data = []  # List to store each transformed feature
-            for i in range(4):
-                train_features = train_data_values[:, i].reshape(-1, 1)
-                getattr(self, f'scaler_{self.domain}_{i}').fit(train_features)
+            # for i in range(df_data_values.shape[1]):
+            for idx, val in enumerate(df_raw.columns[1:]):  # except 'date' which is the first column
+                train_features = train_data_values[:, idx].reshape(-1, 1)
+                getattr(self, f'scaler_{self.domain}_{val}').fit(train_features)
                 
-                df_data_features = df_data_values[:, i].reshape(-1, 1)
-                transformed_feature = getattr(self, f'scaler_{self.domain}_{i}').transform(df_data_features)
+                df_data_features = df_data_values[:, idx].reshape(-1, 1)
+                transformed_feature = getattr(self, f'scaler_{self.domain}_{val}').transform(df_data_features)
                 transformed_data.append(transformed_feature)
             data = np.concatenate(transformed_data, axis=1)
         else:
             data = df_data.values
 
-        # setattr(self, f'data_x_{self.domain}', data[border1:border2])
-        # setattr(self, f'data_y_{self.domain}', data[border1:border2])
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
         if self.timeenc == 0:
-            # setattr(self, f'data_stamp_{self.domain}', df_stamp[border1:border2][['month', 'day', 'weekday', 'hour']].values)
             self.data_stamp = df_stamp[border1:border2][['month', 'day', 'weekday', 'hour']].values
         elif self.timeenc == 1:
-            # setattr(self, f'data_stamp_{self.domain}', data_stamp[border1:border2])
             self.data_stamp = data_stamp[border1:border2]
 
-        # # 13. check if there is missing value
-        # assert len(df_raw[df_raw['Active_Power'].isnull()]['Active_Power'].index.tolist()) == 0
-        # assert len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()) == 0
-        # assert len(df_raw[df_raw['Global_Horizontal_Radiation'] < 0].index.tolist()) == 0
-        # assert len(df_raw[df_raw['Diffuse_Horizontal_Radiation'] < 0].index.tolist()) == 0
-        # assert len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()) == 0
-
-
     def __getitem__(self, index):
-        # self.seq_len = getattr(self, f'seq_len_{self.domain}')
-        # self.label_len = getattr(self, f'label_len_{self.domain}')
-        # self.pred_len = getattr(self, f'pred_len_{self.domain}')
         s_begin = index
         s_end = s_begin + self.seq_len
         r_begin = s_end - self.label_len
         r_end = r_begin + self.label_len + self.pred_len
         
-        # seq_x = getattr(self, f'data_x_{self.domain}')[s_begin:s_end]
-        # seq_y = getattr(self, f'data_y_{self.domain}')[r_begin:r_end]
-        # seq_x_mark = getattr(self, f'data_stamp_{self.domain}')[s_begin:s_end]
-        # seq_y_mark = getattr(self, f'data_stamp_{self.domain}')[r_begin:r_end]  
         seq_x = self.data_x[s_begin:s_end]
         seq_y = self.data_y[r_begin:r_end]
         seq_x_mark = self.data_stamp[s_begin:s_end]
@@ -1189,12 +1216,11 @@ class Dataset_pv_GIST(Dataset):
         return seq_x, seq_y, seq_x_mark, seq_y_mark
 
     def __len__(self):
-        # return len(getattr(self, f'data_x_{self.domain}')) - self.seq_len - self.pred_len + 1
         return len(self.data_x) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
-        return getattr(self, f'scaler_{self.domain}_3').inverse_transform(data)
-        # return self.scaler_3.inverse_transform(data)
+        ''' active power만 예측하고 검증할 때는 이거만 씀 '''
+        return getattr(self, f'scaler_{self.domain}_Active_Power').inverse_transform(data)
    
 class Dataset_Pred(Dataset):
     def __init__(self, root_path, flag='pred', size=None,
