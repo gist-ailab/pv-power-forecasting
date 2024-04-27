@@ -3,66 +3,58 @@ if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
 
-# exp_id=debug
-exp_id='231201_T01'
+DATE=$(date +%y%m%d%H)
+model_name=Transformer
+exp_id="${DATE}_FirstSolar_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir ./logs/$exp_id
 fi
 
-random_seed=2021
-model_name=Transformer
+seq_len=336
 
-for pred_len in 96 192 336 720
+root_path_name=./dataset/DKASC/
+data_path_name='79-Site_DKA-M6_A-Phase.csv'
+data_name=pv_DKASC
+
+random_seed=2021
+
+for pred_len in 1 2 4 8 16
 do
+    if [ $pred_len -eq 1 ]; then
+        label_len=0
+    else
+        label_len=$((pred_len/2))
+    fi
   python -u run_longExp.py \
     --gpu 0 \
     --random_seed $random_seed \
     --is_training 1 \
-    --root_path ./dataset/pv/ \
-    --data_path '91-Site_DKA-M9_B-Phase.csv' \
-    --model_id pv_DKASC_$exp_id'_96_'$pred_len \
+    --source_root_path $root_path_name \
+    --target_root_path None \
+    --source_data_path $data_path_name \
+    --target_data_path None \
+    --model_id $exp_id'_'$seq_len'_'$pred_len \
     --model $model_name \
-    --data pv_DKASC \
-    --features M \
-    --seq_len 96 \
-    --label_len 48 \
+    --data $data_name \
+    --features MS \
+    --seq_len $seq_len \
+    --label_len $label_len \
     --pred_len $pred_len \
-    --e_layers 2 \
-    --d_layers 1 \
-    --factor 3 \
+    --e_layers 3 \
+    --d_layers 3 \
     --enc_in 5 \
     --dec_in 5 \
-    --c_out 5 \
+    --c_out 1 \
+    --n_heads 16 \
+    --d_model 128 \
+    --d_ff 256 \
+    --dropout 0.2\
+    --fc_dropout 0.2\
+    --head_dropout 0\
     --des 'Exp' \
-    --itr 1 \
+    --train_epochs 100\
+    --patience 20\
     --exp_id $exp_id \
-    --train_epochs 1 >logs/$exp_id/DKASC_$model_name'_96_'$pred_len.log
+    --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$exp_id/$exp_id'_'$seq_len'_'$pred_len.log 
 done
-
-# for model_name in Autoformer Informer Transformer
-# do 
-# for pred_len in 24 36 48 60
-# do
-#   python -u run_longExp.py \
-#     --random_seed $random_seed \
-#     --is_training 1 \
-#     --root_path ./dataset/ \
-#     --data_path national_illness.csv \
-#     --model_id ili_36_$pred_len \
-#     --model $model_name \
-#     --data custom \
-#     --features M \
-#     --seq_len 36 \
-#     --label_len 18 \
-#     --pred_len $pred_len \
-#     --e_layers 2 \
-#     --d_layers 1 \
-#     --factor 3 \
-#     --enc_in 7 \
-#     --dec_in 7 \
-#     --c_out 7 \
-#     --des 'Exp' \
-#     --itr 1 >logs/LongForecasting/$model_name'_ili_'$pred_len.log
-# done
-# done
