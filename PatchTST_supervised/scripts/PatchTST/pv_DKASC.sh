@@ -1,40 +1,52 @@
+#!/bin/bash
+
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
-model_id_name='240102_1A'
 
-if [ ! -d "./logs/$model_id_name" ]; then
-    mkdir ./logs/$model_id_name
+DATE=$(date +%y%m%d%H)
+model_name=PatchTST
+exp_id="${DATE}_FirstSolar_$model_name"
+
+if [ ! -d "./logs/$exp_id" ]; then
+    mkdir ./logs/$exp_id
 fi
 
 seq_len=336
-model_name=PatchTST
 
-root_path_name=./dataset/pv/
-data_path_name='91-Site_DKA-M9_B-Phase.csv'
+root_path_name=./dataset/DKASC/
+data_path_name='79-Site_DKA-M6_A-Phase.csv'
 data_name=pv_DKASC
 
 random_seed=2021
-# for pred_len in 96 192 336 720
-for pred_len in 24 48 96 192
+
+for pred_len in 1 2 4 8 16
 do
+    if [ $pred_len -eq 1 ]; then
+        label_len=0
+    else
+        label_len=$((pred_len/2))
+    fi
     python -u run_longExp.py \
       --gpu 0 \
       --random_seed $random_seed \
       --is_training 1 \
-      --root_path $root_path_name \
-      --data_path $data_path_name \
-      --model_id $model_id_name'_'$seq_len'_'$pred_len \
+      --source_root_path $root_path_name \
+      --target_root_path None \
+      --source_data_path $data_path_name \
+      --target_data_path None \
+      --model_id $exp_id'_'$seq_len'_'$pred_len \
       --model $model_name \
       --data $data_name \
-      --features M \
+      --features MS \
       --seq_len $seq_len \
+      --label_len $label_len \
       --pred_len $pred_len \
-      --enc_in 21 \
-      --e_layers 3 \
+      --enc_in 5 \
+      --e_layers 5 \
       --n_heads 16 \
       --d_model 128 \
-      --d_ff 256 \
+      --d_ff 512 \
       --dropout 0.2\
       --fc_dropout 0.2\
       --head_dropout 0\
@@ -44,6 +56,6 @@ do
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --exp_id $model_id_name \
-      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$model_id_name/$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
+      --exp_id $exp_id \
+      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$exp_id/$exp_id'_'$seq_len'_'$pred_len.log 
 done
