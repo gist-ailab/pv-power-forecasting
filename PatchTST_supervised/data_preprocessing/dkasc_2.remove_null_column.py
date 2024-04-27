@@ -3,19 +3,22 @@ import numpy as np
 import pandas as pd
 import warnings
 
+from tqdm import tqdm
+
 warnings.filterwarnings('ignore')
 
 
 
 
 if __name__ == '__main__':
-    root_path = './dataset/DKASC_c'
-    save_path = './dataset/DKASC_cp'
+    root_path = './dataset/DKASC_preprocessed_1'
+    save_path = './dataset/DKASC_preprocessed_2'
+    os.makedirs(save_path, exist_ok=True)
     data_path_list = os.listdir(root_path)
     data_path_list.sort()
     print()
     
-    for i, data_path in enumerate(data_path_list):
+    for i, data_path in tqdm(enumerate(data_path_list)):
         # data_path = '0-96-Site_DKA-MasterMeter1.csv'
         df_raw = pd.read_csv(os.path.join(root_path, data_path))
         print('-'*5, data_path, '-'*5)

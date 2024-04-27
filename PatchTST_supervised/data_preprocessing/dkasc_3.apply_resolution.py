@@ -3,14 +3,18 @@ import numpy as np
 import pandas as pd
 import warnings
 
+from tqdm import tqdm
+
 warnings.filterwarnings('ignore')
 
 
 
 
 if __name__ == '__main__':
-    root_path = 'dataset/DKASC_cp'
-    save_path = 'dataset/DKASC_cpr'
+    root_path = './dataset/DKASC_preprocessed_2'
+    save_path = './dataset/DKASC_preprocessed_3'
+    os.makedirs(save_path, exist_ok=True)
+    
     data_path_list = os.listdir(root_path)
     data_path_list.sort()
     
@@ -20,10 +24,10 @@ if __name__ == '__main__':
     
     print()
     
-    for i, data_path in enumerate(data_path_list):
+    for i, data_path in tqdm(enumerate(data_path_list)):
         # data_path = '0-96-Site_DKA-MasterMeter1.csv'
         df_raw = pd.read_csv(os.path.join(root_path, data_path))
-        print('-'*5, data_path, '-'*5)
+        print('\n', '-'*5, data_path, '-'*5)
         
         df_list = df_raw.columns.to_list()
         num_all = len(df_raw)
@@ -47,6 +51,7 @@ if __name__ == '__main__':
             df.loc[j] = new_row
             
             j += (last_idx - first_idx +1)
+            print(j, '/', len(df_raw)-1) 
             if j >= len(df_raw)-1: break
             
             
