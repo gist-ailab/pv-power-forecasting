@@ -63,6 +63,11 @@ class Exp_Main(Exp_Basic):
         return criterion
 
     def train(self, setting, exp_id, resume):
+        def count_parameters(model):
+            return sum(p.numel() for p in model.parameters() if p.requires_grad)
+        count = count_parameters(self.model)
+        print(f'The number of parameters of the model is {count}.')        
+        
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
@@ -168,12 +173,6 @@ class Exp_Main(Exp_Basic):
                             # print(outputs.shape,batch_y.shape)
                             
                 f_dim = -1 if self.args.features == 'MS' else 0
-                
-                if iter_count == 1:
-                    def count_parameters(model):
-                        return sum(p.numel() for p in model.parameters() if p.requires_grad)
-                    count = count_parameters(self.model)
-                    print(f'The number of parameters of the model is {count}.')
                 
                 # loss for source domain
                 source_outputs = source_outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
