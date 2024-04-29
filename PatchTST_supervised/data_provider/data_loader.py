@@ -1091,37 +1091,40 @@ class Dataset_pv_GIST(Dataset):
         self.input_channels = self.input_channels + [self.target]
         for i in self.input_channels:
             setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
-
-        # save preprocessed data
-        processed_data = data_path.split('.')[0] + f'_{flag}.pkl'
-        save_path = os.path.join(root_path,
-                                 'preprocessed',
-                                 f'{self.seq_len}_{self.label_len}_{self.pred_len}')
-        os.makedirs(save_path, exist_ok=True)
-        self.pkl_file = os.path.join(save_path, processed_data)
-        if os.path.exists(self.pkl_file):
-            print(f'Load saved file {self.pkl_file}.')
             
-            with open(self.pkl_file, 'rb') as f:
-                save_data = pickle.load(f)
+        self.__read_data__()
+
+        # ###TODO: 저장해서 쓸 수 있어야 하는데 StandardScaler에서 문제 발생한다.
+        # # save preprocessed data
+        # processed_data = data_path.split('.')[0] + f'_{flag}.pkl'
+        # save_path = os.path.join(root_path,
+        #                          'preprocessed',
+        #                          f'{self.seq_len}_{self.label_len}_{self.pred_len}')
+        # os.makedirs(save_path, exist_ok=True)
+        # self.pkl_file = os.path.join(save_path, processed_data)
+        # if os.path.exists(self.pkl_file):
+        #     print(f'Load saved file {self.pkl_file}.')
+            
+        #     with open(self.pkl_file, 'rb') as f:
+        #         save_data = pickle.load(f)
                 
-                self.data_x = save_data['data_x']
-                self.data_y = save_data['data_y']
-                self.data_stamp = save_data['data_stamp']                  
-        else:
-            print(f'Preprocessing {data_path} for {flag}...')
+        #         self.data_x = save_data['data_x']
+        #         self.data_y = save_data['data_y']
+        #         self.data_stamp = save_data['data_stamp']                  
+        # else:
+        #     print(f'Preprocessing {data_path} for {flag}...')
 
-            self.__read_data__()
+        #     self.__read_data__()
             
-            # load preprocessed data
-            save_data = {
-                'data_x': self.data_x,
-                'data_y': self.data_y,
-                'data_stamp': self.data_stamp
-            }
+        #     # load preprocessed data
+        #     save_data = {
+        #         'data_x': self.data_x,
+        #         'data_y': self.data_y,
+        #         'data_stamp': self.data_stamp
+        #     }
             
-            with open(self.pkl_file, 'wb') as f:
-                pickle.dump(save_data, f, pickle.HIGHEST_PROTOCOL)
+        #     with open(self.pkl_file, 'wb') as f:
+        #         pickle.dump(save_data, f, pickle.HIGHEST_PROTOCOL)
         
 
     def __read_data__(self):            
