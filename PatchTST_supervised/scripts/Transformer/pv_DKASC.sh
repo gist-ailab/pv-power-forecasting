@@ -1,7 +1,4 @@
 # ALL scripts in this file come from Autoformer
-if [ ! -d "./logs" ]; then
-    mkdir ./logs
-fi
 
 DATE=$(date +%y%m%d%H)
 model_name=Transformer

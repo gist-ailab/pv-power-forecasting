@@ -1,9 +1,5 @@
 #!/bin/bash
 
-if [ ! -d "./logs" ]; then
-    mkdir ./logs
-fi
-
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 exp_id="${DATE}_FirstSolar_$model_name"
