@@ -55,7 +55,7 @@ class PatchCDTST_backbone(nn.Module):
             self.head = self.create_pretrain_head(self.head_nf, c_in, fc_dropout) # custom head passed as a partial func with all its kwargs
         elif head_type == 'flatten': 
             self.head = Flatten_Head(self.individual, self.n_vars, self.head_nf, target_window, head_dropout=head_dropout)
-        
+
     
     def forward(self, src_domain, tgt_domain):                                              # z: [bs x nvars x seq_len]
         # norm
@@ -80,6 +80,7 @@ class PatchCDTST_backbone(nn.Module):
         src_z, tgt_z, cross_z = self.backbone(src_domain, tgt_domain)       # z: [bs x nvars x d_model x patch_num]
         src_output = self.head(src_z)                                       # output: [bs x nvars x target_window]
         tgt_output = self.head(tgt_z)                                       # output: [bs x nvars x target_window]
+        
         
         # denorm
         if self.revin: 
@@ -132,7 +133,6 @@ class Flatten_Head(nn.Module):
             x = self.linear(x)
             x = self.dropout(x)
         return x
-        
         
     
     
@@ -273,44 +273,60 @@ class CDTSTEncoder(nn.Module):
                         res_attention=False, n_layers=1, pre_norm=False, store_attn=False):
         super().__init__()
 
-        self.layers = nn.ModuleList([
-            nn.ModuleList([
-                        TSTEncoderLayer(q_len, d_model, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff, norm=norm,
-                                        attn_dropout=attn_dropout, dropout=dropout,
-                                        activation=activation, res_attention=res_attention,
-                                        pre_norm=pre_norm, store_attn=store_attn),
-                        TSTEncoderLayer(q_len, d_model, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff, norm=norm,
-                                        attn_dropout=attn_dropout, dropout=dropout,
-                                        activation=activation, res_attention=res_attention,
-                                        pre_norm=pre_norm, store_attn=store_attn),
-                        CDTSTEncoderLayer(q_len, d_model, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff, norm=norm,
-                                        attn_dropout=attn_dropout, dropout=dropout,
-                                        activation=activation, res_attention=res_attention,
-                                        pre_norm=pre_norm, store_attn=store_attn)
-                        ]) for i in range(n_layers)
-        ])
+        # self.layers = nn.ModuleList([
+        #     nn.ModuleList([
+        #                 TSTEncoderLayer(q_len, d_model, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff, norm=norm,
+        #                                 attn_dropout=attn_dropout, dropout=dropout,
+        #                                 activation=activation, res_attention=res_attention,
+        #                                 pre_norm=pre_norm, store_attn=store_attn),
+        #                 TSTEncoderLayer(q_len, d_model, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff, norm=norm,
+        #                                 attn_dropout=attn_dropout, dropout=dropout,
+        #                                 activation=activation, res_attention=res_attention,
+        #                                 pre_norm=pre_norm, store_attn=store_attn),
+        #                 CDTSTEncoderLayer(q_len, d_model, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff, norm=norm,
+        #                                 attn_dropout=attn_dropout, dropout=dropout,
+        #                                 activation=activation, res_attention=res_attention,
+        #                                 pre_norm=pre_norm, store_attn=store_attn)
+        #                 ])  # TODO: weight sharing 해야하므로 이렇게 되어있으면 안 된다.
+        # ])
+        
+        self.layers = nn.ModuleList([CDTSTEncoderLayer(q_len, d_model, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff, norm=norm,
+                                                       attn_dropout=attn_dropout, dropout=dropout,
+                                                       activation=activation, res_attention=res_attention,
+                                                       pre_norm=pre_norm, store_attn=store_attn) for i in range(n_layers)])
 
         self.res_attention = res_attention
 
     def forward(self, src_s:Tensor, src_t:Tensor, key_padding_mask:Optional[Tensor]=None, attn_mask:Optional[Tensor]=None):
         output_s = src_s
         output_t = src_t
+        output_cd = torch.zeros_like(src_s)
         scores_s = None
         scores_t = None
-        scores_cross = None
+        scores_cd = None
 
+        # if self.res_attention:
+        #     for src_layer, tgt_layer, cross_layer in self.layers:
+        #         output_s, scores_s = src_layer(output_s, prev=scores_s, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+        #         output_t, scores_t = tgt_layer(output_t, prev=scores_t, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+        #         output_cross, scores_cross = cross_layer(output_s, output_t, prev=scores_cross, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+        # else:
+        #     for src_layer, tgt_layer, cross_layer in self.layers:
+        #         output_s = src_layer(output_s, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+        #         output_t = tgt_layer(output_t, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+        #         output_cross = cross_layer(output_s, output_t, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                
         if self.res_attention:
-            for src_layer, tgt_layer, cross_layer in self.layers:
-                output_s, scores_s = src_layer(output_s, prev=scores_s, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
-                output_t, scores_t = tgt_layer(output_t, prev=scores_t, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
-                output_cross, scores_cross = cross_layer(output_s, output_t, prev=scores_cross, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+            for cross_layer in self.layers:
+                output_s, output_t, output_cd, scores_s, scores_t, scores_cd = cross_layer(output_s, output_t, output_cd,
+                                                                                           prev_s=scores_s, prev_t=scores_t, prev_cd=scores_cd,
+                                                                                           key_padding_mask=key_padding_mask, attn_mask=attn_mask)
         else:
-            for src_layer, tgt_layer, cross_layer in self.layers:
-                output_s = src_layer(output_s, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
-                output_t = tgt_layer(output_t, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
-                output_cross = cross_layer(output_s, output_t, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+            for cross_layer in self.layers:
+                output_s, output_t, output_cd = cross_layer(output_s, output_t, output_cd,
+                                                            key_padding_mask=key_padding_mask, attn_mask=attn_mask)
 
-        return output_s, output_t, output_cross
+        return output_s, output_t, output_cd
 
         
         
@@ -358,6 +374,7 @@ class TSTEncoderLayer(nn.Module):
         # Multi-Head attention sublayer
         if self.pre_norm:
             src = self.norm_attn(src)
+            
         ## Multi-Head attention
         if self.res_attention:
             src2, attn, scores = self.self_attn(src, src, src, prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
@@ -365,6 +382,7 @@ class TSTEncoderLayer(nn.Module):
             src2, attn = self.self_attn(src, src, src, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
         if self.store_attn:
             self.attn = attn
+            
         ## Add & Norm
         src = src + self.dropout_attn(src2) # Add: residual connection with residual dropout
         if not self.pre_norm:
@@ -422,20 +440,48 @@ class CDTSTEncoderLayer(nn.Module):
         self.store_attn = store_attn
 
 
-    def forward(self, src_s:Tensor, src_t:Tensor, prev:Optional[Tensor]=None, key_padding_mask:Optional[Tensor]=None, attn_mask:Optional[Tensor]=None) -> Tensor:
-
+    def forward(self, src_s:Tensor, src_t:Tensor, src_cd:Tensor,
+                prev_s:Optional[Tensor]=None, prev_t:Optional[Tensor]=None, prev_cd:Optional[Tensor]=None,
+                key_padding_mask:Optional[Tensor]=None, attn_mask:Optional[Tensor]=None) -> Tensor:
+        # TODO: encoder의 layer 번호를 가져와서 첫 번째 layer인 경우, index를 _MultiheadAttention에 전달해준다.
         # Multi-Head attention sublayer
         if self.pre_norm:
             src_s = self.norm_attn(src_t)
             src_t = self.norm_attn(src_t)
+            src_cd = self.norm_attn(src_cd)
             
+        for i in range(3):
+            if i == 0:
+                if self.res_attention:
+                    output_s, q_s, _, _, scores_s = self.source_target_encoder_layer(src_s, src_s, src_s, src_s, prev_s, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                else:
+                    output_s, q_s, _, _ = self.source_target_encoder_layer(src_s, src_s, src_s, src_s, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                    
+            elif i ==1:
+                if self.res_attention:
+                    output_t, _, v_t, k_t, scores_t = self.source_target_encoder_layer(src_t, src_t, src_t, src_t, prev_t, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                else:
+                    output_t, _, v_t, k_t = self.source_target_encoder_layer(src_t, src_t, src_t, src_t, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+            
+            else:
+                if self.res_attention:
+                    output_cd, _, _, _, scores_cd = self.source_target_encoder_layer(src_cd, q_s, v_t, k_t, prev_cd, key_padding_mask=key_padding_mask, attn_mask=attn_mask, cross_domain=True)
+                else:
+                    output_cd, _, _, _ = self.source_target_encoder_layer(src_cd, q_s, v_t, k_t, key_padding_mask=key_padding_mask, attn_mask=attn_mask, cross_domain=True)
+
+        return output_s, output_t, output_cd, scores_s, scores_t, scores_cd      
+
+        
+    def source_target_encoder_layer(self, src:Tensor, Q:Tensor, K:Tensor, V:Tensor, prev:Optional[Tensor]=None,
+                                    key_padding_mask:Optional[Tensor]=None, attn_mask:Optional[Tensor]=None, cross_domain=False) -> Tensor:
         ## Multi-Head attention
         if self.res_attention:
-            src2, attn, scores = self.self_attn(src_s, src_t, src_t, prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+            src2, attn, q, k, v, scores = self.self_attn(Q, K, V, prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask, cross_domain=cross_domain)
         else:
-            src2, attn = self.self_attn(src_s, src_t, src_t, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+            src2, attn, q, k, v = self.self_attn(Q, K, V, key_padding_mask=key_padding_mask, attn_mask=attn_mask, cross_domain=cross_domain)
         if self.store_attn:
             self.attn = attn
+            
         ## Add & Norm
         src = src + self.dropout_attn(src2) # Add: residual connection with residual dropout
         if not self.pre_norm:
@@ -446,15 +492,16 @@ class CDTSTEncoderLayer(nn.Module):
             src = self.norm_ffn(src)
         ## Position-wise Feed-Forward
         src2 = self.ff(src)
+        
         ## Add & Norm
         src = src + self.dropout_ffn(src2) # Add: residual connection with residual dropout
         if not self.pre_norm:
             src = self.norm_ffn(src)
 
         if self.res_attention:
-            return src, scores
+            return src, q, k, v, scores
         else:
-            return src
+            return src, q, k, v
 
 
 
@@ -485,19 +532,22 @@ class _MultiheadAttention(nn.Module):
 
 
     def forward(self, Q:Tensor, K:Optional[Tensor]=None, V:Optional[Tensor]=None, prev:Optional[Tensor]=None,
-                key_padding_mask:Optional[Tensor]=None, attn_mask:Optional[Tensor]=None):
-
+                key_padding_mask:Optional[Tensor]=None, attn_mask:Optional[Tensor]=None, cross_domain=False):
+        # TODO: layer index를 받아와서 cross_domain에 대한 hidden feature를 0으로 할지 말지 결정해준다.
         bs = Q.size(0)
         if K is None: K = Q
         if V is None: V = Q
-
-        # Linear (+ split in multiple heads)
-        q_s = self.W_Q(Q).view(bs, -1, self.n_heads, self.d_k).transpose(1,2)       # q_s    : [bs x n_heads x max_q_len x d_k]
-        k_s = self.W_K(K).view(bs, -1, self.n_heads, self.d_k).permute(0,2,3,1)     # k_s    : [bs x n_heads x d_k x q_len] - transpose(1,2) + transpose(2,3)
-        v_s = self.W_V(V).view(bs, -1, self.n_heads, self.d_v).transpose(1,2)       # v_s    : [bs x n_heads x q_len x d_v]
-        # TODO: 여기에서 나온 q, k, v를 target, source domain에 맞추어 출력해주서야 한다.
         
-
+        if cross_domain:
+            q_s = Q
+            k_s = K
+            v_s = V
+        else:
+            # Linear (+ split in multiple heads)
+            q_s = self.W_Q(Q).view(bs, -1, self.n_heads, self.d_k).transpose(1,2)       # q_s    : [bs x n_heads x max_q_len x d_k]
+            k_s = self.W_K(K).view(bs, -1, self.n_heads, self.d_k).permute(0,2,3,1)     # k_s    : [bs x n_heads x d_k x q_len] - transpose(1,2) + transpose(2,3)
+            v_s = self.W_V(V).view(bs, -1, self.n_heads, self.d_v).transpose(1,2)       # v_s    : [bs x n_heads x q_len x d_v]
+        
         # Apply Scaled Dot-Product Attention (multiple heads)
         if self.res_attention:
             output, attn_weights, attn_scores = self.sdp_attn(q_s, k_s, v_s, prev=prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
@@ -509,8 +559,8 @@ class _MultiheadAttention(nn.Module):
         output = output.transpose(1, 2).contiguous().view(bs, -1, self.n_heads * self.d_v) # output: [bs x q_len x n_heads * d_v]
         output = self.to_out(output)
 
-        if self.res_attention: return output, attn_weights, attn_scores
-        else: return output, attn_weights
+        if self.res_attention: return output, attn_weights, q_s, k_s, v_s, attn_scores
+        else: return output, attn_weights, q_s, k_s, v_s
 
 
 class _ScaledDotProductAttention(nn.Module):
