@@ -102,8 +102,10 @@ class Model(nn.Module):
             src_domain, tgt_domain, tgt_feat, cross_feat = self.model(src_domain, tgt_domain)
             src_domain = src_domain.permute(0,2,1)      # src_domain: [Batch, Input length, Channel]
             tgt_domain = tgt_domain.permute(0,2,1)      # tgt_domain: [Batch, Input length, Channel]
-            tgt_feat = tgt_feat.permute(0,2,1)          # tgt_feat: [Batch, Input length, Channel]
-            cross_feat = cross_feat.permute(0,2,1)      # cross_feat: [Batch, Input length, Channel]
+            
+            # ### TODO: 여기에서 출력 후, feature 단위에서 mmdloss를 구해야 하는데, 차원을 어떻게 맞추는 것이 맞는지 알아봐야 한다.
+            # tgt_feat = tgt_feat.permute(0,2,1)          # tgt_feat: [Batch, Input length, Channel]
+            # cross_feat = cross_feat.permute(0,2,1)      # cross_feat: [Batch, Input length, Channel]
             
         return src_domain, tgt_domain, tgt_feat, cross_feat
     
