@@ -182,15 +182,22 @@ class Exp_Main(Exp_Basic):
                 
                 if 'CDTST' in self.args.model:
                     # loss for target domain
-                    target_outputs = target_outputs[:, -self.args.pred_len:, f_dim:]
-                    batch_y_t = batch_y_t[:, -self.args.pred_len:, f_dim:].to(self.device)
-                    loss_t = criterion(target_outputs, batch_y_t)
+                    # target_outputs = target_outputs[:, -self.args.pred_len:, f_dim:]
+                    # batch_y_t = batch_y_t[:, -self.args.pred_len:, f_dim:].to(self.device)
+                    # loss_t = criterion(target_outputs, batch_y_t)
+                    t_outputs = target_outputs[:, -self.args.pred_len:, f_dim:]
+                    b_y_t = batch_y_t[:, -self.args.pred_len:, f_dim:].to(self.device)
+                    loss_t = criterion(t_outputs, b_y_t)
+                    
                     # train_loss_t.append(loss_t.item())
                     
                     # loss for cross-domain
-                    target_feat = target_feat[:, -self.args.pred_len:, f_dim:]
-                    cross_feat = cross_feat[:, -self.args.pred_len:, f_dim:]
-                    mmd_loss = cross_criterion(target_feat, cross_feat)
+                    # target_feat = target_feat[:, -self.args.pred_len:, f_dim:]
+                    # cross_feat = cross_feat[:, -self.args.pred_len:, f_dim:]
+                    # mmd_loss = cross_criterion(target_feat, cross_feat)
+                    target_f = target_feat[:, -self.args.pred_len:, f_dim:]
+                    cross_f = cross_feat[:, -self.args.pred_len:, f_dim:]
+                    mmd_loss = cross_criterion(target_f, cross_f)
                     # train_mmd_loss.append(mmd_loss.item())
                     total_loss = loss_s + loss_t + mmd_loss
                 else:
