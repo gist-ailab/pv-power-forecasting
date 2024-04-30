@@ -322,7 +322,7 @@ class Dataset_pv_DKASC(Dataset):
         self.data_path = data_path
 
         self.DATASET_SPLIT_YEAR = {
-            '79-Site_DKA-M6_A-Phase.csv'    : [2009, 2020,  2021, 2021,  2022, 2022],   # 7.0kW, CdTe, Fixed, First-Solar
+            '79-Site_DKA-M6_A-Phase.csv'    : [2009, 2020,  2021, 2022,  2023, 2023],   # 7.0kW, CdTe, Fixed, First-Solar
             '91-Site_DKA-M9_B-Phase.csv'    : [2014, 2020,  2021, 2021,  2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A
             '87-Site_DKA-M9_A+C-Phases.csv' : [2010, 2020,  2021, 2021,  2022, 2022],   # 23.4kW, mono-Si, Tracker: Dual              # 1B
             '78-Site_DKA-M11_3-Phase.csv'   : [2010, 2020,  2021, 2021,  2022, 2022],   # 26.5kW, mono-Si, Tracker: Dual              # 2
@@ -860,12 +860,10 @@ class CrossDomain_Dataset(Dataset):
         pv_DKASC = Dataset_pv_DKASC(root_path=source_root_path, flag=flag, size=size,
                                     features=features, data_path=source_data_path, target=target,
                                     scale=scale, timeenc=timeenc, freq=freq, domain='source')
-        pv_DKASC.__init__()
         
         pv_GIST = Dataset_pv_GIST(root_path=target_root_path, flag=flag, size=size,
                                   features=features, data_path=target_data_path, target=target,
                                   scale=scale, timeenc=timeenc, freq=freq, domain='target')
-        pv_GIST.__init__()
         
         self.data_x_source = pv_DKASC.data_x
         self.data_y_source = pv_DKASC.data_y
