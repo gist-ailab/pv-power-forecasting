@@ -18,7 +18,10 @@ class RBF(nn.Module):
 
     def forward(self, X):
         L2_distances = torch.cdist(X, X) ** 2
-        return torch.exp(-L2_distances[None, ...] / (self.get_bandwidth(L2_distances) * self.bandwidth_multipliers)[:, None, None]).sum(dim=0)
+        # return torch.exp(-L2_distances[None, ...] / (self.get_bandwidth(L2_distances) * self.bandwidth_multipliers)[:, None, None]).sum(dim=0)
+        bandwidth = self.get_bandwidth(L2_distances)
+        bandwidth_multipliers = self.bandwidth_multipliers.to(X.device)
+        return torch.exp(-L2_distances[None, ...] / (bandwidth * bandwidth_multipliers.view(-1, 1, 1))[:, None, None]).sum(dim=0)
 
 
 class MMDLoss(nn.Module):
@@ -29,6 +32,7 @@ class MMDLoss(nn.Module):
 
     def forward(self, X, Y):
         K = self.kernel(torch.vstack([X, Y]))
+        # TODO: K값이 nan으로 출력된다. 이유를 찾아보자.
 
         X_size = X.shape[0]
         XX = K[:X_size, :X_size].mean()
