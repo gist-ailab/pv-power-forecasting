@@ -860,10 +860,12 @@ class CrossDomain_Dataset(Dataset):
         pv_DKASC = Dataset_pv_DKASC(root_path=source_root_path, flag=flag, size=size,
                                     features=features, data_path=source_data_path, target=target,
                                     scale=scale, timeenc=timeenc, freq=freq, domain='source')
+        self.pv_DKASC = pv_DKASC
         
         pv_GIST = Dataset_pv_GIST(root_path=target_root_path, flag=flag, size=size,
                                   features=features, data_path=target_data_path, target=target,
                                   scale=scale, timeenc=timeenc, freq=freq, domain='target')
+        self.pv_GIST = pv_GIST
         
         self.data_x_source = pv_DKASC.data_x
         self.data_y_source = pv_DKASC.data_y
@@ -899,10 +901,13 @@ class CrossDomain_Dataset(Dataset):
         # TODO: source, target domain의 길이가 다르다. 위의 getitem과 같이 연결지어 len을 어떻게 할지 생각해보자.
         # TODO: 한쪽 길이에 맞추어 epoch 를 맞추는 법도 생각해보자.
 
-    def inverse_transform(self, data):
-        source_active_power = getattr(self, f'scaler_source_Active_Power').inverse_transform(data)
-        target_active_power = getattr(self, f'scaler_target_Active_Power').inverse_transform(data)
-        return source_active_power, target_active_power
+    def inverse_transform(self, data, domain='source'):
+        if domain == 'source':
+            source_active_power = self.pv_DKASC.scaler_source_Active_Power.inverse_transform(data)
+            return source_active_power
+        elif domain == 'target':
+            target_active_power = self.pv_GIST.scaler_target_Active_Power.inverse_transform(data)
+            return target_active_power
         
    
 class Dataset_pv_SolarDB(Dataset):
