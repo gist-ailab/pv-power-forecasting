@@ -2,7 +2,7 @@
 
 DATE=$(date +%y%m%d%H)
 model_name=PatchCDTST
-exp_id="${DATE}_FirstSolar_GIST_$model_name"
+exp_id="${DATE}_FirstSolar2GIST_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir ./logs/$exp_id
@@ -32,7 +32,7 @@ do
       --source_root_path $source_root_path \
       --target_root_path $target_root_path \
       --source_data_path $source_data_path_name \
-      --target_data_path $source_data_path_name \
+      --target_data_path $target_data_path_name \
       --model_id $exp_id'_'$seq_len'_'$pred_len \
       --model $model_name \
       --data $data_name \
