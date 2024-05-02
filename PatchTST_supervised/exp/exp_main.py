@@ -351,6 +351,8 @@ class Exp_Main(Exp_Basic):
                 loss_s = criterion(pred_s, gt_s)
                 
                 if 'CDTST' in self.args.model:
+                    total_source_losses.append(loss_s.item())   # append source loss separately
+                    
                     # loss for target domain
                     target_outputs = target_outputs[:, -self.args.pred_len:, f_dim:]
                     batch_y_t = batch_y_t[:, -self.args.pred_len:, f_dim:].to(self.device)
@@ -365,29 +367,28 @@ class Exp_Main(Exp_Basic):
                     gt_t = torch.from_numpy(active_power_gt_np_t).to(self.device)
                     
                     loss_t = criterion(pred_t, gt_t)
+                    total_target_losses.append(loss_t.item())
                     
                     # loss for cross-domain                    
-                    target_f = []
-                    cross_f = []
+                    target_f_list = []
+                    cross_f_list = []
                     # 차원 1은 nvars이고 이건 cross, target이 동일하여 동일 루프에서 사용
                     for i in range(target_feat.size(1)):
-                        target_f_list = flatten(target_feat[:, i, :, :])
-                        cross_f_list = flatten(cross_feat[:, i, :, :])
-                        target_f.append(target_f_list)
-                        cross_f.append(cross_f_list)
-                    mmd_loss = cross_criterion(target_f, cross_f)   # list내에 각 변수 별로 tensor를 구성하여 MMD를 구하는 함수에 넣어 줌.
+                        # extract each variable's feature
+                        target_f = flatten(target_feat[:, i, :, :])
+                        cross_f = flatten(cross_feat[:, i, :, :])
+                        # append each variable's feature to the list
+                        target_f_list.append(target_f)
+                        cross_f_list.append(cross_f)
+                    # mmd loss calculate loss with each variable's feature
+                    mmd_loss = cross_criterion(target_f_list, cross_f_list)
                     
                     total_loss = loss_s + loss_t + mmd_loss
                     
                 else:
                     total_loss = loss_s
-                    
-                
-                total_target_losses.append(loss_t.item())
-                if 'CDTST' in self.args.model:
-                    # train loop에서 early stopping을 위해 source, target loss를 따로 저장
-                    total_losses.append(total_loss.item())
-                    total_source_losses.append(loss_s.item())
+
+                total_losses.append(total_loss.item())                    
         
         self.model.train()
         if 'CDTST' in self.args.model:
