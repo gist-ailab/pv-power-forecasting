@@ -3,8 +3,6 @@ import sys
 import numpy as np
 import pandas as pd
 
-
-
 def wrapup(file_list, save_name):
     df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Weather_Temperature_Celsius', 'Global_Horizontal_Radiation', 'Weather_Relative_Humidity'])
     
@@ -12,7 +10,7 @@ def wrapup(file_list, save_name):
     weather_info.columns = ['spot', 'spot_name', 'date', 'temperature', 'wind_speed', 'precipitation', 'humidity']
     # print(weather_info)
     
-    pv_columns = ['time', 'radiation_horizontal', 'temperature_outdoor', 'radiation_incline', 'temperature_module', 
+    pv_columns = ['time', 'radiation_horizontal', 'temperature_outdoor', 'radiation_incline', 'temperature_module',
                   '1_soccer-field_cumulative_power', '1_soccer-field_hourly_power',
                   '2_student-union_cumulative_power', '2_student-union_hourly_power',
                   '3_center-warehouse_cumulative_power', '3_center-warehouse_hourly_power',
@@ -114,15 +112,50 @@ def wrapup(file_list, save_name):
     
     with open(save_name, 'w') as f:
         df.to_csv(f, index=False)
+
+
+def create_combined_weather_csv(create_path, project_root):
+    weather_data_dir = os.path.join(project_root, 'data/GIST_dataset/weather')
+    weather_csv_files = [f for f in os.listdir(weather_data_dir) if f.endswith('.csv')]
+    weather_csv_files.sort()
+
+    data_frames = []
+    for file in weather_csv_files:
+        file_path = os.path.join(weather_data_dir, file)
+        try:
+            df = pd.read_csv(file_path, encoding='utf-8', skiprows=1, header=None)
+        except UnicodeDecodeError:
+            df = pd.read_csv(file_path, encoding='latin1', skiprows=1, header=None)
+
+        # df = df.reindex(columns=expected_columns)   # Reindex the DataFrame to ensure consistent columns
+        data_frames.append(df)
+    # Concatenate all DataFrames into a single DataFrame
+    combined_df = pd.concat(data_frames, ignore_index=True)
+
+    # Define the column names
+    column_names = ['spot', 'spot_name', 'date', 'temperature', 'wind_direction', 'precipitation', 'humidity']
+
+    # Save the combined DataFrame to a new CSV file
+    combined_df.to_csv(create_path, index=False, header=column_names)
         
 
 if __name__ == '__main__':
-    path = 'dataset/GIST/일보/'
-    file_list = [path + _ for _ in os.listdir(path)]
-    file_list.sort()
-    # print(file_list)
-    
-    wrapup(file_list, 'dataset/GIST/sisuldong.csv')
+    # Get the absolute path of the current file
+    current_file_path = os.path.abspath(__file__)
+
+    # Get the root directory (assuming the root is two levels up from the current file)
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
+
+    pv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV')
+    pv_file_list = [pv_data_dir + _ for _ in os.listdir(pv_data_dir)]
+    pv_file_list.sort()
+
+    # Define the path to save the combined CSV file
+    weather_data = os.path.join(project_root, 'data/GIST_dataset/weather_data.csv')
+    if not os.path.exists(weather_data):
+        create_combined_weather_csv(weather_data, project_root)
+
+    wrapup(pv_file_list, 'dataset/GIST/sisuldong.csv')
     
 
 
