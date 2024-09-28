@@ -3,11 +3,13 @@ import sys
 import numpy as np
 import pandas as pd
 
-def wrapup(file_list, save_name):
+def wrapup(file_list,
+           weather_data,
+           save_name):
     df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Weather_Temperature_Celsius', 'Global_Horizontal_Radiation', 'Weather_Relative_Humidity'])
     
-    weather_info = pd.read_csv('dataset/GIST/GIST_AWS_TIM_2022.csv', encoding='unicode_escape')
-    weather_info.columns = ['spot', 'spot_name', 'date', 'temperature', 'wind_speed', 'precipitation', 'humidity']
+    weather_info = pd.read_csv(weather_data, encoding='unicode_escape')
+    weather_info.columns = ['spot', 'spot_name', 'date', 'temperature', 'wind_direction', 'precipitation', 'humidity']
     # print(weather_info)
     
     pv_columns = ['time', 'radiation_horizontal', 'temperature_outdoor', 'radiation_incline', 'temperature_module',
@@ -137,6 +139,30 @@ def create_combined_weather_csv(create_path, project_root):
 
     # Save the combined DataFrame to a new CSV file
     combined_df.to_csv(create_path, index=False, header=column_names)
+
+def check_new_columns(pv_file_list):
+    previous_elements = set()
+
+    for i, file in enumerate(pv_file_list):
+        df = pd.read_excel(file)
+        third_row = df.iloc[2]
+        if i == 0:
+            previous_elements = set(third_row.dropna().tolist())
+            continue
+        else:
+            current_elements = set(third_row.dropna().tolist())
+            new_elements = current_elements - previous_elements
+            if new_elements == set():
+                continue
+            else:
+                print(f'New elements in {file}: {new_elements}')
+        previous_elements = current_elements
+
+def conver_excel_to_csv(file_path):
+    df = pd.read_excel(file_path)
+    df.to_csv(file_path.replace('.xlsx', '.csv'), index=False)
+
+
         
 
 if __name__ == '__main__':
@@ -147,7 +173,7 @@ if __name__ == '__main__':
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
     pv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV')
-    pv_file_list = [pv_data_dir + _ for _ in os.listdir(pv_data_dir)]
+    pv_file_list = [os.path.join(pv_data_dir, _) for _ in os.listdir(pv_data_dir)]
     pv_file_list.sort()
 
     # Define the path to save the combined CSV file
@@ -155,7 +181,14 @@ if __name__ == '__main__':
     if not os.path.exists(weather_data):
         create_combined_weather_csv(weather_data, project_root)
 
-    wrapup(pv_file_list, 'dataset/GIST/sisuldong.csv')
+    # Check for new columns in the PV data
+    check_new_columns(pv_file_list)
+
+
+
+    wrapup(pv_file_list,
+           weather_data,
+           'dataset/GIST/sisuldong.csv')
     
 
 
