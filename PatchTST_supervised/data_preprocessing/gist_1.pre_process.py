@@ -3,6 +3,8 @@ import sys
 import numpy as np
 import pandas as pd
 
+from tqdm import tqdm
+
 def wrapup(file_list,
            weather_data,
            save_name):
@@ -14,20 +16,21 @@ def wrapup(file_list,
     
     pv_columns = ['time', 'radiation_horizontal', 'temperature_outdoor', 'radiation_incline', 'temperature_module',
                   '1_soccer-field_cumulative_power', '1_soccer-field_hourly_power',
-                  '2_student-union_cumulative_power', '2_student-union_hourly_power',
-                  '3_center-warehouse_cumulative_power', '3_center-warehouse_hourly_power',
-                  '4_undergraduate_cumulative_power', '4_undergraduate_hourly_power',
-                  '5_dasan_cumulative_power', '5_dasan_hourly_power',
-                  '6_sisuldong_cumulative_power', '6_sisuldong_hourly_power',
-                  '7_univC_cumulative_power', '7_univC_hourly_power',
-                  '8_animal-exp_cumulative_power', '8_animal-exp_hourly_power',
-                  '9_main-library_cumulative_power', '9_main-library_hourly_power',
-                  '10_LG-library_cumulative_power', '10_LG-library_hourly_power',
-                  '11_renewable-energy_cumulative_power', '11_renewable-energy_hourly_power',
-                  '12_samsung_cumulative_power', '12_samsung_hourly_power',
-                  '13_junggidong_cumulative_power', '13_junggidong_hourly_power',
-                  '14_industrial-cooperative_cumulative_power', '14_industrial-cooperative_hourly_power',
-                  '15_dormB_cumulative_power', '15_dormB_hourly_power',
+                  '2_student-union(W6)_cumulative_power', '2_student-union(W6)_hourly_power',
+                  '3_center-warehouse(W13)_cumulative_power', '3_center-warehouse(W13)_hourly_power',
+                  '4_dormA(E11)_cumulative_power', '4_dormA(E11)_hourly_power',
+                  '5_dasan(C9)_cumulative_power', '5_dasan(C9)_hourly_power',
+                  '6_sisuldong(W11)_cumulative_power', '6_sisuldong(W11)_hourly_power',
+                  '7_univC(N6)_cumulative_power', '7_univC(N6)_hourly_power',
+                  '8_animal-exp(E2)_cumulative_power', '8_animal-exp(E2)_hourly_power',
+                  '9_main-library(N1)_cumulative_power', '9_main-library(N1)_hourly_power',
+                  '10_LG-library(N2)_cumulative_power', '10_LG-library(N2)_hourly_power',
+                  '11_renewable-energy(C10)_cumulative_power', '11_renewable-energy(C10)_hourly_power',
+                  '12_samsung-env(C7)_cumulative_power', '12_samsung-env(C7)_hourly_power',
+                  '13_GAIA(C11)_cumulative_power', '13_GAIA(C11)_hourly_power',
+                  '14_GTI(E3)_cumulative_power', '14_GTI(E3)_hourly_power',
+                  '15_dormB(E12)_cumulative_power', '15_dormB(E12)_hourly_power',
+                  '16_physics(E8)_cumulative_power', '16_physics(E8)_hourly_power',
                   'daily_load']
     empty_rows = pd.concat([pd.DataFrame(df.columns)]*24, axis=1).T
     empty_rows.columns = df.columns
@@ -143,8 +146,8 @@ def create_combined_weather_csv(create_path, project_root):
 def check_new_columns(pv_file_list):
     previous_elements = set()
 
-    for i, file in enumerate(pv_file_list):
-        df = pd.read_excel(file)
+    for i, file in tqdm(enumerate(pv_file_list), total=len(pv_file_list), desc='Checking for added new columns'):
+        df = pd.read_excel(file, engine='xlrd')
         third_row = df.iloc[2]
         if i == 0:
             previous_elements = set(third_row.dropna().tolist())
@@ -158,9 +161,23 @@ def check_new_columns(pv_file_list):
                 print(f'New elements in {file}: {new_elements}')
         previous_elements = current_elements
 
-def conver_excel_to_csv(file_path):
-    df = pd.read_excel(file_path)
-    df.to_csv(file_path.replace('.xlsx', '.csv'), index=False)
+def conver_excel_to_csv(file_list):
+    for i, xls_file in tqdm(enumerate(file_list), total=len(file_list), desc='Converting Excel to CSV'):
+        df = pd.read_excel(xls_file, engine='xlrd')
+        df = df.drop([0, 1])
+        save_name = xls_file.split('/')[-1].replace('xls', 'csv')
+        save_name = '.'.join(save_name.split('.')[1:])
+        save_dir = xls_file.split('/')[:-2]
+        save_dir.append('daily_PV_csv')
+        save_dir = '/'.join(save_dir)
+        os.makedirs(save_dir, exist_ok=True)
+        save_path = os.path.join(save_dir, save_name)
+        df.to_csv(save_path, index=False)
+    print('Conversion completed!')
+        # pv_file_list[0].split('/')[-1].split('.')[1]
+
+
+
 
 
         
@@ -172,8 +189,8 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    pv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV')
-    pv_file_list = [os.path.join(pv_data_dir, _) for _ in os.listdir(pv_data_dir)]
+    pv_xls_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_xls')
+    pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
     pv_file_list.sort()
 
     # Define the path to save the combined CSV file
@@ -182,7 +199,13 @@ if __name__ == '__main__':
         create_combined_weather_csv(weather_data, project_root)
 
     # Check for new columns in the PV data
-    check_new_columns(pv_file_list)
+    # check_new_columns(pv_file_list)
+
+    conver_excel_to_csv(pv_file_list)
+
+    pv_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')
+    pv_file_list = [os.path.join(pv_csv_data_dir, _) for _ in os.listdir(pv_csv_data_dir)]
+    pv_file_list.sort()
 
 
 
