@@ -19,28 +19,8 @@ def wrapup(file_list, index_of_site,
 
     env_columns = ['time', 'radiation_horizontal', 'temperature_outdoor', 'radiation_incline', 'temperature_module',]
 
-
-    # pv_columns = ['time', 'radiation_horizontal', 'temperature_outdoor', 'radiation_incline', 'temperature_module',
-    #               'Soccer-Field_hourly_power',
-    #               'W06_Student-Union_hourly_power',
-    #               'W13_Centeral-Storage_hourly_power',
-    #               'E11_DormA_hourly_power',
-    #               'C09_Dasan_hourly_power',
-    #               'W11_Facility-Maintenance-Bldg_hourly_power',
-    #               'N06_College-Bldg_hourly_power',
-    #               'E02_Animal-Recource-Center_hourly_power',
-    #               'N01_Central-Library_hourly_power',
-    #               'N02_LG-Library_hourly_power',
-    #               'C10_Renewable-E-Bldg_hourly_power',
-    #               'C07_Samsung-Env-Bldg_hourly_power',
-    #               'C11_GAIA_hourly_power',
-    #               'E03_GTI_hourly_power',
-    #               'E12_DormB_hourly_power',
-    #               'E8_Natural-Science-Bldg_hourly_power',
-    #               'daily_load']
     empty_rows = pd.concat([pd.DataFrame(df.columns)]*24, axis=1).T
     empty_rows.columns = df.columns
-    # df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Weather_Temperature_Celsius', 'Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Relative_Humidity'])
 
     for i, file in tqdm(enumerate(file_list), total=len(file_list), desc=f'Processing {kor_name}. Out of {index_of_site+1}/16'):
         ## read pv info
@@ -66,11 +46,12 @@ def wrapup(file_list, index_of_site,
             continue
 
         # Step 1: 'date'와 'time' 데이터를 추출하여 새로운 DataFrame 생성
-        temp_df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity'])
+        temp_df = pd.DataFrame(
+            columns=['timestep', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
+                     'Weather_Relative_Humidity'])
 
         # Step 2: temp_df에 데이터 채워넣기
-        temp_df['date'] = daily_weather_data['datetime'].dt.date
-        temp_df['time'] = daily_weather_data['datetime'].dt.time
+        temp_df['timestep'] = daily_weather_data['datetime']
         temp_df['Active_Power'] = daily_pv_data[kor_name]
         temp_df['Global_Horizontal_Radiation'] = daily_pv_data['radiation_horizontal']
         temp_df['Weather_Temperature_Celsius'] = daily_weather_data['temperature']
@@ -236,7 +217,8 @@ if __name__ == '__main__':
         '중앙연구기기센터': 'C11_GAIA',
         '산업협력관': 'E03_GTI',
         '학사B동': 'E12_DormB',
-        '자연과학동': 'E8_Natural-Science-Bldg'}
+        '자연과학동': 'E8_Natural-Science-Bldg'
+    }
 
     for i, (kor_name, eng_name) in enumerate(site_dict.items()):
         wrapup(pv_file_list, i,
