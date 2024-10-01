@@ -6,53 +6,20 @@ import pandas as pd
 from tqdm import tqdm
 from copy import deepcopy
 
-def wrapup(file_list,
+def wrapup(file_list, index_of_site,
+           kor_name, eng_name,
            weather_data,
-           save_name):
-    df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Weather_Temperature_Celsius', 'Global_Horizontal_Radiation', 'Weather_Relative_Humidity'])
+           save_dir):
+    df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity'])
     
     weather_info = pd.read_csv(weather_data, encoding='unicode_escape')
     weather_info.columns = ['datetime', 'temperature', 'wind_direction', 'precipitation', 'humidity']
+    weather_info['datetime'] = pd.to_datetime(weather_info['datetime'])
     # print(weather_info)
 
-    '''
-    pv_columns = ['time', 'radiation_horizontal', 'temperature_outdoor', 'radiation_incline', 'temperature_module',
-                  '1_soccer-field_hourly_power',
-                  '2_student-union(W6)_hourly_power',
-                  '3_center-warehouse(W13)_hourly_power',
-                  '4_dormA(E11)_hourly_power',
-                  '5_dasan(C9)_hourly_power',
-                  '6_sisuldong(W11)_hourly_power',
-                  '7_univC(N6)_hourly_power',
-                  '8_animal-exp(E2)_hourly_power',
-                  '9_main-library(N1)_hourly_power',
-                  '10_LG-library(N2)_hourly_power',
-                  '11_renewable-energy(C10)_hourly_power',
-                  '12_samsung-env(C7)_hourly_power',
-                  '13_GAIA(C11)_hourly_power',
-                  '14_GTI(E3)_hourly_power',
-                  '15_dormB(E12)_hourly_power',
-                  '16_physics(E8)_hourly_power',
-                  'daily_load']
-    '''
     env_columns = ['time', 'radiation_horizontal', 'temperature_outdoor', 'radiation_incline', 'temperature_module',]
-    site_dict = {
-        '축구장': 'Soccer-Field',
-        '학생회관': 'W06_Student-Union',
-        '중앙창고': 'W13_Centeral-Storage',
-        '학사과정': 'E11_DormA',
-        '다산빌딩': 'C09_Dasan',
-        '시설관리동': 'W11_Facility-Maintenance-Bldg',
-        '대학C동': 'N06_College-Bldg',
-        '동물실험동': 'E02_Animal-Recource-Center',
-        '중앙도서관': 'N01_Central-Library',
-        'LG도서관': 'N02_LG-Library',
-        '신재생에너지동': 'C10_Renewable-E-Bldg',
-        '삼성환경동': 'C07_Samsung-Env-Bldg',
-        '중앙연구기기센터': 'C11_GAIA',
-        '산업협력관': 'E03_GTI',
-        '학사B동': 'E12_DormB',
-        '자연과학동': 'E8_Natural-Science-Bldg'}
+
+
     # pv_columns = ['time', 'radiation_horizontal', 'temperature_outdoor', 'radiation_incline', 'temperature_module',
     #               'Soccer-Field_hourly_power',
     #               'W06_Student-Union_hourly_power',
@@ -74,89 +41,49 @@ def wrapup(file_list,
     empty_rows = pd.concat([pd.DataFrame(df.columns)]*24, axis=1).T
     empty_rows.columns = df.columns
     # df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Weather_Temperature_Celsius', 'Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Relative_Humidity'])
-    
-    for i, file in enumerate(file_list):
+
+    for i, file in tqdm(enumerate(file_list), total=len(file_list), desc=f'Processing {kor_name}. Out of {index_of_site+1}/16'):
         ## read pv info
-        pv_info = pd.read_csv(file)
-        pv_info.columns.values[:len(env_columns)] = env_columns
+        daily_pv_data = pd.read_csv(file)
+        daily_pv_data.columns = daily_pv_data.iloc[0]
+        daily_pv_data.columns.values[:len(env_columns)] = env_columns
+        daily_pv_data = daily_pv_data.drop([0, 1, 2])
+        daily_pv_data = daily_pv_data.reset_index(drop=True)
+
+        if kor_name not in daily_pv_data.columns:
+            # print(f'{kor_name} is not in the columns. Skipping...')
+            continue
         
         ## get date
         pv_date = file.split('_')[-2]
-        weather_data = weather_info[weather_info['datetime'].str.contains(pv_date)]
-        weather_data = weather_data.reset_index(drop=True)
+        pv_date = pd.to_datetime(pv_date).date()
+        daily_weather_data = weather_info[weather_info['datetime'].dt.date == pv_date]
+        daily_weather_data = daily_weather_data.reset_index(drop=True)
 
+        # Check if there is no weather data for the given date
+        if daily_weather_data.empty:
+            print(f'No weather data for {pv_date}. Skipping...')
+            continue
 
-        # weather_info['date'].str.contains(pv_date)
-        if pv_date == '2024-09-25': continue
-                
-        ## check if the time is correct
-        pv_time = [_time.split(' ')[0] for _time in pv_info.iloc[3:27]['time'].values]
-        if i == 0:
-            weather_time = ['00']
-            weather_time.extend([_time.split(' ')[1].split(':')[0] for _time in weather_data['date'].values])
-            weather_data = pd.concat([pd.DataFrame({
-                'date': f'{pv_date} 00:00',
-                'spot': 783,
-                'spot_name': 'GIST',
-                'humidity': weather_data.loc[0, 'humidity'],                
-            }, index=[0]), weather_data], axis=0)
-            weather_data = weather_data.reset_index(drop=True)
+        # Step 1: 'date'와 'time' 데이터를 추출하여 새로운 DataFrame 생성
+        temp_df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity'])
+
+        # Step 2: temp_df에 데이터 채워넣기
+        temp_df['date'] = daily_weather_data['datetime'].dt.date
+        temp_df['time'] = daily_weather_data['datetime'].dt.time
+        temp_df['Active_Power'] = daily_pv_data[kor_name]
+        temp_df['Global_Horizontal_Radiation'] = daily_pv_data['radiation_horizontal']
+        temp_df['Weather_Temperature_Celsius'] = daily_weather_data['temperature']
+        temp_df['Weather_Relative_Humidity'] = daily_weather_data['humidity']
+
+        # Step 3: DataFrame 결합 (concat)
+        if df.empty:
+            df = deepcopy(temp_df)
         else:
-            weather_time = [_time.split(' ')[1].split(':')[0] for _time in weather_data['date'].values]
-        
-        ## handling the missing humidity data. 앞에 있는 값을 그대로 가져옴
-        if weather_data['humidity'].isnull().sum():
-            missing_idx = weather_data[weather_data['humidity'].isnull()].index
-            for idx in missing_idx:
-                weather_data.loc[idx, 'humidity'] = weather_data.loc[idx-1, 'humidity']
-        
-        ## handling the missing weather data
-        missing_time = list(set(pv_time) - set(weather_time))
-        missing_time.sort()
-        
-        for m_time in missing_time:
-            m_time = int(m_time)
-            ## forward filling
-            tmp1 = weather_data.loc[weather_data.index < m_time]
-            tmp2 = weather_data.loc[weather_data.index >= m_time]
-            weather_data = pd.concat([tmp1, pd.DataFrame({
-                'date': f'{pv_date} {str(m_time).zfill(2)}:00',
-                'spot': 783,
-                'spot_name': 'GIST',
-                'humidity': weather_data.loc[m_time-1, 'humidity'],                
-            }, index=[m_time])], axis=0)
-            weather_data = pd.concat([weather_data, tmp2], axis=0)
-            weather_data = weather_data.reset_index(drop=True)
-        
-        
-        assert len(pv_time) == len(weather_data)
-        
-        ## add empty rows for 24 hours
-        df = pd.concat([df, empty_rows], axis=0)
-        df = df.reset_index(drop=True)
-        
-        ## add data
-        df.loc[24*i:24*(i+1)-1,'timestamp']                     = [pv_date + ' ' + str(i).zfill(2) + ':00' for i in range(24)]
-        df.loc[24*i:24*(i+1)-1,'date']                          = pv_date
-        df.loc[24*i:24*(i+1)-1,'time']                          = [str(i).zfill(2) + ':00' for i in range(24)]
-        df.loc[24*i:24*(i+1)-1,'Active_Power']                  = pv_info.iloc[5:29]['6_sisuldong_hourly_power'].values
-        df.loc[24*i:24*(i+1)-1,'Weather_Temperature_Celsius']   = pv_info.iloc[5:29]['temperature_outdoor'].values
-        df.loc[24*i:24*(i+1)-1,'Global_Horizontal_Radiation']   = pv_info.iloc[5:29]['radiation_horizontal'].values
-        # df.loc[24*i:24*(i+1)-1,'Diffuse_Horizontal_Radiation']  = pv_info.iloc[5:29]['radiation_incline'].values
-        df.loc[24*i:24*(i+1)-1,'Weather_Relative_Humidity']     = weather_data['humidity'].values
-            
-    
-    df.drop(['date', 'time'], axis=1, inplace=True)
-    
-    for i, column in enumerate(df.columns):
-        if column == 'timestamp': continue
-        missing_indices = df[df[column] == '-'].index.tolist()
-        df.loc[missing_indices, column] = np.nan
-        
-        df[column] = pd.to_numeric(df[column], errors='coerce')
-        df[column] = df[column].interpolate()
-    
-    with open(save_name, 'w') as f:
+            df = pd.concat([df, temp_df], ignore_index=True)
+
+    save_path = os.path.join(save_dir, f'{eng_name}.csv')
+    with open(save_path, 'w') as f:
         df.to_csv(f, index=False)
 
 
@@ -182,9 +109,7 @@ def create_combined_weather_csv(create_path, project_root):
     # Define the column names the add
     column_names = ['datetime', 'temperature', 'wind_direction', 'precipitation', 'humidity']
     combined_df.columns = column_names
-
-    # 3번째 컬럼을 datetime 형식으로 변환 (시간 관련 처리를 위해)
-    combined_df['datetime'] = pd.to_datetime(combined_df.iloc[:, 0])
+    combined_df['datetime'] = pd.to_datetime(combined_df.iloc[:, 0])    # 3번째 컬럼을 datetime 형식으로 변환 (시간 관련 처리를 위해)
 
     # Step 1: datetime을 인덱스로 설정하고 1시간 단위로 리샘플링
     combined_df.set_index('datetime', inplace=True)
@@ -193,6 +118,7 @@ def create_combined_weather_csv(create_path, project_root):
     # Step 3: 1시간이 빠진 경우 앞뒤 값의 평균으로 채우기. 단일 결측값에 대해 선형 보간을 사용하여 평균값으로 채움
     filled_values = df_resampled[df_resampled.isna()]  # 보간 전 결측값 기록
     df_resampled.interpolate(method='linear', inplace=True)
+
     # Step 4: 2시간 이상 연속 결측값이 있던 날짜는 삭제
     # 결측값이 2시간 이상 연속되면 해당 날짜를 제거
     mask = df_resampled.isna().astype(int).groupby(df_resampled.index.floor('D')).sum() >= 2
@@ -201,16 +127,15 @@ def create_combined_weather_csv(create_path, project_root):
     # Step 4: 해당 날짜들을 제거
     df_cleaned = df_resampled[~df_resampled.index.floor('D').isin(dates_to_remove)]
 
-    # Step 5: 보간된 날짜 및 시간과 제거된 날짜를 로그로 저장
-    with open('log_filled_and_removed.txt', 'w') as log_file:
-        log_file.write("===== 보간된 날짜 및 시간 =====\n")
-        filled_times = filled_values.index
-        for time in filled_times:
-            log_file.write(f"{time}\n")
-
-        log_file.write("\n===== 제거된 날짜 =====\n")
-        for date in dates_to_remove:
-            log_file.write(f"{date}\n")
+    # # Check for missing dates
+    # unique_dates = pd.to_datetime(df_cleaned.index.date).unique()
+    # missing_dates = pd.date_range(start=unique_dates[0], end=unique_dates[-1]).difference(unique_dates)
+    # print(f'Missing dates: {missing_dates}') if missing_dates else print('No missing dates')
+    # # Check for missing hours
+    # full_time_range = pd.date_range(start=df_cleaned.index.min(), end=df_cleaned.index.max(), freq='h')
+    # actual_times = df_cleaned.index
+    # missing_times = full_time_range.difference(actual_times)
+    # print(f'Missing times: {missing_times}') if missing_times else print('No missing times')
 
     # Save the combined DataFrame to a new CSV file
     df_cleaned.to_csv(create_path, index=True)
@@ -295,9 +220,29 @@ if __name__ == '__main__':
     pv_file_list = [os.path.join(pv_csv_data_dir, _) for _ in os.listdir(pv_csv_data_dir)]
     pv_file_list.sort()
 
-    wrapup(pv_file_list,
-           weather_data,
-           'dataset/GIST/sisuldong.csv')
+    site_dict = {
+        '축구장': 'Soccer-Field',
+        '학생회관': 'W06_Student-Union',
+        '중앙창고': 'W13_Centeral-Storage',
+        '학사과정': 'E11_DormA',
+        '다산빌딩': 'C09_Dasan',
+        '시설관리동': 'W11_Facility-Maintenance-Bldg',
+        '대학C동': 'N06_College-Bldg',
+        '동물실험동': 'E02_Animal-Recource-Center',
+        '중앙도서관': 'N01_Central-Library',
+        'LG도서관': 'N02_LG-Library',
+        '신재생에너지동': 'C10_Renewable-E-Bldg',
+        '삼성환경동': 'C07_Samsung-Env-Bldg',
+        '중앙연구기기센터': 'C11_GAIA',
+        '산업협력관': 'E03_GTI',
+        '학사B동': 'E12_DormB',
+        '자연과학동': 'E8_Natural-Science-Bldg'}
+
+    for i, (kor_name, eng_name) in enumerate(site_dict.items()):
+        wrapup(pv_file_list, i,
+               kor_name, eng_name,
+               weather_data,
+               os.path.join(project_root, 'data/GIST_dataset'))
     
 
 
