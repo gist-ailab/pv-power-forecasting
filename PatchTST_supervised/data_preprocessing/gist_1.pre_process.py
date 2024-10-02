@@ -9,7 +9,7 @@ from copy import deepcopy
 def wrapup(file_list, index_of_site,
            kor_name, eng_name,
            weather_data,
-           save_dir):
+           save_dir, log_file_path):
     df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity'])
     
     weather_info = pd.read_csv(weather_data, encoding='unicode_escape')
@@ -31,9 +31,16 @@ def wrapup(file_list, index_of_site,
         daily_pv_data = daily_pv_data.reset_index(drop=True)
 
         if kor_name not in daily_pv_data.columns:
-            # print(f'{kor_name} is not in the columns. Skipping...')
             continue
-        
+
+        columns_to_keep = daily_pv_data.columns[:5].tolist()  # 첫 5개의 영문 컬럼 유지
+        columns_to_keep.append(kor_name)  # kor_name 컬럼 유지
+        # 나머지 컬럼 삭제
+        daily_pv_data = daily_pv_data[columns_to_keep]
+
+        # 결측치 처리:'-' 또는 빈 값을 NaN으로 변환
+        daily_pv_data = daily_pv_data.map(lambda x: np.nan if x == '-' else x)
+
         ## get date
         pv_date = file.split('_')[-2]
         pv_date = pd.to_datetime(pv_date).date()
@@ -42,7 +49,36 @@ def wrapup(file_list, index_of_site,
 
         # Check if there is no weather data for the given date
         if daily_weather_data.empty:
-            print(f'No weather data for {pv_date}. Skipping...')
+            with open(log_file_path, 'a') as log_file:
+                log_file.write(f'No weather data for {pv_date}. Skipping...')
+            continue
+
+        # Step 1: daily_pv_data에 있는 결측치 처리
+        flag = False
+        for column in daily_pv_data.columns:
+            missing_values_count = daily_pv_data[column].isnull().sum()
+            if missing_values_count == 1:
+                # 첫 번째 값이 NaN일 경우: 이후 값으로 채움
+                if pd.isna(daily_pv_data[column].iloc[0]):
+                    daily_pv_data[column].ffill()
+
+                # 마지막 값이 NaN일 경우: 이전 값으로 채움
+                elif daily_pv_data[column].iloc[-1] is np.nan:
+                    daily_pv_data[column].bfill()
+
+                else:   # 결측치가 중간에 있는 경우: 앞뒤 값의 평균으로 채움
+                    ffill_values = daily_pv_data[column].ffill()
+                    bfill_values = daily_pv_data[column].bfill()
+                    daily_pv_data[column] = (ffill_values + bfill_values) / 2
+
+            elif missing_values_count >= 2:
+                # 결측치가 2개 이상인 경우: 해당 날을 스킵
+                with open(log_file_path, 'a') as log_file:
+                    log_file.write(f"Skipping {pv_date} due to too many missing values in {column}\n")
+                flag = True
+                break
+
+        if flag:
             continue
 
         # Step 1: 'date'와 'time' 데이터를 추출하여 새로운 DataFrame 생성
@@ -154,10 +190,8 @@ def convert_excel_to_hourly_csv(file_list):
         columns_to_drop = [i for i in range(start_column, df.shape[1]) if (i - start_column) % 2 == 0]
         df.drop(df.columns[columns_to_drop], axis=1, inplace=True)
 
-        # 맨 마지막 행에 있는 하루 동안 총 발전량은 제거
-        last_row_value = df.iloc[-1, 0]
-        if last_row_value != '23 시':
-            df = df.drop(df.index[-1])
+        last_valid_row = df[df.iloc[:, 0] == '23 시'].index  # '23 시'가 있는 행의 인덱스를 찾음
+        df = df.iloc[:last_valid_row[-1]-1]  # '23 시'가 있는 행까지만 유지, 그 이후는 제거
 
         save_name = xls_file.split('/')[-1].replace('xls', 'csv')
         save_name = '.'.join(save_name.split('.')[1:])
@@ -168,12 +202,6 @@ def convert_excel_to_hourly_csv(file_list):
         save_path = os.path.join(save_dir, save_name)
         df.to_csv(save_path, index=False)
     print('Conversion completed!')
-        # pv_file_list[0].split('/')[-1].split('.')[1]
-
-
-
-
-
 
 
 if __name__ == '__main__':
@@ -181,7 +209,7 @@ if __name__ == '__main__':
     current_file_path = os.path.abspath(__file__)
 
     # Get the root directory (assuming the root is two levels up from the current file)
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
+    project_root = os.path.dirname(os.path.dirname(current_file_path))
 
     pv_xls_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_xls')
     pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
@@ -220,11 +248,13 @@ if __name__ == '__main__':
         '자연과학동': 'E8_Natural-Science-Bldg'
     }
 
+    log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
     for i, (kor_name, eng_name) in enumerate(site_dict.items()):
         wrapup(pv_file_list, i,
                kor_name, eng_name,
                weather_data,
-               os.path.join(project_root, 'data/GIST_dataset'))
+               os.path.join(project_root, 'data/GIST_dataset'),
+               log_file_path)
     
 
 
