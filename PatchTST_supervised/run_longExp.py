@@ -15,15 +15,16 @@ if __name__ == '__main__':
     # basic config
     parser.add_argument('--is_training', type=int, default=1, help='status')
     parser.add_argument('--model_id', type=str, default='test', help='model id')
-    parser.add_argument('--model', type=str, default='Autoformer',
+    parser.add_argument('--model', type=str, default='PatchTST',
                         help='model name, options: [Autoformer, Informer, Transformer, DLinear, NLinear, Linear, PatchTST, PatchCDTST, Naive_repeat, Arima]')
 
     # data loader
-    parser.add_argument('--data', type=str, default='CrossDomain', help='dataset type')
-    parser.add_argument('--source_root_path', type=str, default='./data/DKASC/', help='root path of the source domain data file')
-    parser.add_argument('--target_root_path', type=str, default='./data/GIST_dataset/', help='root path of the target domain data file')
-    parser.add_argument('--source_data_path', type=str, default='91-Site_DKA-M9_B-Phase.csv', help='source domain data file')
-    parser.add_argument('--target_data_path', type=str, default='GIST_sisuldong.csv', help='target domain data file')
+    parser.add_argument('--data', type=str, default='GIST', help='dataset type. ex: DKASC, GIST')
+    # parser.add_argument('--root_path', type=str, default='./data/DKASC/', help='root path of the source domain data file')
+    parser.add_argument('--root_path', type=str, default='./data/GIST_dataset/',
+                        help='root path of the source domain data file')
+    parser.add_argument('--data_path', type=str, default='GIST_sisuldong.csv',
+                        help='source domain data file')
     parser.add_argument('--features', type=str, default='MS',
                         help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
     parser.add_argument('--target', type=str, default='Active_Power', help='target feature in S or MS task')
@@ -32,9 +33,9 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
 
     # forecasting task
-    parser.add_argument('--seq_len', type=int, default=96, help='input sequence length')
-    parser.add_argument('--label_len', type=int, default=48, help='start token length')
-    parser.add_argument('--pred_len', type=int, default=96, help='prediction sequence length')
+    parser.add_argument('--seq_len', type=int, default=336, help='input sequence length')
+    parser.add_argument('--label_len', type=int, default=48, help='start token length') # decoder 있는 모델에서 사용
+    parser.add_argument('--pred_len', type=int, default=8, help='prediction sequence length')
 
 
     # DLinear
@@ -100,9 +101,7 @@ if __name__ == '__main__':
     parser.add_argument('--use_multi_gpu', action='store_true', help='use multiple gpus', default=False)
     parser.add_argument('--devices', type=str, default='0,1,2,3', help='device ids of multile gpus')
     parser.add_argument('--test_flop', action='store_true', default=False, help='See utils/tools for usage')
-    
-    ## HS
-    parser.add_argument('--exp_id', type=str, default='debug', help='exp_id')
+
     parser.add_argument('--resume', action='store_true', default=False, help='resume')
 
     args = parser.parse_args()
@@ -149,14 +148,14 @@ if __name__ == '__main__':
 
             exp = Exp(args)  # set experiments
             print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-            exp.train(setting, args.exp_id, args.resume)
+            exp.train(setting, args.resume)
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-            exp.test(setting, args.exp_id)
+            exp.test(setting)
 
             if args.do_predict:
                 print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-                exp.predict(setting, args.exp_id, True)
+                exp.predict(setting, True)
 
             torch.cuda.empty_cache()
     else:
@@ -180,6 +179,6 @@ if __name__ == '__main__':
 
         exp = Exp(args)  # set experiments
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-        exp.test(setting, args.exp_id, args.checkpoints, test=1)
+        exp.test(setting, args.checkpoints, test=1)
         torch.cuda.empty_cache()
         
