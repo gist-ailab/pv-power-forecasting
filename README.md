@@ -22,15 +22,32 @@ Though you can follow the instructions from the original PatchTST repo, we provi
 
 2. Install requirements. ```pip install -r requirements.txt```
 
-2. Download data. You can download all the datasets from [Autoformer](https://drive.google.com/drive/folders/1ZOYpTUa82_jCcxIdTmyr0LXQfvaM9vIy). Create a seperate folder ```./dataset``` and put all the csv files in the directory.
+3. Download data (Please tell us if you need the data.).
+4. Put the data in the ```./data``` directory.  
+   The directory structure should be as follows:
+   ```
+    ./data
+    ├── DKASC_AliceSprings
+    │   ├── CSV file 01
+    │   ├── CSV file 02
+    │   └── ...
+    ├── GIST_dataset
+    │   ├── CSV file 01
+    │   ├── CSV file 02
+    │   └── ...
+   
+   ```
+   The detailed information about the data preprocessing is in the `./data_preprocessing/DATA_PREPROCESSING.md` .
 
-3. Training. All the scripts are in the directory ```./scripts/PatchTST```. The default model is PatchTST/42. For example, if you want to get the multivariate forecasting results for weather dataset, just run the following command, and you can open ```./result.txt``` to see the results once the training is done:
-```
-sh ./scripts/PatchTST/weather.sh
-```
+5. Run `./run_longExp.py` for a single experiment.  
+   You can adjust the hyperparameters in the `./run_longExp.py` file.  
+   You can adjust the hyperparameters based on your needs (e.g. different patch length, different look-back windows, prediction lengths etc.). We also provide codes for the baseline models.
 
-You can adjust the hyperparameters based on your needs (e.g. different patch length, different look-back windows and prediction lengths.). We also provide codes for the baseline models.
-
+6. (Optional) If you want to run experiments on sequentially, you can use the bash files on `./scripts/PatchTST` directory.  
+   For example, if you want to run a single site of DKASC experiment (`79-Site_DKA-M6_A-Phase.csv`) with changing the prediction length, you can run the following command:  
+   ```
+   sh ./scripts/PatchTST/DKASC_single.sh
+   ``` 
 
 
 ## Acknowledgement
@@ -38,6 +55,8 @@ You can adjust the hyperparameters based on your needs (e.g. different patch len
 We appreciate the following github repo very much for the valuable code base and datasets:
 
 https://github.com/yuqinie98/PatchTST
+
+https://dkasolarcentre.com.au/
 
 ## Contact
 
@@ -52,4 +71,3 @@ If you find this repo useful in your research, please consider citing our paper 
 adding soon
 }
 ```
-
