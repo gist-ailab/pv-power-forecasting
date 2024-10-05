@@ -1,0 +1,9 @@
+matplotlib
+numpy
+opencv-python
+openpyxl
+pandas
+pillow
+scikit-learn
+tqdm
+xlrd

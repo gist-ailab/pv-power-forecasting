@@ -467,11 +467,11 @@ $RECYCLE.BIN/
 
 
 PatchTST_supervised/dataset/*
-PatchTST_supervised/checkpoints/*
+checkpoints/*
 PatchTST_supervised/checkpoints_*/*
-PatchTST_supervised/results/*
+results/*
 PatchTST_supervised/results_*/*
-PatchTST_supervised/test_results/*
+test_results/*
 PatchTST_supervised/test_results_*/*
 PatchTST_supervised/result.txt
 PatchTST_supervised/result*.txt
