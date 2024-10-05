@@ -16,8 +16,7 @@ data_name=DKASC_single
 
 random_seed=2021
 
-#for pred_len in 1 2 4 8 16
-for pred_len in 1 2 4 8
+for pred_len in 1 2 4 8 16
 do
     if [ $pred_len -eq 1 ]; then
         label_len=0
