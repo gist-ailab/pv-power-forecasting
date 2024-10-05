@@ -39,9 +39,8 @@ Though you can follow the instructions from the original PatchTST repo, we provi
    ```
    The detailed information about the data preprocessing is in the `./data_preprocessing/DATA_PREPROCESSING.md` .
 
-5. Run `./run_longExp.py` for a single experiment.  
-   You can adjust the hyperparameters in the `./run_longExp.py` file.  
-   You can adjust the hyperparameters based on your needs (e.g. different patch length, different look-back windows, prediction lengths etc.). We also provide codes for the baseline models.
+5. Run `./run_longExp.py` for a single experiment.   
+   You can adjust the hyperparameters based on your needs (e.g. different patch length, different look-back windows, prediction lengths etc.).
 
 6. (Optional) If you want to run experiments on sequentially, you can use the bash files on `./scripts/PatchTST` directory.  
    For example, if you want to run a single site of DKASC experiment (`79-Site_DKA-M6_A-Phase.csv`) with changing the prediction length, you can run the following command:  
