@@ -760,7 +760,30 @@ class Dataset_GIST(Dataset):
             self.__preprocess_and_save_data__()
             self.__load_preprocessed_data__()
 
-        
+    def __load_preprocessed_data__(self):
+        # preprocessed 데이터셋 불러오기
+        if self.flag == 'train':
+            self.data_frames = pd.read_pickle(self.train_file)
+
+        self.LOCATIONS = {
+            'C07_Samsung-Env-Bldg.csv' : 0,
+            'C09_Dasan.csv' : 1,
+            'C10_Renewable-E-Bldg.csv' : 2,
+            'C11_GAIA.csv ' : 3,
+            'E02_Animal-Recource-Center.csv' : 4,
+            'E03_GTI.csv'   : 5,
+            'E08_Natural-Science-Bldg.csv' : 6,
+            'E11_DormA.csv' : 7,
+            'E12_DormB.csv' : 8,
+            'N01_Central-Library.csv'   : 9,
+            'N02_LG-Library.csv' : 10,
+            'N06_College-Bldg.csv' : 11,
+            'W06_Student-Union.csv' : 12,
+            'W11_Facility-Maintenance-Bldg.csv' : 13,   
+            'W13_Centeral-Storage.csv' : 14,
+            'Soccer-Field.csv'  : 15,
+        }
+
     def __preprocess_and_save_data__(self):  
 
         train_data_frames, val_data_frames, test_data_frames = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
