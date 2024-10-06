@@ -414,11 +414,39 @@ class Dataset_DKASC(Dataset):
         self.ds_list = []
         # self.ap_max_list = []
         # self.ap_min_list = []
+
+        # 각 모드에 맞는 파일 이름 (빠른 훈련을 위해서 데이터 미리 파일로 저장해서 불러옴)
+        self.train_file = os.path.join(root_path, f'DKASC_preprocessed_train.{self.save_format}')
+        self.val_file = os.path.join(root_path, f'DKASC_preprocessed_val.{self.save_format}')
+        self.test_file = os.path.join(root_path, f'DKASC_preprocessed_test.{self.save_format}')
         
+        # 파일이 존재하면 불러오고, 없으면 생성
+        if os.path.exists(self._get_preprocessed_file()): 
+            self.__load_preprocessed_data__() 
+        else:
+            self.__preprocess_and_save_data__()
+            self.__load_preprocessed_data__()
+        
+
         self.__read_data__()
 
-    def __read_data__(self):
-        # data_path_list = ['25-212-Site_DKA-M15_C-Phase_II.csv', '10-85-Site_DKA-M7_A-Phase.csv']
+
+    # 1. 데이터셋 리스트 불러와서 훈련, 검증, 테스트 데이터셋 나누기
+    # 2. 전체 훈련 데이터셋들을 불러와서 Scaler Fit
+    # 3. 검증, 테스트 데이터셋 scaling
+    # 4. 나중에 모델 훈련 시, 불러올 수 있게 전체 훈련, 검증, 테스트 데이터셋 저장
+    def __preprocess_and_save_data__(self):
+        # 데이터 프레임
+        train_data_frames, val_data_frames, test_data_frames = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        # Data stamp 저장 프레임 (년, 월, 일, 요일, 시간)
+        train_ds_frames, val_ds_frames, test_ds_frames = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+    
+        # DKASC 모든 데이터 불러오기
+        if self.data_paths == 'ALL':     
+            self.data_paths = self.DATASET_SPLIT_YEAR.keys()   
+
+        self.data_path_list = sorted(self.data_paths)
         for idx, data_path in enumerate(self.data_path_list):
             df_raw = pd.read_csv(os.path.join(self.root_path, data_path))
             
@@ -457,55 +485,114 @@ class Dataset_DKASC(Dataset):
                 if column == 'date': continue
                 print(column, '\tmean:', round(df_raw[column].mean(),2),'\tstd:', round(df_raw[column].std(),2))
 
-            border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[data_path][2*(self.set_type)]}-01-01 00:00:00'].index[0]
-            border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[data_path][2*(self.set_type)+1]}-12-31 23:00:00'].index[-1]+1
+            # 1-1. 년도에 따라서 train, val, test set 나누기
+            # 1-1-1. 파일명에 해당하는 연도 정보 가져오기
+            if data_path not in self.DATASET_SPLIT_YEAR:
+                raise ValueError(f"'{data_path}' 파일에 대한 연도 정보가 없습니다.")
             
-            df_stamp = df_raw[['date']][border1:border2]
+            split_years = self.DATASET_SPLIT_YEAR[data_path]
 
-            if self.timeenc == 0:
-                data_stamp = pd.DataFrame()
-                data_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
-                data_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
-                data_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
-                data_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
-            elif self.timeenc == 1:
-                data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
-                data_stamp = data_stamp.transpose(1, 0)
+            # split_years는 [train_start, train_end, val_start, val_end, test_start, test_end]
+            train_start = split_years[0]
+            train_end = split_years[1]
+            val_start = split_years[2]
+            val_end = split_years[3]
+            test_start = split_years[4]
+            test_end = split_years[5]
+
+            # 각 구간에 해당하는 데이터를 추출
+            train_data = df_raw[(df_raw['date'] >= f'{train_start}-01-01') & (df_raw['date'] <= f'{train_end}-12-31')]
+            val_data = df_raw[(df_raw['date'] >= f'{val_start}-01-01') & (df_raw['date'] <= f'{val_end}-12-31')]
+            test_data = df_raw[(df_raw['date'] >= f'{test_start}-01-01') & (df_raw['date'] <= f'{test_end}-12-31')]
 
 
+            # 각 데이터셋 time encoding (년, 월, 일, 요일, 시간)
+            for df_stamp in [train_data, val_data, test_data]:
+                if self.timeenc == 0:
+                    data_stamp = pd.DataFrame()
+                    data_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
+                    data_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
+                    data_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
+                    data_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
+                    
+                    data_stamp = data_stamp[['month', 'day', 'weekday', 'hour']].values
+
+                elif self.timeenc == 1:
+                    data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
+                    data_stamp = data_stamp.transpose(1, 0)
+            
+            train_data_frames = pd.concat([train_data_frames, train_data])
+            val_data_frames = pd.concat([val_data_frames, val_data])
+            test_data_frames = pd.concat([test_data_frames, test_data])
+
+            train_ds_frames = pd.concat([train_ds_frames, pd.DataFrame(data_stamp)])
+            val_ds_frames = pd.concat([val_ds_frames, pd.DataFrame(data_stamp)])
+            test_ds_frames = pd.concat([test_ds_frames, pd.DataFrame(data_stamp)])
+
+
+        self.scaler = StandardScaler()  
+        data_frames = [train_data_frames, val_data_frames, test_data_frames]
+
+        for i, df_raw in enumerate(data_frames):
             if self.features == 'M' or self.features == 'MS':
                 cols_data = df_raw.columns[1:] 
                 df_data = df_raw[cols_data]
             elif self.features == 'S':
                 df_data = df_raw[[self.target]]
 
-            if self.scale:
-                train_border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[data_path][0]}-01-01 00:00:00'].index.tolist()[0]
-                train_border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[data_path][1]}-12-31 23:00:00'].index.tolist()[-1]+1
-                train_data = df_data[train_border1:train_border2]
-                
-                train_data_values = train_data.values
-                df_data_values = df_data.values
-                transformed_data = []  # List to store each transformed feature
-                for i in range(df_data_values.shape[1]):
-                    train_features = train_data_values[:, i].reshape(-1, 1)
-                    getattr(self, f'scaler_{i}').fit(train_features)
-                    
-                    df_data_features = df_data_values[:, i].reshape(-1, 1)
-                    transformed_feature = getattr(self, f'scaler_{i}').transform(df_data_features)
-                    transformed_data.append(transformed_feature)
-                data = np.concatenate(transformed_data, axis=1)
-                
-            else:
-                data = df_data.values
 
-            self.x_list.append(data[border1:border2])
-            self.y_list.append(data[border1:border2])
-            if self.timeenc == 0:
-                self.ds_list.append(data_stamp[['month', 'day', 'weekday', 'hour']].values)
-            else:
-                self.ds_list.append(data_stamp)
-        
+            # 훈련 데이터(전체 Location)에 대해서만 스케일러 Fit
+            if self.scale:
+                df_data_values = df_data.values
+
+               # Train 데이터에 대해 fit 후 transform
+                if i == 0:  # train 데이터에 대해서 fit과 transform을 모두 수행
+                    self.scaler.fit(df_data_values)  # fit
+                    df_data_values = self.scaler.transform(df_data_values)  # transform
+                else:  # val, test는 transform만 수행
+                    df_data_values = self.scaler.transform(df_data_values)
+
+                
+                df_data = pd.DataFrame(df_data_values, columns=df_data.columns)
+            
+            # 변경된 df_data를 원래의 df_raw에 업데이트
+            df_raw[cols_data if self.features in ['M', 'MS'] else [self.target]] = df_data
+
+
+            # 리스트 내 해당 데이터프레임을 변경된 값으로 업데이트
+            data_frames[i] = df_raw  # 직접 대입하여 변경
+
+
+        # 훈련, 검증, 테스트 데이터 저장
+        train_data_frames.to_pickle(self.train_file)
+        print("[INFO] Train data saved.")
+
+        val_data_frames.to_pickle(self.val_file)
+        print("[INFO] Validation data saved.")
+
+        test_data_frames.to_pickle(self.test_file)
+        print("[INFO] Test data saved.")
+
+            ###### TODO: 의논 후 정리 [이전] 각각의 column에 대해서 스케일러 적용 ######################
+            
+                # train_data_values = train_data_frames.values
+                # df_data_values = df_data.values
+            #     transformed_data = []  # List to store each transformed feature
+            #     for i in range(df_data_values.shape[1]):
+            #         train_features = train_data_values[:, i].reshape(-1, 1)
+            #         getattr(self, f'scaler_{i}').fit(train_features)
+                    
+            #         df_data_features = df_data_values[:, i].reshape(-1, 1)
+            #         transformed_feature = getattr(self, f'scaler_{i}').transform(df_data_features)
+            #         transformed_data.append(transformed_feature)
+            #     data = np.concatenate(transformed_data, axis=1)
+                
+            # else:
+            #     data = df_data.values
+
+            ################################################################
+
+  
     def __getitem__(self, index):
         s_begin = index
         for i, x in enumerate(self.x_list):
