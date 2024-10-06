@@ -26,6 +26,7 @@ do
     python -u run_longExp.py \
       --remove_cols $remove_cols \
       --gpu 0 \
+      --use_amp \
       --random_seed $random_seed \
       --is_training 1 \
       --root_path $root_path_name \

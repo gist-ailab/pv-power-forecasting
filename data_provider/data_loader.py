@@ -454,26 +454,24 @@ class Dataset_DKASC(Dataset):
             self.data_frames = pd.read_pickle(self.test_file)
             self.ds_frames = pd.read_pickle(self.test_file.replace('preprocessed', 'data_stamp'))
 
-            # Scaler 불러오기
-            if self.scaler_path is not None:
-                self.scaler = joblib.load(self.scaler_path)
-            else: self.scaler = joblib.load('/PV/DKASC_ALL_scaler.pkl')
+        # Scaler 불러오기
+        if self.scaler_path is not None:
+            self.scaler = joblib.load(self.scaler_path)
+        else: self.scaler = joblib.load('/PV/DKASC_ALL_scaler.pkl')
 
-        COLUMN_ORDER = {
+        self.COLUMN_ORDER = {
             'date' : 0, 
             'Active_Energy_Delivered_Received' : 1,
             'Current_Phase_Average' : 2, 
-            'Performance_Ratio' : 3,
-            'Wind_Speed' : 4,
-            'Weather_Temperature_Celsius' : 5,
-            'Weather_Relative_Humidity' : 6, 
-            'Global_Horizontal_Radiation' : 7,
-            'Diffuse_Horizontal_Radiation' : 8,
-            'Wind_Direction' : 9,
-            'Weather_Daily_Rainfall' : 10, 
-            'Radiation_Global_Tilted' : 11,
-            'Radiation_Diffuse_Tilted' : 12, 
-            'Active_Power' : 13
+            'Weather_Temperature_Celsius' : 4,
+            'Weather_Relative_Humidity' : 5, 
+            'Global_Horizontal_Radiation' : 6,
+            'Diffuse_Horizontal_Radiation' : 7,
+            'Wind_Direction' : 8,
+            'Weather_Daily_Rainfall' : 9, 
+            'Radiation_Global_Tilted' : 10,
+            'Radiation_Diffuse_Tilted' : 11, 
+            'Active_Power' : 12
         }
 
         self.x_list = self.data_frames[self.data_frames.columns[1:]].values
@@ -481,7 +479,7 @@ class Dataset_DKASC(Dataset):
      
 
         if self.remove_cols is not None:
-            self.remove_cols_list = [COLUMN_ORDER[col] for col in self.remove_cols if col in COLUMN_ORDER]
+            self.remove_cols_list = [self.COLUMN_ORDER[col] for col in self.remove_cols if col in self.COLUMN_ORDER]
             self.x_list = np.delete(self.x_list, self.remove_cols_list, axis=1)
             
      
@@ -538,14 +536,14 @@ class Dataset_DKASC(Dataset):
             ## check for not null
             print(print(df_raw.isnull().sum()))
 
-            # TODO: 하나의 csv 파일에서 wind speed 전체가 결측치라서 interpolation이 안 됨. 이 경우에 대한 처리 필요 (아예 삭제하기)##
-            # 특정 열의 결측치를 허용할 열 목록 설정
-            allowed_null_columns = ['Wind_Speed', 'Performance_Ratio']
-            # 허용된 열을 제외하고 결측치가 없는지 검사
-            df_filtered = df_raw.drop(columns=allowed_null_columns, errors='ignore')
-            # 결측치가 있는지 검사하고, 예외적으로 허용된 열은 무시함
-            assert (df_filtered.isnull().sum()).sum() == 0, "허용되지 않은 열에 결측치가 존재합니다."            
-            
+            # # 특정 열의 결측치를 허용할 열 목록 설정
+            # allowed_null_columns = ['Wind_Speed', 'Performance_Ratio']
+            # # 허용된 열을 제외하고 결측치가 없는지 검사
+            # df_filtered = df_raw.drop(columns=allowed_null_columns, errors='ignore')
+            # # 결측치가 있는지 검사하고, 예외적으로 허용된 열은 무시함
+            # assert (df_filtered.isnull().sum()).sum() == 0, "허용되지 않은 열에 결측치가 존재합니다."            
+            assert (df_raw.isnull().sum()).sum() == 0, "허용되지 않은 열에 결측치가 존재합니다."            
+
 
             ### get maximum and minimum value of 'Active_Power'
             # self.ap_max_list.append(df_raw['Active_Power'].max())
@@ -705,7 +703,8 @@ class Dataset_DKASC(Dataset):
 
     def inverse_transform(self, data):
         ## change the scaler number .. if num of features changes
-        return self.scaler_8.inverse_transform(data)
+        # return self.scaler_8.inverse_transform(data)
+        return self.scaler.inverse_transform(data[[self.COLUMN_ORDER['Active_Power']]])
     
 
 

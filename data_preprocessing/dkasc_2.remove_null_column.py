@@ -11,8 +11,8 @@ warnings.filterwarnings('ignore')
 
 
 if __name__ == '__main__':
-    root_path = './dataset/DKASC_preprocessed_1'
-    save_path = './dataset/DKASC_preprocessed_2'
+    root_path = '/PV/DKASC_AliceSprings_1h'
+    save_path = '/PV/DKASC_AliceSprings_1h'
     os.makedirs(save_path, exist_ok=True)
     data_path_list = os.listdir(root_path)
     data_path_list.sort()
@@ -32,7 +32,8 @@ if __name__ == '__main__':
             print(column.ljust(40), round(num_null / num_all * 100, 2), '%')
         
         df = df_raw
-        for column in (['Performance_Ratio', 'Wind_Speed', 'Radiation_Global_Tilted', 'Radiation_Diffuse_Tilted']):
+        # for column in (['Performance_Ratio', 'Wind_Speed', 'Radiation_Global_Tilted', 'Radiation_Diffuse_Tilted']):
+        for column in (['Performance_Ratio', 'Wind_Speed']):
             if column in df_list:
                 df = df.drop(columns=[column])
         print('\n')
