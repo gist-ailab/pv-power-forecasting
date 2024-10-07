@@ -458,7 +458,7 @@ class Dataset_DKASC(Dataset):
         # Scaler 불러오기
         if self.scaler_path is not None:
             self.scaler = joblib.load(self.scaler_path)
-        else: self.scaler = joblib.load('/PV/DKASC_ALL_scaler.pkl')
+        else: self.scaler = joblib.load('/ailab_mat/dataset/PV/DKASC_ALL_scaler.pkl')
 
         self.COLUMN_ORDER = {
             'date' : 0, 

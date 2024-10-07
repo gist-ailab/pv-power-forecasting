@@ -49,9 +49,14 @@ class Exp_Main(Exp_Basic):
         data_set, data_loader = data_provider(self.args, flag)
         return data_set, data_loader
 
-    def _select_optimizer(self):
-        model_optim = optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
+    def _select_optimizer(self, part=None):
+        if part == None:
+            model_optim = optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
+        else:
+            if part == 'linear_probe':
+                model_optim = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.learning_rate)
         return model_optim
+
 
     def _select_criterion(self):
         criterion = nn.MSELoss()

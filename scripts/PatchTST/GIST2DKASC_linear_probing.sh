@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Fully_Finetune_DKASC2GIST_$model_name"
+exp_id="${DATE}_Linear_Probing_DKASC2GIST_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -20,7 +20,7 @@ random_seed=2024
 
 # remove_cols="Wind_Speed Performance_Ratio" 
 
-
+export CUDA_VISIBLE_DEVICES=2
 for pred_len in 24 #1 2 4 8 16
 do
     python -u run_finetune.py \
@@ -28,7 +28,7 @@ do
       --use_amp \
       --random_seed $random_seed \
       --is_training 1 \
-      --is_fully_finetune 1 \
+      --is_linear_probe 1 \
       --checkpoints /ailab_mat/dataset/PV/checkpoint.pth\
       --root_path $root_path_name \
       --data_path $data_path_name \
