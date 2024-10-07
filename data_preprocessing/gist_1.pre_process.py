@@ -6,10 +6,10 @@ import pandas as pd
 from tqdm import tqdm
 from copy import deepcopy
 
-def wrapup(file_list, index_of_site,
-           kor_name, eng_name,
-           weather_data,
-           save_dir, log_file_path):
+def combine_into_each_site(file_list, index_of_site,
+                           kor_name, eng_name,
+                           weather_data,
+                           save_dir, log_file_path):
     df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity'])
     
     weather_info = pd.read_csv(weather_data, encoding='unicode_escape')
@@ -39,7 +39,7 @@ def wrapup(file_list, index_of_site,
         daily_pv_data = daily_pv_data[columns_to_keep]
 
         # 결측치 처리:'-' 또는 빈 값을 NaN으로 변환
-        daily_pv_data = daily_pv_data.map(lambda x: np.nan if x == '-' else x)
+        daily_pv_data = daily_pv_data.map(lambda x: np.nan if x in ['-', '', ' '] else x)
 
         ## get date
         pv_date = file.split('_')[-2]
@@ -60,11 +60,11 @@ def wrapup(file_list, index_of_site,
             if missing_values_count == 1:
                 # 첫 번째 값이 NaN일 경우: 이후 값으로 채움
                 if pd.isna(daily_pv_data[column].iloc[0]):
-                    daily_pv_data[column].ffill()
+                    daily_pv_data[column] = daily_pv_data[column].bfill()
 
                 # 마지막 값이 NaN일 경우: 이전 값으로 채움
-                elif daily_pv_data[column].iloc[-1] is np.nan:
-                    daily_pv_data[column].bfill()
+                elif pd.isna(daily_pv_data[column].iloc[-1]):
+                    daily_pv_data[column] = daily_pv_data[column].ffill()
 
                 else:   # 결측치가 중간에 있는 경우: 앞뒤 값의 평균으로 채움
                     ffill_values = daily_pv_data[column].ffill()
@@ -83,11 +83,11 @@ def wrapup(file_list, index_of_site,
 
         # Step 1: 'date'와 'time' 데이터를 추출하여 새로운 DataFrame 생성
         temp_df = pd.DataFrame(
-            columns=['timestep', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
+            columns=['timestamp', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
                      'Weather_Relative_Humidity'])
 
         # Step 2: temp_df에 데이터 채워넣기
-        temp_df['timestep'] = daily_weather_data['datetime']
+        temp_df['timestamp'] = daily_weather_data['datetime']
         temp_df['Active_Power'] = daily_pv_data[kor_name]
         temp_df['Global_Horizontal_Radiation'] = daily_pv_data['radiation_horizontal']
         temp_df['Weather_Temperature_Celsius'] = daily_weather_data['temperature']
@@ -211,9 +211,10 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(current_file_path))
 
-    pv_xls_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_xls')
-    pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
-    pv_file_list.sort()
+    # # Get the path to the daily PV xls data
+    # pv_xls_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_xls')
+    # pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
+    # pv_file_list.sort()
 
     # Define the path to save the combined CSV file
     weather_data = os.path.join(project_root, 'data/GIST_dataset/GIST_weather_data.csv')
@@ -244,17 +245,17 @@ if __name__ == '__main__':
         '삼성환경동': 'C07_Samsung-Env-Bldg',
         '중앙연구기기센터': 'C11_GAIA',
         '산업협력관': 'E03_GTI',
-        '학사B동': 'E12_DormB',
+        '기숙사 B동': 'E12_DormB',
         '자연과학동': 'E8_Natural-Science-Bldg'
     }
 
     log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
     for i, (kor_name, eng_name) in enumerate(site_dict.items()):
-        wrapup(pv_file_list, i,
-               kor_name, eng_name,
-               weather_data,
-               os.path.join(project_root, 'data/GIST_dataset'),
-               log_file_path)
+        combine_into_each_site(pv_file_list, i,
+                               kor_name, eng_name,
+                               weather_data,
+                               os.path.join(project_root, 'data/GIST_dataset'),
+                               log_file_path)
     
 
 
