@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_GIST_$model_name"
+exp_id="${DATE}_Fully_Finetune_DKASC2GIST_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -12,19 +12,23 @@ fi
 seq_len=336
 label_len=0
 
-root_path_name=/PV/GIST_dataset
+root_path_name=/PV/DKASC_AliceSprings_1h
 data_path_name=ALL
-data_name=GIST
+data_name=DKASC
 random_seed=2024
 
-#for pred_len in 1 2 4 8 16
-for pred_len in 24 #1 2 4 8 16  
+
+# remove_cols="Wind_Speed Performance_Ratio" 
+
+
+for pred_len in 24 #1 2 4 8 16
 do
-    python -u run_longExp.py \
+    python -u run_finetune.py \
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
-      --is_training 0 \
+      --is_training 1 \
+      --is_fully_finetune 1 \
       --checkpoints /home/pv/code/PatchTST/checkpoints/24100802_PatchTST_GIST_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth\
       --root_path $root_path_name \
       --data_path $data_path_name \

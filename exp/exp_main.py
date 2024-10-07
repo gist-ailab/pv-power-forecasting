@@ -390,24 +390,24 @@ class Exp_Main(Exp_Basic):
                 true_normalized_list.append(true_normalized)
                 input_list.append(batch_x.detach().cpu().numpy())
                 
-                if i % 10 == 0:
-                    if self.args.model != 'LSTM':
-                    # visualize_input_length = outputs.shape[1]*3 # visualize three times of the prediction length
-                        input_np_s = batch_x[:, :, -1].detach().cpu().numpy()
-                        input_inverse_transform_s = test_data.inverse_transform(input_np_s)
-                        input_seq_s = input_inverse_transform_s[0,:]
-                        gt_s = true[0, -self.args.pred_len:]
-                        pd_s = pred[0, :]
-                        visual(input_seq_s, gt_s, pd_s, os.path.join(folder_path_inout, str(i) + '.png'))
-                        # visual_out(input_seq, gt, pd, os.path.join(folder_path_out, str(i) + '.png'))
-                        # TODO: visual, visual_out은 거의 같은데 하나는 input을 포함하고 하나는 input을 포함하지 않는다.
-                    else:
-                        input_np = batch_x.detach().cpu().numpy()
-                        input_inverse_transform = test_data.inverse_transform(input_np)
+                # if i % 10 == 0:
+                #     if self.args.model != 'LSTM':
+                #     # visualize_input_length = outputs.shape[1]*3 # visualize three times of the prediction length
+                #         input_np_s = batch_x[:, :, -1].detach().cpu().numpy()
+                #         input_inverse_transform_s = test_data.inverse_transform(input_np_s)
+                #         input_seq_s = input_inverse_transform_s[0,:]
+                #         gt_s = true[0, -self.args.pred_len:]
+                #         pd_s = pred[0, :]
+                #         visual(input_seq_s, gt_s, pd_s, os.path.join(folder_path_inout, str(i) + '.png'))
+                #         # visual_out(input_seq, gt, pd, os.path.join(folder_path_out, str(i) + '.png'))
+                #         # TODO: visual, visual_out은 거의 같은데 하나는 input을 포함하고 하나는 input을 포함하지 않는다.
+                #     else:
+                #         input_np = batch_x.detach().cpu().numpy()
+                #         input_inverse_transform = test_data.inverse_transform(input_np)
 
-                        gt = np.concatenate((input_inverse_transform[0, :, -1], true[0, :, -1]), axis=0)
-                        pd = np.concatenate((input_inverse_transform[0, :, -1], pred[0, :, -1]), axis=0)
-                        visual_original(gt, pd, os.path.join(folder_path, str(i) + '.png'))
+                #         gt = np.concatenate((input_inverse_transform[0, :, -1], true[0, :, -1]), axis=0)
+                #         pd = np.concatenate((input_inverse_transform[0, :, -1], pred[0, :, -1]), axis=0)
+                #         visual_original(gt, pd, os.path.join(folder_path, str(i) + '.png'))
                     
 
         if self.args.test_flop:
