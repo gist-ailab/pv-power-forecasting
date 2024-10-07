@@ -162,7 +162,7 @@ if __name__ == '__main__':
                 exp.linear_probe(setting, args.exp_id,  args.resume)
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-            exp.test(setting, args.exp_id, args.checkpoints, args.scaler, args.ap_idx)
+            exp.test(setting, args.checkpoints, test=1)
 
             if args.do_predict:
                 print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
