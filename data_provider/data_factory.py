@@ -1,11 +1,12 @@
 from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
-     Dataset_DKASC_single, Dataset_DKASC, Dataset_GIST
+     Dataset_DKASC_single, Dataset_DKASC, Dataset_GIST, Dataset_German
 from torch.utils.data import DataLoader
 
 data_dict = {
     'DKASC': Dataset_DKASC,
     'DKASC_single': Dataset_DKASC_single,
     'GIST': Dataset_GIST,
+    'German': Dataset_German,
     'ETTh1': Dataset_ETT_hour,
     'ETTh2': Dataset_ETT_hour,
     'ETTm1': Dataset_ETT_minute,
@@ -44,7 +45,9 @@ def data_provider(args, flag):
         features=args.features,
         target=args.target,
         timeenc=timeenc,
-        freq=freq
+        freq=freq,
+        remove_cols=args.remove_cols,
+        scaler_path=args.scaler_path
     )
     print(flag, data_set.__len__())
     data_loader = DataLoader(

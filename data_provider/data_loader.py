@@ -8,6 +8,8 @@ from utils.timefeatures import time_features
 import warnings
 import copy
 import pickle
+import joblib
+import random
 
 warnings.filterwarnings('ignore')
 
@@ -343,7 +345,7 @@ class Dataset_DKASC_single(Dataset):
 
 class Dataset_DKASC(Dataset):
     def __init__(self, root_path, flag='train', size=None,
-                 features='S', data_path='',
+                 features='S', data_path='', remove_cols=None, scaler_path=None,
                  target='Active_Power', scale=True, timeenc=0, freq='h'):
         # size [seq_len, label_len, pred_len]
         # info
@@ -365,62 +367,146 @@ class Dataset_DKASC(Dataset):
         self.scale = scale
         self.timeenc = timeenc
         self.freq = freq
+        self.flag = flag
+
+        self.remove_cols = remove_cols
+        self.scaler_path = scaler_path
 
         self.root_path = root_path
-        self.data_path_list = data_path.split(',')
-        
+        if data_path != 'ALL':
+            self.data_path_list = data_path.split(',')
+        else: self.data_path_list = data_path
+
         self.DATASET_SPLIT_YEAR = {
-            '1A-91-Site_DKA-M9_B-Phase.csv'     : [2014, 2020,  2021, 2021,  2022, 2023],    # 
-            '1B-87-Site_DKA-M9_A+C-Phases.csv'  : [2014, 2020,  2021, 2021,  2022, 2023],    # 
-            '2-78-Site_DKA-M11_3-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '3-70-Site_DKA-M5_A-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '4-86-Site_DKA-M2_B-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '5-89-Site_DKA-M3_B-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '6-95-Site_DKA-M3_C-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '7-79-Site_DKA-M6_A-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '8-93-Site_DKA-M4_A-Phase.csv'      : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '9A-218-Site_DKA-M4_C-Phase_II.csv' : [2018, 2020,  2021, 2021,  2022, 2023],    # 
-            '10-85-Site_DKA-M7_A-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '11-106-Site_DKA-M5_C-Phase.csv'    : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '12-84-Site_DKA-M5_B-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '13-92-Site_DKA-M6_B-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '14-90-Site_DKA-M3_A-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '16A-100-Site_DKA-M1_A-Phase.csv'   : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '16B-103-Site_DKA-M1_B-Phase.csv'   : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '16C-105-Site_DKA-M1_C-Phase.csv'   : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '16D-81-Site_DKA-M2_A-Phase.csv'    : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '17-69-Site_DKA-M4_B-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '18-71-Site_DKA-M2_C-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 
-            '19-98-Site_DKA-M8_B-Phase.csv'     : [2010, 2020,  2021, 2021,  2022, 2023],    # 
-            '20-68-Site_DKA-M8_C-Phase.csv'     : [2010, 2020,  2021, 2021,  2022, 2023],    # 
-            '21-67-Site_DKA-M8_A-Phase.csv'     : [2010, 2020,  2021, 2021,  2022, 2023],    # 
-            '22-97-Site_DKA-M10_B+C-Phases.csv' : [2011, 2020,  2021, 2021,  2022, 2023],    # 
-            '23-61-Site_DKA-M15_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
-            '24-213-Site_DKA-M16_A-Phase_II.csv': [2017, 2020,  2021, 2021,  2022, 2023],    # 
-            '25-212-Site_DKA-M15_C-Phase_II.csv': [2017, 2020,  2021, 2021,  2022, 2023],    # 
-            '26-72-Site_DKA-M15_B-Phase.csv'    : [2014, 2020,  2021, 2021,  2022, 2023],    # 
-            '29-55-Site_DKA-M20_B-Phase.csv'    : [2014, 2020,  2021, 2021,  2022, 2023],    # 
-            '30-56-Site_DKA-M20_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
-            '31-74-Site_DKA-M18_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
-            '32-214-Site_DKA-M18_B-Phase_II.csv': [2017, 2020,  2021, 2021,  2022, 2023],    # 
-            '33-52-Site_DKA-M16_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
-            '34-63-Site_DKA-M17_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
-            '35-73-Site_DKA-M19_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
-            '36-58-Site_DKA-M17_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
-            '37-64-Site_DKA-M17_B-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
-            '38-59-Site_DKA-M19_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 
+            '52-Site_DKA-M16_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 33
+            '54-Site_DKA-M15_C-Phase.csv'    : [2011, 2012,  2013, 2014,  2015, 2016],
+            '55-Site_DKA-M20_B-Phase.csv'    : [2014, 2020,  2021, 2021,  2022, 2023],    # 29
+            '56-Site_DKA-M20_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 30
+            '57-Site_DKA-M16_A-Phase.csv'    : [2011, 2012,  2013, 2014,  2015, 2016],
+            '58-Site_DKA-M17_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 36
+            '59-Site_DKA-M19_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 38
+            '60-Site_DKA-M18_A-Phase.csv'    : [2013, 2019,  2020, 2021,  2022, 2023],
+            '61-Site_DKA-M15_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 23
+            '63-Site_DKA-M17_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 34
+            '64-Site_DKA-M17_B-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 37
+            '66-Site_DKA-M16_B-Phase.csv'    : [2011, 2020,  2021, 2022,  2022, 2023],
+            '67-Site_DKA-M8_A-Phase.csv'     : [2010, 2020,  2021, 2021,  2022, 2023],    # 21
+            '68-Site_DKA-M8_C-Phase.csv'     : [2010, 2020,  2021, 2021,  2022, 2023],    # 20
+            '69-Site_DKA-M4_B-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 17
+            '70-Site_DKA-M5_A-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 3
+            '71-Site_DKA-M2_C-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 18
+            '72-Site_DKA-M15_B-Phase.csv'    : [2014, 2020,  2021, 2021,  2022, 2023],    # 26
+            '73-Site_DKA-M19_A-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 35
+            '74-Site_DKA-M18_C-Phase.csv'    : [2011, 2020,  2021, 2021,  2022, 2023],    # 31
+            '77-Site_DKA-M18_B-Phase.csv'    : [2011, 2012,  2013, 2014,  2015, 2016],
+            '79-Site_DKA-M6_A-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 7
+            '84-Site_DKA-M5_B-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 12
+            '85-Site_DKA-M7_A-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 10
+            '90-Site_DKA-M3_A-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 14
+            '92-Site_DKA-M6_B-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 13
+            '93-Site_DKA-M4_A-Phase.csv'     : [2009, 2020,  2021, 2021,  2022, 2023],    # 8
+            '97-Site_DKA-M10_B+C-Phases.csv' : [2011, 2020,  2021, 2021,  2022, 2023],    # 22
+            '98-Site_DKA-M8_B-Phase.csv'     : [2010, 2020,  2021, 2021,  2022, 2023],    # 19
+            '99-Site_DKA-M4_C-Phase.csv'     : [2009, 2014,  2015, 2016,  2017, 2018],
+            '100-Site_DKA-M1_A-Phase.csv'    : [2009, 2020,  2021, 2021,  2022, 2023],    # 16A
+            '212-Site_DKA-M15_C-Phase_II.csv': [2017, 2020,  2021, 2021,  2022, 2023],    # 25
+            '213-Site_DKA-M16_A-Phase_II.csv': [2017, 2020,  2021, 2021,  2022, 2023],    # 24
+            '214-Site_DKA-M18_B-Phase_II.csv': [2017, 2020,  2021, 2021,  2022, 2023],    # 32
+            '218-Site_DKA-M4_C-Phase_II.csv' : [2018, 2020,  2021, 2021,  2022, 2023],    # 9A
         }
+
+
         self.pv_list = []
         self.x_list = []
         self.y_list = []
         self.ds_list = []
         # self.ap_max_list = []
         # self.ap_min_list = []
-        
-        self.__read_data__()
 
-    def __read_data__(self):
-        # data_path_list = ['25-212-Site_DKA-M15_C-Phase_II.csv', '10-85-Site_DKA-M7_A-Phase.csv']
+        # 각 모드에 맞는 파일 이름 (빠른 훈련을 위해서 데이터 미리 파일로 저장해서 불러옴)
+        self.train_file = os.path.join(root_path, f'DKASC_preprocessed_train.pkl')
+        self.val_file = os.path.join(root_path, f'DKASC_preprocessed_val.pkl')
+        self.test_file = os.path.join(root_path, f'DKASC_preprocessed_test.pkl')
+        
+        # 파일이 존재하면 불러오고, 없으면 생성
+        if os.path.exists(self.train_file): 
+            self.__load_preprocessed_data__() 
+        else:
+            self.__preprocess_and_save_data__()
+            self.__load_preprocessed_data__()
+
+
+
+    # 저장된 데이터 불러오기    
+    def __load_preprocessed_data__(self):
+
+
+        # preprocessed 데이터셋 불러오기
+        if self.flag == 'train':
+            self.data_frames = pd.read_pickle(self.train_file)#, encoding='ISO-8859-1')
+            self.ds_frames = pd.read_pickle(self.train_file.replace('preprocessed', 'data_stamp'))#, encoding='ISO-8859-1')
+    
+
+        elif self.flag == 'val':
+            self.data_frames = pd.read_pickle(self.val_file)
+            self.ds_frames = pd.read_pickle(self.val_file.replace('preprocessed', 'data_stamp'))
+
+        else: # test
+            self.data_frames = pd.read_pickle(self.test_file)
+            self.ds_frames = pd.read_pickle(self.test_file.replace('preprocessed', 'data_stamp'))
+
+        # Scaler 불러오기
+        if self.scaler_path is not None:
+            self.scaler = joblib.load(self.scaler_path)
+        else: self.scaler = joblib.load('/PV/DKASC_ALL_scaler.pkl')
+
+        self.COLUMN_ORDER = {
+            'date' : 0, 
+            'Active_Energy_Delivered_Received' : 1,
+            'Current_Phase_Average' : 2, 
+            'Weather_Temperature_Celsius' : 3,
+            'Weather_Relative_Humidity' : 4, 
+            'Global_Horizontal_Radiation' : 5,
+            'Diffuse_Horizontal_Radiation' : 6,
+            'Wind_Direction' : 7,
+            'Weather_Daily_Rainfall' : 8, 
+            'Radiation_Global_Tilted' : 9,
+            'Radiation_Diffuse_Tilted' : 10, 
+            'Active_Power' : 11
+        }
+
+        self.x_list = self.data_frames[self.data_frames.columns[1:]].values
+      
+     
+
+        if self.remove_cols is not None:
+            self.remove_cols_list = [self.COLUMN_ORDER[col] for col in self.remove_cols if col in self.COLUMN_ORDER]
+            self.x_list = np.delete(self.x_list, self.remove_cols_list, axis=1)
+            
+     
+        self.y_list = self.data_frames[self.data_frames.columns[-1]].values
+        self.ds_list = self.ds_frames.values
+        
+
+                                    
+
+
+    # 1. 데이터셋 리스트 불러와서 훈련, 검증, 테스트 데이터셋 나누기
+    # 2. 전체 훈련 데이터셋들을 불러와서 Scaler Fit
+    # 3. 검증, 테스트 데이터셋 scaling
+    # 4. 나중에 모델 훈련 시, 불러올 수 있게 전체 훈련, 검증, 테스트 데이터셋 저장
+    def __preprocess_and_save_data__(self):
+        # 데이터 프레임
+        train_data_frames, val_data_frames, test_data_frames = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        # Data stamp 저장 프레임 (년, 월, 일, 요일, 시간)
+        train_ds_frames, val_ds_frames, test_ds_frames = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+    
+        # DKASC 모든 데이터 불러오기
+        if self.data_path_list == 'ALL':     
+            self.data_path_list = self.DATASET_SPLIT_YEAR.keys()   
+
+        self.data_path_list = sorted(self.data_path_list)
         for idx, data_path in enumerate(self.data_path_list):
             df_raw = pd.read_csv(os.path.join(self.root_path, data_path))
             
@@ -435,9 +521,9 @@ class Dataset_DKASC(Dataset):
             cols.remove('Active_Power')
             df_raw = df_raw[['date'] + cols + [self.target]]            
 
-            ## Creae scaler for each feature
-            for i in range(len(df_raw.columns)-1):
-                setattr(self, f'scaler_{i}', StandardScaler())
+            # ## Creae scaler for each feature
+            # for i in range(len(df_raw.columns)-1):
+            #     setattr(self, f'scaler_{i}', StandardScaler())
             
             ## pre-processing
             df_date = pd.DataFrame()
@@ -449,32 +535,410 @@ class Dataset_DKASC(Dataset):
             df_date['hour'] = df_date.date.apply(lambda row: row.hour, 1)
             
             ## check for not null
-            assert (df_raw.isnull().sum()).sum() == 0
-            
+            print(print(df_raw.isnull().sum()))
+
+            # # 특정 열의 결측치를 허용할 열 목록 설정
+            # allowed_null_columns = ['Wind_Speed', 'Performance_Ratio']
+            # # 허용된 열을 제외하고 결측치가 없는지 검사
+            # df_filtered = df_raw.drop(columns=allowed_null_columns, errors='ignore')
+            # # 결측치가 있는지 검사하고, 예외적으로 허용된 열은 무시함
+            # assert (df_filtered.isnull().sum()).sum() == 0, "허용되지 않은 열에 결측치가 존재합니다."            
+            assert (df_raw.isnull().sum()).sum() == 0, "허용되지 않은 열에 결측치가 존재합니다."            
+
+
             ### get maximum and minimum value of 'Active_Power'
             # self.ap_max_list.append(df_raw['Active_Power'].max())
             # self.ap_min_list.append(df_raw['Active_Power'].min())
-            print(data_path, '\tmax: ', round(df_raw['Active_Power'].max(),2), '\tmin: ', round(df_raw['Active_Power'].min(),2))
-            for column in df_raw.columns:
-                if column == 'date': continue
-                print(column, '\tmean:', round(df_raw[column].mean(),2),'\tstd:', round(df_raw[column].std(),2))
+            print(data_path, '\tmax: ', 'Active Power', round(df_raw['Active_Power'].max(),2), '\tmin: ', round(df_raw['Active_Power'].min(),2))
+            # for column in df_raw.columns:
+            #     if column == 'date': continue
+            #     print(column, '\tmean:', round(df_raw[column].mean(),2),'\tstd:', round(df_raw[column].std(),2))
 
-            border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[data_path][2*(self.set_type)]}-01-01 00:00:00'].index[0]
-            border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[data_path][2*(self.set_type)+1]}-12-31 23:00:00'].index[-1]+1
+            # 1-1. 년도에 따라서 train, val, test set 나누기
+            # 1-1-1. 파일명에 해당하는 연도 정보 가져오기
+            if data_path not in self.DATASET_SPLIT_YEAR:
+                raise ValueError(f"'{data_path}' 파일에 대한 연도 정보가 없습니다.")
             
-            df_stamp = df_raw[['date']][border1:border2]
+            split_years = self.DATASET_SPLIT_YEAR[data_path]
+
+            # split_years는 [train_start, train_end, val_start, val_end, test_start, test_end]
+            train_start = split_years[0]
+            train_end = split_years[1]
+            val_start = split_years[2]
+            val_end = split_years[3]
+            test_start = split_years[4]
+            test_end = split_years[5]
+
+            # 각 구간에 해당하는 데이터를 추출
+            train_data = df_raw[(df_raw['date'] >= f'{train_start}-01-01') & (df_raw['date'] <= f'{train_end}-12-31')]
+            val_data = df_raw[(df_raw['date'] >= f'{val_start}-01-01') & (df_raw['date'] <= f'{val_end}-12-31')]
+            test_data = df_raw[(df_raw['date'] >= f'{test_start}-01-01') & (df_raw['date'] <= f'{test_end}-12-31')]
+
+
+            # 각 데이터셋 time encoding (년, 월, 일, 요일, 시간)
+            for i, df_stamp in enumerate([train_data, val_data, test_data]):
+                if self.timeenc == 0:
+                    data_stamp = pd.DataFrame()
+                    data_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
+                    data_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
+                    data_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
+                    data_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
+                    
+                    data_stamp = data_stamp[['month', 'day', 'weekday', 'hour']].values
+
+                elif self.timeenc == 1:
+                    data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
+                    data_stamp = data_stamp.transpose(1, 0)
+                
+                if i == 0:
+                    train_ds_frames = pd.concat([train_ds_frames, pd.DataFrame(data_stamp)])
+                elif i == 1:
+                    val_ds_frames = pd.concat([val_ds_frames, pd.DataFrame(data_stamp)])
+                else: test_ds_frames = pd.concat([test_ds_frames, pd.DataFrame(data_stamp)])
+
+
+
+            train_data_frames = pd.concat([train_data_frames, train_data])
+            val_data_frames = pd.concat([val_data_frames, val_data])
+            test_data_frames = pd.concat([test_data_frames, test_data])
+
+            
+
+#
+        self.scaler = StandardScaler()  
+        data_frames = [train_data_frames, val_data_frames, test_data_frames]
+
+        for i, df_raw in enumerate(data_frames):
+            if self.features == 'M' or self.features == 'MS':
+                cols_data = df_raw.columns[1:] 
+                df_data = df_raw[cols_data]
+            elif self.features == 'S':
+                df_data = df_raw[[self.target]]
+
+
+            # 훈련 데이터(전체 Location)에 대해서만 스케일러 Fit
+            if self.scale:
+                df_data_values = df_data.values
+
+               # Train 데이터에 대해 fit 후 transform
+                if i == 0:  # train 데이터에 대해서 fit과 transform을 모두 수행
+                    self.scaler.fit(df_data_values)  # fit
+                    df_data_values = self.scaler.transform(df_data_values)  # transform
+                else:  # val, test는 transform만 수행
+                    df_data_values = self.scaler.transform(df_data_values)
+
+                with open('/PV/DKASC_ALL_scaler.pkl', 'wb') as f:
+                    pickle.dump(self.scaler, f)
+                
+                df_data = pd.DataFrame(df_data_values, columns=df_data.columns)
+            
+            # 변경된 df_data를 원래의 df_raw에 업데이트
+            df_raw[cols_data if self.features in ['M', 'MS'] else [self.target]] = df_data
+
+
+            # 리스트 내 해당 데이터프레임을 변경된 값으로 업데이트
+            data_frames[i] = df_raw  # 직접 대입하여 변경
+
+
+        # 훈련, 검증, 테스트 데이터 저장
+        train_data_frames.to_pickle(self.train_file)
+        train_ds_frames.to_pickle(self.train_file.replace('preprocessed', 'data_stamp'))
+        print("[INFO] Train data saved.")
+
+        val_data_frames.to_pickle(self.val_file)
+        val_ds_frames.to_pickle(self.val_file.replace('preprocessed', 'data_stamp'))
+        print("[INFO] Validation data saved.")
+
+        test_data_frames.to_pickle(self.test_file)
+        test_ds_frames.to_pickle(self.test_file.replace('preprocessed', 'data_stamp'))
+        print("[INFO] Test data saved.")
+
+            ###### TODO: 의논 후 정리 [이전] 각각의 column에 대해서 스케일러 적용 ######################
+            
+                # train_data_values = train_data_frames.values
+                # df_data_values = df_data.values
+            #     transformed_data = []  # List to store each transformed feature
+            #     for i in range(df_data_values.shape[1]):
+            #         train_features = train_data_values[:, i].reshape(-1, 1)
+            #         getattr(self, f'scaler_{i}').fit(train_features)
+                    
+            #         df_data_features = df_data_values[:, i].reshape(-1, 1)
+            #         transformed_feature = getattr(self, f'scaler_{i}').transform(df_data_features)
+            #         transformed_data.append(transformed_feature)
+            #     data = np.concatenate(transformed_data, axis=1)
+                
+            # else:
+            #     data = df_data.values
+
+            ################################################################
+
+  
+    def __getitem__(self, index):
+        s_begin = index
+        # for i, x in enumerate(self.x_list):
+        #     if s_begin < (len(x) - self.seq_len - self.pred_len +1):
+        #         break
+        #     else:
+        #         s_begin -= (len(x) - self.seq_len - self.pred_len +1)
+            
+        s_end = s_begin + self.seq_len
+        r_begin = s_end - self.label_len
+        r_end = r_begin + self.label_len + self.pred_len
+
+        seq_x = self.x_list[s_begin:s_end]
+        seq_y = self.y_list[r_begin:r_end]
+        seq_x_mark = self.ds_list[s_begin:s_end]
+        seq_y_mark = self.ds_list[r_begin:r_end]
+        # pv_max = self.ap_max_list[i]
+        # pv_min = self.ap_min_list[i]
+        # print(seq_x.shape, seq_y.shape, seq_x_mark.shape, seq_y_mark.shape)
+        
+        
+        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark
+        return seq_x, seq_y, seq_x_mark, seq_y_mark, pv_max, pv_min
+
+    def __len__(self):    
+        return len(self.x_list) - self.seq_len - self.pred_len + 1
+
+        return len(self.data_x) - self.seq_len - self.pred_len + 1
+
+    def inverse_transform(self, data):
+        ## change the scaler number .. if num of features changes
+        # return self.scaler_8.inverse_transform(data)
+
+        return self.scaler.inverse_transform(data)
+    
+
+
+
+class Dataset_GIST(Dataset):
+    def __init__(self, root_path, flag='train', size=None,
+                 features='MS', data_path='GIST_sisuldong.csv', target='Active_Power',
+                 scale=True, timeenc=0, freq='h', remove_cols=None, scaler_path=None):
+        # size [seq_len, label_len, pred_len]
+        # info
+        if size == None:
+            self.seq_len = 24 * 4 * 4
+            self.label_len = 24 * 4
+            self.pred_len = 24 * 4
+        else:
+            self.seq_len = size[0]
+            self.label_len = size[1]
+            self.pred_len = size[2]
+        # init
+        assert flag in ['train', 'test', 'val']
+        type_map = {'train': 0, 'val': 1, 'test': 2}
+        self.set_type = type_map[flag]
+
+        self.features = features
+        self.target = target
+        self.scale = scale
+        self.timeenc = timeenc
+        self.freq = freq
+        self.flag = flag
+
+        self.remove_cols = remove_cols
+        self.scaler_path = scaler_path
+        
+
+        self.root_path = root_path
+        if data_path != 'ALL':
+            self.data_paths = data_path.split(',')
+        else: self.data_paths = data_path
+        
+        # Create scaler for each input_channels
+        # self.input_channels = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        self.input_channels = self.input_channels + [self.target]
+        # for i in self.input_channels:
+        #     setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
+            
+        
+        # 각 모드에 맞는 파일 이름 (빠른 훈련을 위해서 데이터 미리 파일로 저장해서 불러옴)
+        self.train_file = os.path.join(root_path, f'GIST_preprocessed_train.pkl')
+        self.val_file = os.path.join(root_path, f'GIST_preprocessed_val.pkl')
+        self.test_file = os.path.join(root_path, f'GIST_preprocessed_test.pkl')
+        
+        # 파일이 존재하면 불러오고, 없으면 생성
+        if os.path.exists(self.train_file): 
+            self.__load_preprocessed_data__() 
+        else:
+            self.__preprocess_and_save_data__()
+            self.__load_preprocessed_data__()
+
+
+
+
+    def __load_preprocessed_data__(self):
+       
+               # preprocessed 데이터셋 불러오기
+        if self.flag == 'train':
+            self.data_frames = pd.read_pickle(self.train_file)#, encoding='ISO-8859-1')
+            self.ds_frames = pd.read_pickle(self.train_file.replace('preprocessed', 'data_stamp'))#, encoding='ISO-8859-1')
+            print(self.data_frames.columns)
+            exit()
+
+        elif self.flag == 'val':
+            self.data_frames = pd.read_pickle(self.val_file)
+            self.ds_frames = pd.read_pickle(self.val_file.replace('preprocessed', 'data_stamp'))
+
+        else: # test
+            self.data_frames = pd.read_pickle(self.test_file)
+            self.ds_frames = pd.read_pickle(self.test_file.replace('preprocessed', 'data_stamp'))
+
+        # Scaler 불러오기
+        if self.scaler_path is not None:
+            self.scaler = joblib.load(self.scaler_path)
+        else: self.scaler = joblib.load('/PV/GIST_ALL_scaler.pkl')
+
+        self.COLUMN_ORDER = {
+            'date' : 0, 
+            'Active_Energy_Delivered_Received' : 1,
+            'Current_Phase_Average' : 2, 
+            'Weather_Temperature_Celsius' : 3,
+            'Weather_Relative_Humidity' : 4, 
+            'Global_Horizontal_Radiation' : 5,
+            'Diffuse_Horizontal_Radiation' : 6,
+            'Wind_Direction' : 7,
+            'Weather_Daily_Rainfall' : 8, 
+            'Radiation_Global_Tilted' : 9,
+            'Radiation_Diffuse_Tilted' : 10, 
+            'Active_Power' : 11
+        }
+
+
+
+
+        self.x_list = self.data_frames[self.data_frames.columns[1:]].values
+      
+     
+
+        if self.remove_cols is not None:
+            self.remove_cols_list = [self.COLUMN_ORDER[col] for col in self.remove_cols if col in self.COLUMN_ORDER]
+            self.x_list = np.delete(self.x_list, self.remove_cols_list, axis=1)
+            
+     
+        self.y_list = self.data_frames[self.data_frames.columns[-1]].values
+        self.ds_list = self.ds_frames.values
+        
+
+
+
+
+        
+
+
+
+    def __preprocess_and_save_data__(self):  
+
+        train_data_frames, val_data_frames, test_data_frames = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        # Data stamp 저장 프레임 (년, 월, 일, 요일, 시간)
+        train_ds_frames, val_ds_frames, test_ds_frames = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+    
+        # DKASC 모든 데이터 불러오기
+        if self.data_paths == 'ALL':     
+            self.data_paths = os.listdir(self.root_path)
+
+        self.LOCATIONS = [
+            'C07_Samsung-Env-Bldg.csv',
+            'C09_Dasan.csv',
+            'C10_Renewable-E-Bldg.csv',
+            'C11_GAIA.csv ',
+            'E02_Animal-Recource-Center.csv',
+            'E03_GTI.csv',
+            'E08_Natural-Science-Bldg.csv',
+            'E11_DormA.csv',
+            'E12_DormB.csv',
+            'N01_Central-Library.csv',
+            'N02_LG-Library.csv',
+            'N06_College-Bldg.csv',
+            'W06_Student-Union.csv',
+            'W11_Facility-Maintenance-Bldg.csv', 
+            'W13_Centeral-Storage.csv',
+            'Soccer-Field.csv',
+        ]
+        
+        # train 9, valid 4, test 2
+        random.seed(42)
+        random.shuffle(self.LOCATIONS)
+        train_data_list = self.LOCATIONS[:9]
+        val_data_list = self.LOCATIONS[9:13]
+        test_data_list = self.LOCATIONS[13:]
+
+        
+        self.data_path_list = sorted(self.data_paths)
+        for idx, data_path in enumerate(self.data_path_list):
+            if 'E12' in data_path:
+                continue
+
+
+            df_raw = pd.read_csv(os.path.join(self.root_path, data_path))
+            print(df_raw.columns)
+            df_raw['timestep'] = pd.to_datetime(df_raw['timestep'], errors='raise')
+
+            '''
+            df_raw.columns: ['timestep', ...(other features), target feature]
+            '''
+
+            columns = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+            df_raw = df_raw[['timestep'] + self.input_channels]
+            print(df_raw['timestep'].apply(lambda x: pd.to_datetime(x, errors='coerce')).isnull().sum())
+            
+            df_raw[columns] = df_raw[columns].apply(pd.to_numeric)#, errors='coerce')
+
+
+
+            ## check if there is missing value
+            print(data_path)
+            print(df_raw['Global_Horizontal_Radiation'].isnull().sum())
+            print(df_raw['Weather_Temperature_Celsius'].isnull().sum())
+            print(df_raw['Weather_Relative_Humidity'].isnull().sum())
+            print(df_raw['Active_Power'].isnull().sum())
+            
+            assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
+            # assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
+            assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
+            assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
+            assert df_raw['Active_Power'].isnull().sum() == 0
+
+
+            # preprocessing
+            df_stamp = pd.DataFrame()
+            df_stamp['timestep'] = pd.to_datetime(df_raw['timestep'])
 
             if self.timeenc == 0:
-                data_stamp = pd.DataFrame()
-                data_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
-                data_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
-                data_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
-                data_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
+                df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
+                df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
+                df_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
+                df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
+                data_stamp = df_stamp.drop(['timestep'], axis=1).values
+
+                self.data_stamp = df_stamp[['month', 'day', 'weekday', 'hour']].values
+
             elif self.timeenc == 1:
-                data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
+                data_stamp = time_features(pd.to_datetime(df_stamp['timestep'].values), freq=self.freq)
                 data_stamp = data_stamp.transpose(1, 0)
+            
+            
+            if data_path in train_data_list:
+                train_ds_frames = pd.concat([train_ds_frames, pd.DataFrame(data_stamp)])
+                train_data_frames = pd.concat([train_data_frames, df_raw])
+            
+            elif data_path in val_data_list:
+                val_ds_frames = pd.concat([val_ds_frames, pd.DataFrame(data_stamp)])
+                val_data_frames = pd.concat([val_data_frames, df_raw])
+               
+            elif data_path in test_data_list:
+                test_ds_frames = pd.concat([test_ds_frames, pd.DataFrame(data_stamp)])
+                test_data_frames = pd.concat([test_data_frames, df_raw])
+        
+        
 
+        self.scaler = StandardScaler()
+        data_frames = [train_data_frames, val_data_frames, test_data_frames]
 
+        for i, df_raw in enumerate(data_frames):
             if self.features == 'M' or self.features == 'MS':
                 cols_data = df_raw.columns[1:] 
                 df_data = df_raw[cols_data]
@@ -482,68 +946,63 @@ class Dataset_DKASC(Dataset):
                 df_data = df_raw[[self.target]]
 
             if self.scale:
-                train_border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[data_path][0]}-01-01 00:00:00'].index.tolist()[0]
-                train_border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[data_path][1]}-12-31 23:00:00'].index.tolist()[-1]+1
-                train_data = df_data[train_border1:train_border2]
-                
-                train_data_values = train_data.values
                 df_data_values = df_data.values
-                transformed_data = []  # List to store each transformed feature
-                for i in range(df_data_values.shape[1]):
-                    train_features = train_data_values[:, i].reshape(-1, 1)
-                    getattr(self, f'scaler_{i}').fit(train_features)
-                    
-                    df_data_features = df_data_values[:, i].reshape(-1, 1)
-                    transformed_feature = getattr(self, f'scaler_{i}').transform(df_data_features)
-                    transformed_data.append(transformed_feature)
-                data = np.concatenate(transformed_data, axis=1)
-                
-            else:
-                data = df_data.values
 
-            self.x_list.append(data[border1:border2])
-            self.y_list.append(data[border1:border2])
-            if self.timeenc == 0:
-                self.ds_list.append(data_stamp[['month', 'day', 'weekday', 'hour']].values)
-            else:
-                self.ds_list.append(data_stamp)
-        
+               # Train 데이터에 대해 fit 후 transform
+                if i == 0:  # train 데이터에 대해서 fit과 transform을 모두 수행
+                    self.scaler.fit(df_data_values)  # fit
+                    df_data_values = self.scaler.transform(df_data_values)  # transform
+                else:  # val, test는 transform만 수행
+                    df_data_values = self.scaler.transform(df_data_values)
+
+                with open('/PV/DKASC_ALL_scaler.pkl', 'wb') as f:
+                    pickle.dump(self.scaler, f)
+                
+                df_data = pd.DataFrame(df_data_values, columns=df_data.columns)
+            
+            # 변경된 df_data를 원래의 df_raw에 업데이트
+            df_raw[cols_data if self.features in ['M', 'MS'] else [self.target]] = df_data
+
+
+            # 리스트 내 해당 데이터프레임을 변경된 값으로 업데이트
+            data_frames[i] = df_raw  # 직접 대입하여 변경
+
+        # 훈련, 검증, 테스트 데이터 저장
+        train_data_frames.to_pickle(self.train_file)
+        print("[INFO] Train data saved.")
+
+        val_data_frames.to_pickle(self.val_file)
+        print("[INFO] Validation data saved.")
+
+        test_data_frames.to_pickle(self.test_file)
+        print("[INFO] Test data saved.")
+
+
     def __getitem__(self, index):
         s_begin = index
-        for i, x in enumerate(self.x_list):
-            if s_begin < (len(x) - self.seq_len - self.pred_len +1):
-                break
-            else:
-                s_begin -= (len(x) - self.seq_len - self.pred_len +1)
-            
         s_end = s_begin + self.seq_len
         r_begin = s_end - self.label_len
         r_end = r_begin + self.label_len + self.pred_len
-
-        seq_x = self.x_list[i][s_begin:s_end]
-        seq_y = self.y_list[i][r_begin:r_end]
-        seq_x_mark = self.ds_list[i][s_begin:s_end]
-        seq_y_mark = self.ds_list[i][r_begin:r_end]
-        # pv_max = self.ap_max_list[i]
-        # pv_min = self.ap_min_list[i]
         
+        seq_x = self.data_x[s_begin:s_end]
+        seq_y = self.data_y[r_begin:r_end]
+        seq_x_mark = self.data_stamp[s_begin:s_end]
+        seq_y_mark = self.data_stamp[r_begin:r_end]
+
         return seq_x, seq_y, seq_x_mark, seq_y_mark
-        return seq_x, seq_y, seq_x_mark, seq_y_mark, pv_max, pv_min
 
     def __len__(self):
-        total_len = 0
-        for x in self.x_list:
-            total_len += (len(x) - self.seq_len - self.pred_len +1)
-        return total_len
         return len(self.data_x) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
-        ## change the scaler number .. if num of features changes
-        return self.scaler_8.inverse_transform(data)
-
-class Dataset_GIST(Dataset):
+        ''' active power만 예측하고 검증할 때는 이거만 씀 '''
+        return getattr(self, f'scaler_{self.domain}_Active_Power').inverse_transform(data)
+    
+###################################################3
+# German by Doyoon
+class Dataset_German(Dataset):
     def __init__(self, root_path, flag='train', size=None,
-                 features='MS', data_path='GIST_sisuldong.csv', target='Active_Power',
+                 features='MS', data_path='preprocessed_data_DE_KN_industrial1_pv_1.csv', target='Active_Power',
                  scale=True, timeenc=0, freq='h', domain='target'):
         # size [seq_len, label_len, pred_len]
         # info
@@ -572,7 +1031,8 @@ class Dataset_GIST(Dataset):
         
         # Create scaler for each input_channels
         # self.input_channels = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-        self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        # self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius']
         self.input_channels = self.input_channels + [self.target]
         for i in self.input_channels:
             setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
@@ -616,35 +1076,36 @@ class Dataset_GIST(Dataset):
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
         
-        df_raw['timestep'] = pd.to_datetime(df_raw['timestep'], errors='raise')
+        df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
 
         '''
         df_raw.columns: ['timestep', ...(other features), target feature]
         '''
 
-        columns = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-        df_raw = df_raw[['timestep'] + self.input_channels]
+        # columns = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        columns = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius']
+        df_raw = df_raw[['timestamp'] + self.input_channels]
         df_raw[columns] = df_raw[columns].apply(pd.to_numeric, errors='coerce')
 
         # preprocessing
         df_stamp = pd.DataFrame()
-        df_stamp['timestep'] = pd.to_datetime(df_raw['timestep'])
+        df_stamp['timestamp'] = pd.to_datetime(df_raw['timestamp'])
 
         if self.timeenc == 0:
             df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
             df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
             df_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
             df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
-            data_stamp = df_stamp.drop(['timestep'], axis=1).values
+            data_stamp = df_stamp.drop(['timestamp'], axis=1).values
         elif self.timeenc == 1:
-            data_stamp = time_features(pd.to_datetime(df_stamp['timestep'].values), freq=self.freq)
+            data_stamp = time_features(pd.to_datetime(df_stamp['timestamp'].values), freq=self.freq)
             data_stamp = data_stamp.transpose(1, 0)
 
         ## check if there is missing value
         assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
         # assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
         assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
-        assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
+        # assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
         assert df_raw['Active_Power'].isnull().sum() == 0
         
         ### get maximum and minimum value of 'Active_Power'

@@ -3,29 +3,30 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
+exp_id="${DATE}_Pretrain_DKASC_$model_name"
 
-if [ ! -d "./logs/$model_id" ]; then
-    mkdir -p ./logs/$model_id
+if [ ! -d "./logs/$exp_id" ]; then
+    mkdir -p ./logs/$exp_id
 fi
 
 seq_len=336
+label_len=0
 
-root_path_name=./data/GIST_dataset/
-data_path_name=GIST_sisuldong.csv
-data_name=GIST
+root_path_name=/PV/DKASC_AliceSprings_1h
+data_path_name=ALL
+data_name=DKASC
+random_seed=2024
 
-random_seed=2021
 
-#for pred_len in 1 2 4 8 16
-for pred_len in 1 2
+remove_cols="Wind_Speed Performance_Ratio" 
+
+
+for pred_len in 24 1 2 4 8 16
 do
-    if [ $pred_len -eq 1 ]; then
-        label_len=0
-    else
-        label_len=$((pred_len/2))
-    fi
     python -u run_longExp.py \
+      --remove_cols $remove_cols \
       --gpu 0 \
+      --use_amp \
       --random_seed $random_seed \
       --is_training 1 \
       --root_path $root_path_name \
@@ -51,5 +52,5 @@ do
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/$model_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
+      --itr 1 --batch_size 512 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
 done
