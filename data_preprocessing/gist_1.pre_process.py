@@ -264,33 +264,37 @@ if __name__ == '__main__':
 
 import pandas as pd
 import numpy as np
+import os
 
+# 파일 경로 설정
 root_path = '/PV/GIST_dataset'
 data_paths = os.listdir(root_path)
 data_paths = [d for d in data_paths if '.csv' in d]
 
+# NaN으로 변환해야 하는 비정상적인 값 정의
+values_to_replace = ['-', 'nan', 'NaN', '', ' ', 'N/A']
+
 for data_path in data_paths:
     if 'E12' in data_path:
         continue
+
+    # 1. CSV 파일 읽기
     df_raw = pd.read_csv(os.path.join(root_path, data_path))
     print(f'***** {data_path} *****')
 
-    # 1. '-' 값을 결측치(NaN)로 변환
-    df_raw.replace('-', np.nan, inplace=True)
+    # 2. 비정상적인 값을 결측치(NaN)로 변환
+    df_raw.replace(values_to_replace, np.nan, inplace=True)
 
-    # 2. `timestep` 컬럼을 datetime 형식으로 변환
+    # 3. `timestep` 컬럼을 datetime 형식으로 변환
     df_raw['timestep'] = pd.to_datetime(df_raw['timestep'], errors='coerce')
 
-    # 3. 날짜별로 그룹화하여 결측치 처리
-    # 변환 후에도 결측치가 있는 행을 제외하기 위해 확인
+    # 4. `timestep`이 변환되지 않은 행 삭제
     if df_raw['timestep'].isnull().sum() > 0:
         print(f"Warning: {df_raw['timestep'].isnull().sum()} rows have invalid datetime format and will be dropped.")
         df_raw = df_raw.dropna(subset=['timestep'])  # `timestep`이 변환되지 않은 행 삭제
 
-    # 4. 날짜 추출
+    # 5. 날짜별로 그룹화하여 결측치 처리
     df_raw['date'] = df_raw['timestep'].dt.date
-
-    # 5. 날짜별로 그룹화
     grouped = df_raw.groupby('date')
 
     # 6. 결측치가 2개 이상인 날짜를 제거한 후 나머지 데이터에 대해 결측치 처리
@@ -300,7 +304,7 @@ for data_path in data_paths:
         # 결측치가 2개 이상인 날짜 제거
         if daily_pv_data.isna().sum().sum() >= 2:  
             continue  # 해당 날짜 스킵
-        
+
         # 각 컬럼의 결측치 처리
         for column in daily_pv_data.columns:
             if column in ['date', 'timestep']:
@@ -317,20 +321,19 @@ for data_path in data_paths:
             # 3. 중간에 NaN이 있는 경우: 앞뒤 값의 평균으로 채움
             else:
                 daily_pv_data[column].interpolate(method='linear', inplace=True)
-        
+
         # 결측치 처리가 완료된 daily 데이터프레임을 리스트에 저장
         cleaned_df_list.append(daily_pv_data)
 
     # 7. 모든 날짜별 처리된 데이터를 다시 합쳐서 최종 데이터프레임 생성
     df_cleaned = pd.concat(cleaned_df_list, ignore_index=True)
 
-    # 최종 결과 확인
+    # 8. 최종 결과 확인 및 저장
     print("Cleaned DataFrame with processed missing values:\n", df_cleaned)
+    print(f"Total missing values after cleaning: {df_cleaned.isna().sum().sum()}")
 
+    # 9. 처리된 데이터 저장
+    df_cleaned.to_csv(os.path.join(root_path, data_path), index=False)
 
-    print(df_raw.isna().sum().sum())
-    print(df_raw.isnull().sum().sum())
-    print(df_raw['Global_Horizontal_Radiation'].isnull().sum())
-    df_raw.to_csv(os.path.join(root_path, data_path), index=False)
 
 # %%
