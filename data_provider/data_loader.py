@@ -9,6 +9,7 @@ import warnings
 import copy
 import pickle
 import joblib
+import random
 
 warnings.filterwarnings('ignore')
 
@@ -463,15 +464,15 @@ class Dataset_DKASC(Dataset):
             'date' : 0, 
             'Active_Energy_Delivered_Received' : 1,
             'Current_Phase_Average' : 2, 
-            'Weather_Temperature_Celsius' : 4,
-            'Weather_Relative_Humidity' : 5, 
-            'Global_Horizontal_Radiation' : 6,
-            'Diffuse_Horizontal_Radiation' : 7,
-            'Wind_Direction' : 8,
-            'Weather_Daily_Rainfall' : 9, 
-            'Radiation_Global_Tilted' : 10,
-            'Radiation_Diffuse_Tilted' : 11, 
-            'Active_Power' : 12
+            'Weather_Temperature_Celsius' : 3,
+            'Weather_Relative_Humidity' : 4, 
+            'Global_Horizontal_Radiation' : 5,
+            'Diffuse_Horizontal_Radiation' : 6,
+            'Wind_Direction' : 7,
+            'Weather_Daily_Rainfall' : 8, 
+            'Radiation_Global_Tilted' : 9,
+            'Radiation_Diffuse_Tilted' : 10, 
+            'Active_Power' : 11
         }
 
         self.x_list = self.data_frames[self.data_frames.columns[1:]].values
@@ -704,6 +705,7 @@ class Dataset_DKASC(Dataset):
     def inverse_transform(self, data):
         ## change the scaler number .. if num of features changes
         # return self.scaler_8.inverse_transform(data)
+        np.full((11), 0)
         return self.scaler.inverse_transform(data[[self.COLUMN_ORDER['Active_Power']]])
     
 
@@ -765,24 +767,9 @@ class Dataset_GIST(Dataset):
         if self.flag == 'train':
             self.data_frames = pd.read_pickle(self.train_file)
 
-        self.LOCATIONS = {
-            'C07_Samsung-Env-Bldg.csv' : 0,
-            'C09_Dasan.csv' : 1,
-            'C10_Renewable-E-Bldg.csv' : 2,
-            'C11_GAIA.csv ' : 3,
-            'E02_Animal-Recource-Center.csv' : 4,
-            'E03_GTI.csv'   : 5,
-            'E08_Natural-Science-Bldg.csv' : 6,
-            'E11_DormA.csv' : 7,
-            'E12_DormB.csv' : 8,
-            'N01_Central-Library.csv'   : 9,
-            'N02_LG-Library.csv' : 10,
-            'N06_College-Bldg.csv' : 11,
-            'W06_Student-Union.csv' : 12,
-            'W11_Facility-Maintenance-Bldg.csv' : 13,   
-            'W13_Centeral-Storage.csv' : 14,
-            'Soccer-Field.csv'  : 15,
-        }
+        
+
+
 
     def __preprocess_and_save_data__(self):  
 
@@ -795,6 +782,33 @@ class Dataset_GIST(Dataset):
         if self.data_paths == 'ALL':     
             self.data_paths = os.listdir(self.root_path)
 
+        self.LOCATIONS = {
+            'C07_Samsung-Env-Bldg.csv',
+            'C09_Dasan.csv',
+            'C10_Renewable-E-Bldg.csv',
+            'C11_GAIA.csv ',
+            'E02_Animal-Recource-Center.csv',
+            'E03_GTI.csv',
+            'E08_Natural-Science-Bldg.csv',
+            'E11_DormA.csv',
+            'E12_DormB.csv',
+            'N01_Central-Library.csv',
+            'N02_LG-Library.csv',
+            'N06_College-Bldg.csv',
+            'W06_Student-Union.csv',
+            'W11_Facility-Maintenance-Bldg.csv', 
+            'W13_Centeral-Storage.csv',
+            'Soccer-Field.csv',
+        }
+        
+        # train 9, valid 4, test 2
+        random.seed(42)
+        random.shuffle(self.LOCATIONS)
+        train_data_list = self.LOCATIONS[:9]
+        val_data_list = self.LOCATIONS[9:13]
+        test_data_list = self.LOCATIONS[13:]
+
+        
         self.data_path_list = sorted(self.data_paths)
         for idx, data_path in enumerate(self.data_path_list):
 
@@ -837,7 +851,16 @@ class Dataset_GIST(Dataset):
             elif self.timeenc == 1:
                 data_stamp = time_features(pd.to_datetime(df_stamp['timestep'].values), freq=self.freq)
                 data_stamp = data_stamp.transpose(1, 0)
-
+            
+            
+            if data_path in train_data_list:
+                train_ds_frames = pd.concat([train_ds_frames, pd.DataFrame(data_stamp)])
+            elif data_path in val_data_list:
+                val_ds_frames = pd.concat([val_ds_frames, pd.DataFrame(data_stamp)])
+            else:
+                test_ds_frames = pd.concat([test_ds_frames, pd.DataFrame(data_stamp)])
+            
+            
 
         train_data_frames = pd.concat([train_data_frames, train_data])
         val_data_frames = pd.concat([val_data_frames, val_data])
