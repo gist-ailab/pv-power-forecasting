@@ -251,8 +251,10 @@ class Exp_Main(Exp_Basic):
                     outputs_np_2d = output_np.reshape(-1, output_np.shape[-1])
                     batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
 
+
+
                     active_power_np = vali_data.inverse_transform(outputs_np_2d)
-                    active_power_gt_np = vali_data.inverse_transform(batch_y_np_2d.repeat(1,outputs.shape[-1]))
+                    active_power_gt_np = vali_data.inverse_transform(np.repeat(batch_y_np_2d, repeats=outputs.shape[-1], axis=-1))
                     # active_power_gt_np = active_power_gt_np[:, -1]
 
                     active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
@@ -296,6 +298,8 @@ class Exp_Main(Exp_Basic):
             
         pred_list = []
         true_list = []
+        pred_normalized_list = []
+        true_normalized_list = []
         input_list = []
 
         folder_path = os.path.join('./test_results/', setting)
@@ -359,10 +363,15 @@ class Exp_Main(Exp_Basic):
 
                     # de-normalize the data and prediction values
                     pred = test_data.inverse_transform(outputs_np_2d)
-                    true = test_data.inverse_transform(batch_y_np_2d.repeat(1,outputs.shape[-1]))
+                    true = test_data.inverse_transform(np.repeat(batch_y_np_2d, repeats=outputs.shape[-1], axis=-1))
 
-                    pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1) 
-                    true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)[:, :, -1]
+
+                    f_dim = -1 if self.args.features == 'MS' else 0
+                    pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1)[:, :, f_dim:] 
+                    true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)[:, :, f_dim:]
+
+                    pred_normalized = outputs_np
+                    true_normalized = batch_y_np
 
                     # pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1)
                     # true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
@@ -379,6 +388,8 @@ class Exp_Main(Exp_Basic):
 
                 pred_list.append(pred)
                 true_list.append(true[:,-self.args.pred_len:])
+                pred_normalized_list.append(pred_normalized)
+                true_normalized_list.append(true_normalized)
                 input_list.append(batch_x.detach().cpu().numpy())
                 
                 if i % 10 == 0:
@@ -407,10 +418,14 @@ class Exp_Main(Exp_Basic):
 
         pred_np = np.array(pred_list)
         trues_np = np.array(true_list)
+        pred_normalized_np = np.array(pred_normalized_list)
+        true_normalized_np = np.array(true_normalized_list)
         inputx_np = np.array(input_list)
 
         pred_np = pred_np.reshape(-1, pred_np.shape[-2], pred_np.shape[-1])
         trues_np = trues_np.reshape(-1, trues_np.shape[-2], trues_np.shape[-1])
+        pred_normalized_np = pred_normalized_np.reshape(-1, pred_normalized_np.shape[-2], pred_normalized_np.shape[-1])
+        true_normalized_np = true_normalized_np.reshape(-1, true_normalized_np.shape[-2], true_normalized_np.shape[-1])
         inputx_np = inputx_np.reshape(-1, inputx_np.shape[-2], inputx_np.shape[-1])
 
         # result save
@@ -419,13 +434,17 @@ class Exp_Main(Exp_Basic):
         
         # calculate metrics with only generated power
         mae, mse, rmse = metric(pred_np, trues_np)
+        mae_normalized, mse_normalized, rmse_normalized = metric(pred_normalized_np, true_normalized_np)
         print('MSE:{}, MAE:{}, RMSE:{}'.format(mse, mae, rmse))
+        print('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}'.format(mse_normalized, mae_normalized, rmse_normalized))
         
         txt_save_path = os.path.join(folder_path,
                                      f"{self.args.seq_len}_{self.args.pred_len}_result.txt")
         f = open(txt_save_path, 'a')
         f.write(setting + "  \n")
         f.write('MSE:{}, MAE:{}, RMSE:{}'.format(mse, mae, rmse))
+        f.write('\n')
+        f.write('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}'.format(mse_normalized, mae_normalized, rmse_normalized))
         f.write('\n')
         f.write('\n')
         f.close()

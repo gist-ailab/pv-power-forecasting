@@ -775,8 +775,8 @@ class Dataset_GIST(Dataset):
         if self.flag == 'train':
             self.data_frames = pd.read_pickle(self.train_file)#, encoding='ISO-8859-1')
             self.ds_frames = pd.read_pickle(self.train_file.replace('preprocessed', 'data_stamp'))#, encoding='ISO-8859-1')
-            print(self.data_frames.columns)
-            exit()
+            # print(self.data_frames.columns)
+            # exit()
 
         elif self.flag == 'val':
             self.data_frames = pd.read_pickle(self.val_file)
@@ -792,18 +792,11 @@ class Dataset_GIST(Dataset):
         else: self.scaler = joblib.load('/PV/GIST_ALL_scaler.pkl')
 
         self.COLUMN_ORDER = {
-            'date' : 0, 
-            'Active_Energy_Delivered_Received' : 1,
-            'Current_Phase_Average' : 2, 
-            'Weather_Temperature_Celsius' : 3,
-            'Weather_Relative_Humidity' : 4, 
-            'Global_Horizontal_Radiation' : 5,
-            'Diffuse_Horizontal_Radiation' : 6,
-            'Wind_Direction' : 7,
-            'Weather_Daily_Rainfall' : 8, 
-            'Radiation_Global_Tilted' : 9,
-            'Radiation_Diffuse_Tilted' : 10, 
-            'Active_Power' : 11
+            'timestep' : 0,
+            'Global_Horizontal_Radiation' : 1,
+            'Weather_Temperature_Celsius' : 2,
+            'Weather_Relative_Humidity' : 3,
+            'Active_Power' : 3
         }
 
 
@@ -821,10 +814,6 @@ class Dataset_GIST(Dataset):
         self.y_list = self.data_frames[self.data_frames.columns[-1]].values
         self.ds_list = self.ds_frames.values
         
-
-
-
-
         
 
 
@@ -868,6 +857,7 @@ class Dataset_GIST(Dataset):
 
         
         self.data_path_list = sorted(self.data_paths)
+        self.data_path_list = [d for d in self.data_path_list if '.csv' in d]
         for idx, data_path in enumerate(self.data_path_list):
             if 'E12' in data_path:
                 continue
@@ -955,7 +945,7 @@ class Dataset_GIST(Dataset):
                 else:  # val, test는 transform만 수행
                     df_data_values = self.scaler.transform(df_data_values)
 
-                with open('/PV/DKASC_ALL_scaler.pkl', 'wb') as f:
+                with open('/PV/GIST_ALL_scaler.pkl', 'wb') as f:
                     pickle.dump(self.scaler, f)
                 
                 df_data = pd.DataFrame(df_data_values, columns=df_data.columns)
@@ -969,12 +959,15 @@ class Dataset_GIST(Dataset):
 
         # 훈련, 검증, 테스트 데이터 저장
         train_data_frames.to_pickle(self.train_file)
+        train_ds_frames.to_pickle(self.train_file.replace('preprocessed', 'data_stamp'))
         print("[INFO] Train data saved.")
 
         val_data_frames.to_pickle(self.val_file)
+        val_ds_frames.to_pickle(self.val_file.replace('preprocessed', 'data_stamp'))
         print("[INFO] Validation data saved.")
 
         test_data_frames.to_pickle(self.test_file)
+        test_ds_frames.to_pickle(self.test_file.replace('preprocessed', 'data_stamp'))
         print("[INFO] Test data saved.")
 
 
@@ -984,26 +977,27 @@ class Dataset_GIST(Dataset):
         r_begin = s_end - self.label_len
         r_end = r_begin + self.label_len + self.pred_len
         
-        seq_x = self.data_x[s_begin:s_end]
-        seq_y = self.data_y[r_begin:r_end]
-        seq_x_mark = self.data_stamp[s_begin:s_end]
-        seq_y_mark = self.data_stamp[r_begin:r_end]
+        seq_x = self.x_list[s_begin:s_end]
+        seq_y = self.y_list[r_begin:r_end]
+        seq_x_mark = self.ds_list[s_begin:s_end]
+        seq_y_mark = self.ds_list[r_begin:r_end]
 
-        return seq_x, seq_y, seq_x_mark, seq_y_mark
+        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark
 
     def __len__(self):
-        return len(self.data_x) - self.seq_len - self.pred_len + 1
+        return len(self.x_list) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
-        ''' active power만 예측하고 검증할 때는 이거만 씀 '''
-        return getattr(self, f'scaler_{self.domain}_Active_Power').inverse_transform(data)
+        # ''' active power만 예측하고 검증할 때는 이거만 씀 '''
+        # return getattr(self, f'scaler_{self.domain}_Active_Power').inverse_transform(data)
+        return self.scaler.inverse_transform(data)
     
 ###################################################3
 # German by Doyoon
 class Dataset_German(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                  features='MS', data_path='preprocessed_data_DE_KN_industrial1_pv_1.csv', target='Active_Power',
-                 scale=True, timeenc=0, freq='h', domain='target'):
+                 scale=True, timeenc=0, freq='h'):#, domain='target'):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
@@ -1024,7 +1018,7 @@ class Dataset_German(Dataset):
         self.scale = scale
         self.timeenc = timeenc
         self.freq = freq
-        self.domain = domain
+        # self.domain = domain
 
         self.root_path = root_path
         self.data_path = data_path
