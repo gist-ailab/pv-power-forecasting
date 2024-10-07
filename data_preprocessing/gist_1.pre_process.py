@@ -258,3 +258,79 @@ if __name__ == '__main__':
     
 
 
+
+#%%
+## TODO 나중에 코드 통합할 것! 추가 데이터 전처리 작업임 SW##
+
+import pandas as pd
+import numpy as np
+
+root_path = '/PV/GIST_dataset'
+data_paths = os.listdir(root_path)
+data_paths = [d for d in data_paths if '.csv' in d]
+
+for data_path in data_paths:
+    if 'E12' in data_path:
+        continue
+    df_raw = pd.read_csv(os.path.join(root_path, data_path))
+    print(f'***** {data_path} *****')
+
+    # 1. '-' 값을 결측치(NaN)로 변환
+    df_raw.replace('-', np.nan, inplace=True)
+
+    # 2. `timestep` 컬럼을 datetime 형식으로 변환
+    df_raw['timestep'] = pd.to_datetime(df_raw['timestep'], errors='coerce')
+
+    # 3. 날짜별로 그룹화하여 결측치 처리
+    # 변환 후에도 결측치가 있는 행을 제외하기 위해 확인
+    if df_raw['timestep'].isnull().sum() > 0:
+        print(f"Warning: {df_raw['timestep'].isnull().sum()} rows have invalid datetime format and will be dropped.")
+        df_raw = df_raw.dropna(subset=['timestep'])  # `timestep`이 변환되지 않은 행 삭제
+
+    # 4. 날짜 추출
+    df_raw['date'] = df_raw['timestep'].dt.date
+
+    # 5. 날짜별로 그룹화
+    grouped = df_raw.groupby('date')
+
+    # 6. 결측치가 2개 이상인 날짜를 제거한 후 나머지 데이터에 대해 결측치 처리
+    cleaned_df_list = []
+
+    for date, daily_pv_data in grouped:
+        # 결측치가 2개 이상인 날짜 제거
+        if daily_pv_data.isna().sum().sum() >= 2:  
+            continue  # 해당 날짜 스킵
+        
+        # 각 컬럼의 결측치 처리
+        for column in daily_pv_data.columns:
+            if column in ['date', 'timestep']:
+                continue  # 'date'와 'timestep' 컬럼은 스킵
+
+            # 1. 첫 번째 값이 NaN일 경우: 이후 값으로 채움 (forward fill)
+            if pd.isna(daily_pv_data[column].iloc[0]):
+                daily_pv_data[column].fillna(method='ffill', inplace=True)
+
+            # 2. 마지막 값이 NaN일 경우: 이전 값으로 채움 (backward fill)
+            elif pd.isna(daily_pv_data[column].iloc[-1]):
+                daily_pv_data[column].fillna(method='bfill', inplace=True)
+
+            # 3. 중간에 NaN이 있는 경우: 앞뒤 값의 평균으로 채움
+            else:
+                daily_pv_data[column].interpolate(method='linear', inplace=True)
+        
+        # 결측치 처리가 완료된 daily 데이터프레임을 리스트에 저장
+        cleaned_df_list.append(daily_pv_data)
+
+    # 7. 모든 날짜별 처리된 데이터를 다시 합쳐서 최종 데이터프레임 생성
+    df_cleaned = pd.concat(cleaned_df_list, ignore_index=True)
+
+    # 최종 결과 확인
+    print("Cleaned DataFrame with processed missing values:\n", df_cleaned)
+
+
+    print(df_raw.isna().sum().sum())
+    print(df_raw.isnull().sum().sum())
+    print(df_raw['Global_Horizontal_Radiation'].isnull().sum())
+    df_raw.to_csv(os.path.join(root_path, data_path), index=False)
+
+# %%

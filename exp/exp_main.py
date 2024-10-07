@@ -234,26 +234,40 @@ class Exp_Main(Exp_Basic):
                         else:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                             
-                f_dim = -1 if self.args.features == 'MS' else 0
+                
 
-                outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
-                batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                                
+                # outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
+                # batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+
+                outputs = outputs[:, -self.args.pred_len:].to(self.device)
+                batch_y = batch_y[:, -self.args.pred_len:].to(self.device)
+                
                 if self.args.model != 'LSTM':
                     ### calculate metrics with only active power
-                    output_np = outputs[:, :].detach().cpu().numpy() 
-                    batch_y_np = batch_y[:, :].detach().cpu().numpy()
+                    output_np = outputs.detach().cpu().numpy() 
+                    batch_y_np = batch_y.detach().cpu().numpy()
 
                     # de-normalize the data and prediction values
-                    active_power_np = vali_data.inverse_transform(output_np)[:, :, -1]
-                    active_power_gt_np = vali_data.inverse_transform(batch_y_np)[:, :, -1]
-                
+                    outputs_np_2d = output_np.reshape(-1, output_np.shape[-1])
+                    batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
+
+                    active_power_np = vali_data.inverse_transform(outputs_np_2d)
+                    active_power_gt_np = vali_data.inverse_transform(batch_y_np_2d)
+
+                    active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
+                    active_power_gt_np = active_power_gt_np.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
+
+                    f_dim = -1 if self.args.features == 'MS' else 0
+                    active_power_np = active_power_np[:, :, f_dim:]
+                    active_power_gt_np = active_power_gt_np[:, :, f_dim:]
+
                     pred = torch.from_numpy(active_power_np).to(self.device)
                     gt = torch.from_numpy(active_power_gt_np).to(self.device)
                 else:
-                    pred_np = vali_data.inverse_transform(outputs.detach().cpu().numpy())
-                    gt_np = vali_data.inverse_transform(batch_y.detach().cpu().numpy())
+                    pred_np = vali_data.inverse_transform(outputs.reshape(-1, outputs.shape[-1]).detach().cpu().numpy())
+                    gt_np = vali_data.inverse_transform(batch_y.reshape(-1, batch_y.shape[-1]).detach().cpu().numpy())
 
+                    pred_np = pred_np.reshape(-1, vali_data[-2], batch_y_np.shape[-1])
                     pred = torch.from_numpy(pred_np[:, :, -1])
                     gt = torch.from_numpy(gt_np[:, :, -1])
 
@@ -327,22 +341,37 @@ class Exp_Main(Exp_Basic):
                 f_dim = -1 if self.args.features == 'MS' else 0
                 # print(outputs.shape,batch_y.shape)
 
-                outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
-                batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+                # outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
+                # batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+                outputs = outputs[:, -self.args.pred_len:].to(self.device)
+                batch_y = batch_y[:, -self.args.pred_len:].to(self.device)
                 
                 # source domain
                 if self.args.model != 'LSTM':
                     ### calculate metrics with only active power
-                    outputs_np = outputs[:, :].detach().cpu().numpy()
-                    batch_y_np = batch_y[:, :].detach().cpu().numpy()
-                    
+                    outputs_np = outputs.detach().cpu().numpy()
+                    batch_y_np = batch_y.detach().cpu().numpy()
+
+                    outputs_np_2d = outputs_np.reshape(-1, outputs_np.shape[-1])
+                    batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
+                
+
                     # de-normalize the data and prediction values
-                    pred = test_data.inverse_transform(outputs_np)[:, :, -1]
-                    true = test_data.inverse_transform(batch_y_np)[:, :, -1]
-               
+                    pred = test_data.inverse_transform(outputs_np_2d)
+                    true = test_data.inverse_transform(batch_y_np_2d)
+
+                    pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1) 
+                    true = pred.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
+
+                    pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1)
+                    true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
+                                 
                 else:
-                    pred_np = test_data.inverse_transform(outputs.detach().cpu().numpy())
-                    true_np = test_data.inverse_transform(batch_y.detach().cpu().numpy())
+                    pred_np = test_data.inverse_transform(outputs.reshape(-1, outputs_np.shape[-1]).detach().cpu().numpy())
+                    true_np = test_data.inverse_transform(batch_y.reshape(-1, outputs_np.shape[-1]).detach().cpu().numpy())
+                    
+                    pred_np = pred_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
+                    true_np = true_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
 
                     pred = torch.from_numpy(pred_np)[:, :, -1]
                     true = torch.from_numpy(true_np)[:, :, -1]

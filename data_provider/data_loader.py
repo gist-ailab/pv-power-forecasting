@@ -521,9 +521,9 @@ class Dataset_DKASC(Dataset):
             cols.remove('Active_Power')
             df_raw = df_raw[['date'] + cols + [self.target]]            
 
-            ## Creae scaler for each feature
-            for i in range(len(df_raw.columns)-1):
-                setattr(self, f'scaler_{i}', StandardScaler())
+            # ## Creae scaler for each feature
+            # for i in range(len(df_raw.columns)-1):
+            #     setattr(self, f'scaler_{i}', StandardScaler())
             
             ## pre-processing
             df_date = pd.DataFrame()
@@ -604,7 +604,7 @@ class Dataset_DKASC(Dataset):
 
             
 
-
+#
         self.scaler = StandardScaler()  
         data_frames = [train_data_frames, val_data_frames, test_data_frames]
 
@@ -705,8 +705,8 @@ class Dataset_DKASC(Dataset):
     def inverse_transform(self, data):
         ## change the scaler number .. if num of features changes
         # return self.scaler_8.inverse_transform(data)
-        np.full((11), 0)
-        return self.scaler.inverse_transform(data[[self.COLUMN_ORDER['Active_Power']]])
+
+        return self.scaler.inverse_transform(data)
     
 
 
@@ -714,7 +714,7 @@ class Dataset_DKASC(Dataset):
 class Dataset_GIST(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                  features='MS', data_path='GIST_sisuldong.csv', target='Active_Power',
-                 scale=True, timeenc=0, freq='h', domain='target'):
+                 scale=True, timeenc=0, freq='h', remove_cols=None, scaler_path=None):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
@@ -735,19 +735,23 @@ class Dataset_GIST(Dataset):
         self.scale = scale
         self.timeenc = timeenc
         self.freq = freq
-        self.domain = domain
+        self.flag = flag
+
+        self.remove_cols = remove_cols
+        self.scaler_path = scaler_path
+        
 
         self.root_path = root_path
         if data_path != 'ALL':
-            self.data_path_list = data_path.split(',')
-        else: self.data_path_list = data_path
+            self.data_paths = data_path.split(',')
+        else: self.data_paths = data_path
         
         # Create scaler for each input_channels
         # self.input_channels = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
         self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
         self.input_channels = self.input_channels + [self.target]
-        for i in self.input_channels:
-            setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
+        # for i in self.input_channels:
+        #     setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
             
         
         # 각 모드에 맞는 파일 이름 (빠른 훈련을 위해서 데이터 미리 파일로 저장해서 불러옴)
@@ -756,16 +760,70 @@ class Dataset_GIST(Dataset):
         self.test_file = os.path.join(root_path, f'GIST_preprocessed_test.pkl')
         
         # 파일이 존재하면 불러오고, 없으면 생성
-        if os.path.exists(self._get_preprocessed_file()): 
+        if os.path.exists(self.train_file): 
             self.__load_preprocessed_data__() 
         else:
             self.__preprocess_and_save_data__()
             self.__load_preprocessed_data__()
 
+
+
+
     def __load_preprocessed_data__(self):
-        # preprocessed 데이터셋 불러오기
+       
+               # preprocessed 데이터셋 불러오기
         if self.flag == 'train':
-            self.data_frames = pd.read_pickle(self.train_file)
+            self.data_frames = pd.read_pickle(self.train_file)#, encoding='ISO-8859-1')
+            self.ds_frames = pd.read_pickle(self.train_file.replace('preprocessed', 'data_stamp'))#, encoding='ISO-8859-1')
+            print(self.data_frames.columns)
+            exit()
+
+        elif self.flag == 'val':
+            self.data_frames = pd.read_pickle(self.val_file)
+            self.ds_frames = pd.read_pickle(self.val_file.replace('preprocessed', 'data_stamp'))
+
+        else: # test
+            self.data_frames = pd.read_pickle(self.test_file)
+            self.ds_frames = pd.read_pickle(self.test_file.replace('preprocessed', 'data_stamp'))
+
+        # Scaler 불러오기
+        if self.scaler_path is not None:
+            self.scaler = joblib.load(self.scaler_path)
+        else: self.scaler = joblib.load('/PV/GIST_ALL_scaler.pkl')
+
+        self.COLUMN_ORDER = {
+            'date' : 0, 
+            'Active_Energy_Delivered_Received' : 1,
+            'Current_Phase_Average' : 2, 
+            'Weather_Temperature_Celsius' : 3,
+            'Weather_Relative_Humidity' : 4, 
+            'Global_Horizontal_Radiation' : 5,
+            'Diffuse_Horizontal_Radiation' : 6,
+            'Wind_Direction' : 7,
+            'Weather_Daily_Rainfall' : 8, 
+            'Radiation_Global_Tilted' : 9,
+            'Radiation_Diffuse_Tilted' : 10, 
+            'Active_Power' : 11
+        }
+
+
+
+
+        self.x_list = self.data_frames[self.data_frames.columns[1:]].values
+      
+     
+
+        if self.remove_cols is not None:
+            self.remove_cols_list = [self.COLUMN_ORDER[col] for col in self.remove_cols if col in self.COLUMN_ORDER]
+            self.x_list = np.delete(self.x_list, self.remove_cols_list, axis=1)
+            
+     
+        self.y_list = self.data_frames[self.data_frames.columns[-1]].values
+        self.ds_list = self.ds_frames.values
+        
+
+
+
 
         
 
@@ -782,7 +840,7 @@ class Dataset_GIST(Dataset):
         if self.data_paths == 'ALL':     
             self.data_paths = os.listdir(self.root_path)
 
-        self.LOCATIONS = {
+        self.LOCATIONS = [
             'C07_Samsung-Env-Bldg.csv',
             'C09_Dasan.csv',
             'C10_Renewable-E-Bldg.csv',
@@ -799,7 +857,7 @@ class Dataset_GIST(Dataset):
             'W11_Facility-Maintenance-Bldg.csv', 
             'W13_Centeral-Storage.csv',
             'Soccer-Field.csv',
-        }
+        ]
         
         # train 9, valid 4, test 2
         random.seed(42)
@@ -823,11 +881,19 @@ class Dataset_GIST(Dataset):
 
             columns = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
             df_raw = df_raw[['timestep'] + self.input_channels]
-            df_raw[columns] = df_raw[columns].apply(pd.to_numeric, errors='coerce')
+            print(df_raw['timestep'].apply(lambda x: pd.to_datetime(x, errors='coerce')).isnull().sum())
+            
+            df_raw[columns] = df_raw[columns].apply(pd.to_numeric)#, errors='coerce')
 
 
 
             ## check if there is missing value
+            print(data_path)
+            print(df_raw['Global_Horizontal_Radiation'].isnull().sum())
+            print(df_raw['Weather_Temperature_Celsius'].isnull().sum())
+            print(df_raw['Weather_Relative_Humidity'].isnull().sum())
+            print(df_raw['Active_Power'].isnull().sum())
+            
             assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
             # assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
             assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
@@ -855,46 +921,16 @@ class Dataset_GIST(Dataset):
             
             if data_path in train_data_list:
                 train_ds_frames = pd.concat([train_ds_frames, pd.DataFrame(data_stamp)])
+                train_data_frames = pd.concat([train_data_frames, df_raw])
+            
             elif data_path in val_data_list:
                 val_ds_frames = pd.concat([val_ds_frames, pd.DataFrame(data_stamp)])
-            else:
+                val_data_frames = pd.concat([val_data_frames, df_raw])
+               
+            elif data_path in test_data_list:
                 test_ds_frames = pd.concat([test_ds_frames, pd.DataFrame(data_stamp)])
-            
-            
-
-        train_data_frames = pd.concat([train_data_frames, train_data])
-        val_data_frames = pd.concat([val_data_frames, val_data])
-        test_data_frames = pd.concat([test_data_frames, test_data])
-
-        train_ds_frames = pd.concat([train_ds_frames, pd.DataFrame(data_stamp)])
-        val_ds_frames = pd.concat([val_ds_frames, pd.DataFrame(data_stamp)])
-        test_ds_frames = pd.concat([test_ds_frames, pd.DataFrame(data_stamp)])
-
-
-
-
-        ### get maximum and minimum value of 'Active_Power'
-        setattr(self, f'pv_{self.domain}_max', np.max(df_raw['Active_Power'].values))   # save the maximum value of 'Active_Power' as a source/target domain
-        setattr(self, f'pv_{self.domain}_min', np.min(df_raw['Active_Power'].values))   # save the minimum value of 'Active_Power' as a source/target domain
+                test_data_frames = pd.concat([test_data_frames, df_raw])
         
-        num_train = int(len(df_raw) * 0.7)
-        num_test = int(len(df_raw) * 0.1)
-        num_vali = len(df_raw) - num_train - num_test
-
-
-        ##### TODO: 의논 후 정리하기 ###########################
-        # border1s = [0, num_train - self.seq_len, len(df_raw) - num_test - self.seq_len]
-        # border2s = [num_train, num_train + num_vali, len(df_raw)]
-        # border1 = border1s[self.set_type]
-        # border2 = border2s[self.set_type]
-        #####################################################
-        border1s = [0, num_train, len(df_raw) - num_test]
-        border2s = [num_train, num_train + num_vali, len(df_raw)]
-
-        train_data = df_raw.iloc[:num_train]
-        val_data = df_raw.iloc[num_train:num_train+num_vali]
-        test_data = df_raw.iloc[num_train+num_vali:]      
-
         
 
         self.scaler = StandardScaler()
