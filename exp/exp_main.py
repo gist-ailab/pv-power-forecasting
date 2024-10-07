@@ -252,7 +252,8 @@ class Exp_Main(Exp_Basic):
                     batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
 
                     active_power_np = vali_data.inverse_transform(outputs_np_2d)
-                    active_power_gt_np = vali_data.inverse_transform(batch_y_np_2d)
+                    active_power_gt_np = vali_data.inverse_transform(batch_y_np_2d.repeat(1,outputs.shape[-1]))
+                    # active_power_gt_np = active_power_gt_np[:, -1]
 
                     active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
                     active_power_gt_np = active_power_gt_np.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
@@ -358,13 +359,13 @@ class Exp_Main(Exp_Basic):
 
                     # de-normalize the data and prediction values
                     pred = test_data.inverse_transform(outputs_np_2d)
-                    true = test_data.inverse_transform(batch_y_np_2d)
+                    true = test_data.inverse_transform(batch_y_np_2d.repeat(1,outputs.shape[-1]))
 
                     pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1) 
-                    true = pred.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
+                    true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)[:, :, -1]
 
-                    pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1)
-                    true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
+                    # pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1)
+                    # true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
                                  
                 else:
                     pred_np = test_data.inverse_transform(outputs.reshape(-1, outputs_np.shape[-1]).detach().cpu().numpy())

@@ -272,7 +272,7 @@ data_paths = os.listdir(root_path)
 data_paths = [d for d in data_paths if '.csv' in d]
 
 # NaN으로 변환해야 하는 비정상적인 값 정의
-values_to_replace = ['-', 'nan', 'NaN', '', ' ', 'N/A']
+values_to_replace = ['-', 'nan', 'NaN', '', ' ', 'N/A', '  ', 'null', 'NULL', 'None', 'none', 'nil', 'NIL', 'NA', 'na']
 
 for data_path in data_paths:
     if 'E12' in data_path:
@@ -284,6 +284,9 @@ for data_path in data_paths:
 
     # 2. 비정상적인 값을 결측치(NaN)로 변환
     df_raw.replace(values_to_replace, np.nan, inplace=True)
+
+    # 결측치가 제대로 변환되었는지 확인
+    print(f"Initial missing values count after replacing invalid values: {df_raw.isna().sum().sum()}")
 
     # 3. `timestep` 컬럼을 datetime 형식으로 변환
     df_raw['timestep'] = pd.to_datetime(df_raw['timestep'], errors='coerce')
@@ -301,9 +304,12 @@ for data_path in data_paths:
     cleaned_df_list = []
 
     for date, daily_pv_data in grouped:
-        # 결측치가 2개 이상인 날짜 제거
+        # 6-1. 결측치가 2개 이상인 날짜 제거
         if daily_pv_data.isna().sum().sum() >= 2:  
             continue  # 해당 날짜 스킵
+
+        # 6-2. 결측치 처리 전 상태 출력 (디버깅용)
+        print(f"\nDate: {date} - Missing values before processing:\n", daily_pv_data.isna().sum())
 
         # 각 컬럼의 결측치 처리
         for column in daily_pv_data.columns:
@@ -315,12 +321,15 @@ for data_path in data_paths:
                 daily_pv_data[column].fillna(method='ffill', inplace=True)
 
             # 2. 마지막 값이 NaN일 경우: 이전 값으로 채움 (backward fill)
-            elif pd.isna(daily_pv_data[column].iloc[-1]):
+            if pd.isna(daily_pv_data[column].iloc[-1]):  # 여기서 elif 대신 if 사용
                 daily_pv_data[column].fillna(method='bfill', inplace=True)
 
             # 3. 중간에 NaN이 있는 경우: 앞뒤 값의 평균으로 채움
-            else:
+            if daily_pv_data[column].isna().sum() > 0:
                 daily_pv_data[column].interpolate(method='linear', inplace=True)
+
+        # 결측치 처리 후 확인 (디버깅용)
+        print(f"Missing values after processing for date {date}:\n", daily_pv_data.isna().sum())
 
         # 결측치 처리가 완료된 daily 데이터프레임을 리스트에 저장
         cleaned_df_list.append(daily_pv_data)
@@ -332,8 +341,14 @@ for data_path in data_paths:
     print("Cleaned DataFrame with processed missing values:\n", df_cleaned)
     print(f"Total missing values after cleaning: {df_cleaned.isna().sum().sum()}")
 
+    # 데이터프레임 확인을 위해 결측치가 있는 열 출력
+    print("Columns with remaining missing values after cleaning:\n", df_cleaned.columns[df_cleaned.isna().any()])
+
+    df_cleaned = df_cleaned.drop(columns=['date'])
+    
     # 9. 처리된 데이터 저장
     df_cleaned.to_csv(os.path.join(root_path, data_path), index=False)
+
 
 
 # %%

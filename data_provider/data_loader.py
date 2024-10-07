@@ -869,10 +869,12 @@ class Dataset_GIST(Dataset):
         
         self.data_path_list = sorted(self.data_paths)
         for idx, data_path in enumerate(self.data_path_list):
+            if 'E12' in data_path:
+                continue
 
 
             df_raw = pd.read_csv(os.path.join(self.root_path, data_path))
-            
+            print(df_raw.columns)
             df_raw['timestep'] = pd.to_datetime(df_raw['timestep'], errors='raise')
 
             '''
