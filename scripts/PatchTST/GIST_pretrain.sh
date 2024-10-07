@@ -18,7 +18,7 @@ data_name=GIST
 random_seed=2024
 
 #for pred_len in 1 2 4 8 16
-for pred_len in 24 1 2 4 8 16  
+for pred_len in 24 #1 2 4 8 16  
 do
     python -u run_longExp.py \
       --gpu 0 \

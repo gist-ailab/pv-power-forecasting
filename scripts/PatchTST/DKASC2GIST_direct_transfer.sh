@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_DKASC_$model_name"
+exp_id="${DATE}_Direct_Transfer_DKASC2GIST_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -12,9 +12,9 @@ fi
 seq_len=336
 label_len=0
 
-root_path_name=/PV/DKASC_AliceSprings_1h
+root_path_name=/PV/GIST_dataset
 data_path_name=ALL
-data_name=DKASC
+data_name=GIST
 random_seed=2024
 
 
@@ -28,7 +28,8 @@ do
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
-      --is_training 1 \
+      --is_training 0 \
+      --checkpoints \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

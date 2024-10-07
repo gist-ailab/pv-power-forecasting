@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_DKASC_$model_name"
+exp_id="${DATE}_Linear_Probing_DKASC2GIST_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -21,7 +21,7 @@ random_seed=2024
 remove_cols="Wind_Speed Performance_Ratio" 
 
 
-for pred_len in 24 #1 2 4 8 16
+for pred_len in 24 1 2 4 8 16
 do
     python -u run_longExp.py \
       --remove_cols $remove_cols \
