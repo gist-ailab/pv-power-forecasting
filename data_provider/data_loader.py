@@ -959,6 +959,181 @@ class Dataset_GIST(Dataset):
     def inverse_transform(self, data):
         ''' active power만 예측하고 검증할 때는 이거만 씀 '''
         return getattr(self, f'scaler_{self.domain}_Active_Power').inverse_transform(data)
+    
+###################################################3
+# German by Doyoon
+class Dataset_German(Dataset):
+    def __init__(self, root_path, flag='train', size=None,
+                 features='MS', data_path='preprocessed_data_DE_KN_industrial1_pv_1.csv', target='Active_Power',
+                 scale=True, timeenc=0, freq='h', domain='target'):
+        # size [seq_len, label_len, pred_len]
+        # info
+        if size == None:
+            self.seq_len = 24 * 4 * 4
+            self.label_len = 24 * 4
+            self.pred_len = 24 * 4
+        else:
+            self.seq_len = size[0]
+            self.label_len = size[1]
+            self.pred_len = size[2]
+        # init
+        assert flag in ['train', 'test', 'val']
+        type_map = {'train': 0, 'val': 1, 'test': 2}
+        self.set_type = type_map[flag]
+
+        self.features = features
+        self.target = target
+        self.scale = scale
+        self.timeenc = timeenc
+        self.freq = freq
+        self.domain = domain
+
+        self.root_path = root_path
+        self.data_path = data_path
+        
+        # Create scaler for each input_channels
+        # self.input_channels = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        # self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius']
+        self.input_channels = self.input_channels + [self.target]
+        for i in self.input_channels:
+            setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
+            
+        self.__read_data__()
+
+        # ###TODO: 저장해서 쓸 수 있어야 하는데 StandardScaler에서 문제 발생한다.
+        # # save preprocessed data
+        # processed_data = data_path.split('.')[0] + f'_{flag}.pkl'
+        # save_path = os.path.join(root_path,
+        #                          'preprocessed',
+        #                          f'{self.seq_len}_{self.label_len}_{self.pred_len}')
+        # os.makedirs(save_path, exist_ok=True)
+        # self.pkl_file = os.path.join(save_path, processed_data)
+        # if os.path.exists(self.pkl_file):
+        #     print(f'Load saved file {self.pkl_file}.')
+            
+        #     with open(self.pkl_file, 'rb') as f:
+        #         save_data = pickle.load(f)
+                
+        #         self.data_x = save_data['data_x']
+        #         self.data_y = save_data['data_y']
+        #         self.data_stamp = save_data['data_stamp']                  
+        # else:
+        #     print(f'Preprocessing {data_path} for {flag}...')
+
+        #     self.__read_data__()
+            
+        #     # load preprocessed data
+        #     save_data = {
+        #         'data_x': self.data_x,
+        #         'data_y': self.data_y,
+        #         'data_stamp': self.data_stamp
+        #     }
+            
+        #     with open(self.pkl_file, 'wb') as f:
+        #         pickle.dump(save_data, f, pickle.HIGHEST_PROTOCOL)
+        
+
+    def __read_data__(self):            
+        df_raw = pd.read_csv(os.path.join(self.root_path,
+                                          self.data_path))
+        
+        df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
+
+        '''
+        df_raw.columns: ['timestep', ...(other features), target feature]
+        '''
+
+        # columns = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        columns = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius']
+        df_raw = df_raw[['timestamp'] + self.input_channels]
+        df_raw[columns] = df_raw[columns].apply(pd.to_numeric, errors='coerce')
+
+        # preprocessing
+        df_stamp = pd.DataFrame()
+        df_stamp['timestamp'] = pd.to_datetime(df_raw['timestamp'])
+
+        if self.timeenc == 0:
+            df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
+            df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
+            df_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
+            df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
+            data_stamp = df_stamp.drop(['timestamp'], axis=1).values
+        elif self.timeenc == 1:
+            data_stamp = time_features(pd.to_datetime(df_stamp['timestamp'].values), freq=self.freq)
+            data_stamp = data_stamp.transpose(1, 0)
+
+        ## check if there is missing value
+        assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
+        # assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
+        assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
+        # assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
+        assert df_raw['Active_Power'].isnull().sum() == 0
+        
+        ### get maximum and minimum value of 'Active_Power'
+        setattr(self, f'pv_{self.domain}_max', np.max(df_raw['Active_Power'].values))   # save the maximum value of 'Active_Power' as a source/target domain
+        setattr(self, f'pv_{self.domain}_min', np.min(df_raw['Active_Power'].values))   # save the minimum value of 'Active_Power' as a source/target domain
+        
+        num_train = int(len(df_raw) * 0.7)
+        num_test = int(len(df_raw) * 0.1)
+        num_vali = len(df_raw) - num_train - num_test
+        border1s = [0, num_train - self.seq_len, len(df_raw) - num_test - self.seq_len]
+        border2s = [num_train, num_train + num_vali, len(df_raw)]
+        border1 = border1s[self.set_type]
+        border2 = border2s[self.set_type]
+
+        if self.features == 'M' or self.features == 'MS':
+            cols_data = df_raw.columns[1:] 
+            df_data = df_raw[cols_data]
+        elif self.features == 'S':
+            df_data = df_raw[[self.target]]
+
+        if self.scale:
+            train_border1 = border1s[0]
+            train_border2 = border2s[0]
+            train_data = df_data[train_border1:train_border2]
+            
+            train_data_values = train_data.values
+            df_data_values = df_data.values
+            transformed_data = []  # List to store each transformed feature
+            # for i in range(df_data_values.shape[1]):
+            for idx, val in enumerate(df_raw.columns[1:]):  # except 'date' which is the first column
+                train_features = train_data_values[:, idx].reshape(-1, 1)
+                getattr(self, f'scaler_{self.domain}_{val}').fit(train_features)
+
+                df_data_features = df_data_values[:, idx].reshape(-1, 1)
+                transformed_feature = getattr(self, f'scaler_{self.domain}_{val}').transform(df_data_features)
+                transformed_data.append(transformed_feature)
+            data = np.concatenate(transformed_data, axis=1)
+        else:
+            data = df_data.values
+
+        self.data_x = data[border1:border2]
+        self.data_y = data[border1:border2]
+        if self.timeenc == 0:
+            self.data_stamp = df_stamp[border1:border2][['month', 'day', 'weekday', 'hour']].values
+        elif self.timeenc == 1:
+            self.data_stamp = data_stamp[border1:border2]
+
+    def __getitem__(self, index):
+        s_begin = index
+        s_end = s_begin + self.seq_len
+        r_begin = s_end - self.label_len
+        r_end = r_begin + self.label_len + self.pred_len
+        
+        seq_x = self.data_x[s_begin:s_end]
+        seq_y = self.data_y[r_begin:r_end]
+        seq_x_mark = self.data_stamp[s_begin:s_end]
+        seq_y_mark = self.data_stamp[r_begin:r_end]
+
+        return seq_x, seq_y, seq_x_mark, seq_y_mark
+
+    def __len__(self):
+        return len(self.data_x) - self.seq_len - self.pred_len + 1
+
+    def inverse_transform(self, data):
+        ''' active power만 예측하고 검증할 때는 이거만 씀 '''
+        return getattr(self, f'scaler_{self.domain}_Active_Power').inverse_transform(data)
 
 ####################################################
 
