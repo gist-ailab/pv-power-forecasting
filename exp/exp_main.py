@@ -4,14 +4,12 @@ from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, 
 from models.Stat_models import Naive_repeat, Arima
 from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop, visual_out, visual_original
 from utils.metrics import metric
-# from utils.mmd_loss import MMDLoss
 
 import numpy as np
 import torch
 import torch.nn as nn
 from torch import optim
 from torch.optim import lr_scheduler
-from pytorch_adapt.layers import MMDLoss, MMDBatchedLoss
 
 import os
 import time

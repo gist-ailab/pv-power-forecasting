@@ -46,7 +46,9 @@ class Exp_Finetune(Exp_Main):
         if self.args.model == 'LSTM':
             model = model_dict[self.args.model].Model(self.args, self.device).float()
         else: model = model_dict[self.args.model].Model(self.args).float()
-
+        
+        if self.args.use_multi_gpu and self.args.use_gpu:
+            model = nn.DataParallel(model, device_ids=self.args.device_ids)
         return model
 
     def fully_finetune(self, setting, exp_id, resume):
@@ -56,7 +58,9 @@ class Exp_Finetune(Exp_Main):
 
         
        
+        # path = os.path.join('./checkpoints', exp_id, setting)
         path = os.path.join('./checkpoints', exp_id, setting)
+
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -114,6 +118,7 @@ class Exp_Finetune(Exp_Main):
                             outputs = self.model(batch_x)
                         elif 'LSTM' in self.args.model:
                                 outputs = self.model(batch_x, dec_inp)
+                        
                         else:
                             if self.args.output_attention:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -125,6 +130,7 @@ class Exp_Finetune(Exp_Main):
                         outputs = self.model(batch_x)
                     elif 'LSTM' in self.args.model:
                         outputs = self.model(batch_x, dec_inp)
+                    
                     else:
                         if self.args.output_attention:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -188,7 +194,8 @@ class Exp_Finetune(Exp_Main):
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
 
-        path = os.path.join('./checkpoints', exp_id, setting)
+        # path = os.path.join('./checkpoints', exp_id, setting)
+        path = os.path.join('./checkpoints', setting)
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -326,6 +333,7 @@ class Exp_Finetune(Exp_Main):
         self.model.load_state_dict(torch.load(best_model_path))
 
         return self.model
+    
     def vali(self, vali_data, vali_loader, criterion):
                     
         total_loss = []
@@ -365,32 +373,75 @@ class Exp_Finetune(Exp_Main):
                         else:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
-                f_dim = -1 if self.args.features == 'MS' else 0
-                outputs = outputs[:, -self.args.pred_len:, f_dim:]
-                batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)                
-                pred = outputs.detach().cpu()
-                true = batch_y.detach().cpu()
+                outputs = outputs[:, -self.args.pred_len:].to(self.device)
+                batch_y = batch_y[:, -self.args.pred_len:].to(self.device)
+                
 
-                loss = criterion(pred, true)
+                if self.args.model != 'LSTM':
+                    ### calculate metrics with only active power
+                    output_np = outputs.detach().cpu().numpy() 
+                    batch_y_np = batch_y.detach().cpu().numpy()
+
+                    # de-normalize the data and prediction values
+                    outputs_np_2d = output_np.reshape(-1, output_np.shape[-1])
+                    batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
+
+
+
+                    active_power_np = vali_data.inverse_transform(outputs_np_2d)
+                    active_power_gt_np = vali_data.inverse_transform(np.repeat(batch_y_np_2d, repeats=outputs.shape[-1], axis=-1))
+                    # active_power_gt_np = active_power_gt_np[:, -1]
+
+                    active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
+                    active_power_gt_np = active_power_gt_np.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
+
+                    f_dim = -1 if self.args.features == 'MS' else 0
+                    active_power_np = active_power_np[:, :, f_dim:]
+                    active_power_gt_np = active_power_gt_np[:, :, f_dim:]
+
+                    pred = torch.from_numpy(active_power_np).to(self.device)
+                    gt = torch.from_numpy(active_power_gt_np).to(self.device)
+                else:
+                    pred_np = vali_data.inverse_transform(outputs.reshape(-1, outputs.shape[-1]).detach().cpu().numpy())
+                    gt_np = vali_data.inverse_transform(batch_y.reshape(-1, batch_y.shape[-1]).detach().cpu().numpy())
+
+                    pred_np = pred_np.reshape(-1, vali_data[-2], batch_y_np.shape[-1])
+                    pred = torch.from_numpy(pred_np[:, :, -1])
+                    gt = torch.from_numpy(gt_np[:, :, -1])
+
+                loss = criterion(pred, gt)
 
                 total_loss.append(loss)
+
             total_loss = np.average(total_loss)
             self.model.train()
             return total_loss  
     
-    def test(self, setting, exp_id, scaler_path=None, ap_idx=5, test=0):
+    def test(self, setting, src_checkpoints=None, test=0):
         test_data, test_loader = self._get_data(flag='test')
         
         if test:
             print('loading model')
-            self.model.load_state_dict(torch.load(exp_id))#os.path.join('./checkpoints/', exp_id, setting, 'checkpoint.pth')))
+            if src_checkpoints != None:
+                self.model.load_state_dict(torch.load(src_checkpoints))#os.path.join('./checkpoints/', exp_id, setting, 'checkpoint.pth')))
+            else:
+                raise ValueError('src_checkpoints is None')
+        
+        pred_list = []
+        true_list = []
+        pred_normalized_list = []
+        true_normalized_list = []
+        input_list = []
 
-        preds = []
-        trues = []
-        inputx = []
-        preds_inverse = []
-        trues_inverse = []
-        folder_path = './test_results/' + setting + '/'
+        folder_path = os.path.join('./test_results/', setting)
+        folder_path_inout = os.path.join('./test_results/', 'in+out', setting)
+        folder_path_out = os.path.join('./test_results/', 'out', setting)
+
+        if not os.path.exists(folder_path_inout):
+            os.makedirs(folder_path_inout)
+        if not os.path.exists(folder_path_out):
+            os.makedirs(folder_path_out)
+        
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
@@ -432,87 +483,109 @@ class Exp_Finetune(Exp_Main):
 
                 f_dim = -1 if self.args.features == 'MS' else 0
                 # print(outputs.shape,batch_y.shape)
-                outputs = outputs[:, -self.args.pred_len:, f_dim:]
-                batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                outputs = outputs.detach().cpu().numpy()
-                batch_y = batch_y.detach().cpu().numpy()
-
-                pred = outputs  # outputs.detach().cpu().numpy()  # .squeeze()
-                true = batch_y  # batch_y.detach().cpu().numpy()  # .squeeze()
-
-                # scaler_path is not None:
-                with open(scaler_path, 'rb') as f:
-                    scaler = pickle.load(f)
-                # else: scaler = test.scaler
-                AP_idx = ap_idx
-                if test == 0:
-                    pred_inverse = scaler.inverse_transform(outputs.detach().cpu().numpy(), 'Active_Power')
-                    true_inverse = scaler.inverse_transform(batch_y.detach().cpu().numpy(), 'Active_Power')
+                outputs = outputs[:, -self.args.pred_len:].to(self.device)
+                batch_y = batch_y[:, -self.args.pred_len:].to(self.device)
                 
-                else: 
-                    # pred_inverse = scaler.inverse_transform(outputs.squeeze(-1), 'Active_Power')
-                    # true_inverse = scaler.inverse_transform(batch_y.squeeze(-1), 'Active_Power')
-                    pred_inverse = (outputs * scaler.scale_[AP_idx]) + scaler.mean_[AP_idx]
-                    true_inverse = (batch_y * scaler.scale_[AP_idx]) + scaler.mean_[AP_idx]
-                preds.append(pred)
-                trues.append(true)
+                if self.args.model != 'LSTM':
+                    ### calculate metrics with only active power
+                    outputs_np = outputs.detach().cpu().numpy()
+                    batch_y_np = batch_y.detach().cpu().numpy()
 
-                preds_inverse.append(pred_inverse)
-                trues_inverse.append(true_inverse)
+                    outputs_np_2d = outputs_np.reshape(-1, outputs_np.shape[-1])
+                    batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
                 
-                inputx.append(batch_x.detach().cpu().numpy())
-                
-                if i % 20 == 0:
-                    input = batch_x.detach().cpu().numpy()
-                    gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
-                    pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-                    visual_original(gt, pd, os.path.join(folder_path, str(i) + '.png'))
+
+                    # de-normalize the data and prediction values
+                    pred = test_data.inverse_transform(outputs_np_2d)
+                    true = test_data.inverse_transform(np.repeat(batch_y_np_2d, repeats=outputs.shape[-1], axis=-1))
+
+
+                    f_dim = -1 if self.args.features == 'MS' else 0
+                    pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1)[:, :, f_dim:] 
+                    true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)[:, :, f_dim:]
+
+                    pred_normalized = outputs_np
+                    true_normalized = batch_y_np
+
+                else:
+                    pred_np = test_data.inverse_transform(outputs.reshape(-1, outputs_np.shape[-1]).detach().cpu().numpy())
+                    true_np = test_data.inverse_transform(batch_y.reshape(-1, outputs_np.shape[-1]).detach().cpu().numpy())
+                    
+                    pred_np = pred_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
+                    true_np = true_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
+
+                    pred = torch.from_numpy(pred_np)[:, :, -1]
+                    true = torch.from_numpy(true_np)[:, :, -1]
+
+                pred_list.append(pred)
+                true_list.append(true[:,-self.args.pred_len:])
+                pred_normalized_list.append(pred_normalized)
+                true_normalized_list.append(true_normalized)
+                input_list.append(batch_x.detach().cpu().numpy())
+
+                if i % 10 == 0:
+                    if self.args.model != 'LSTM':
+                    # visualize_input_length = outputs.shape[1]*3 # visualize three times of the prediction length
+                        input_np_s = batch_x[:, :, -1].detach().cpu().numpy()
+                        input_inverse_transform_s = test_data.inverse_transform(input_np_s)
+                        input_seq_s = input_inverse_transform_s[0,:]
+                        gt_s = true[0, -self.args.pred_len:]
+                        pd_s = pred[0, :]
+                        visual(input_seq_s, gt_s, pd_s, os.path.join(folder_path_inout, str(i) + '.png'))
+                        # visual_out(input_seq, gt, pd, os.path.join(folder_path_out, str(i) + '.png'))
+                        # TODO: visual, visual_out은 거의 같은데 하나는 input을 포함하고 하나는 input을 포함하지 않는다.
+                    else:
+                        input_np = batch_x.detach().cpu().numpy()
+                        input_inverse_transform = test_data.inverse_transform(input_np)
+
+                        gt = np.concatenate((input_inverse_transform[0, :, -1], true[0, :, -1]), axis=0)
+                        pd = np.concatenate((input_inverse_transform[0, :, -1], pred[0, :, -1]), axis=0)
+                        visual_original(gt, pd, os.path.join(folder_path, str(i) + '.png'))
+                    
 
         if self.args.test_flop:
             test_params_flop((batch_x.shape[1],batch_x.shape[2]))
             exit()
 
-        preds = np.array(preds)
-        trues = np.array(trues)
-        preds_inverse = np.array(preds_inverse)
-        trues_inverse = np.array(trues_inverse)
+        pred_np = np.array(pred_list)
+        trues_np = np.array(true_list)
+        pred_normalized_np = np.array(pred_normalized_list)
+        true_normalized_np = np.array(true_normalized_list)
+        inputx_np = np.array(input_list)
 
-        inputx = np.array(inputx)
-
-
-
-        preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
-        trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
-        preds_inverse = preds_inverse.reshape(-1, preds_inverse.shape[-2], preds_inverse.shape[-1])
-        trues_inverse = trues_inverse.reshape(-1, trues_inverse.shape[-2], trues_inverse.shape[-1])
-        inputx = inputx.reshape(-1, inputx.shape[-2], inputx.shape[-1])
-
-
+        pred_np = pred_np.reshape(-1, pred_np.shape[-2], pred_np.shape[-1])
+        trues_np = trues_np.reshape(-1, trues_np.shape[-2], trues_np.shape[-1])
+        pred_normalized_np = pred_normalized_np.reshape(-1, pred_normalized_np.shape[-2], pred_normalized_np.shape[-1])
+        true_normalized_np = true_normalized_np.reshape(-1, true_normalized_np.shape[-2], true_normalized_np.shape[-1])
+        inputx_np = inputx_np.reshape(-1, inputx_np.shape[-2], inputx_np.shape[-1])
 
         # result save
-        folder_path = './results/' + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-
-        mae, mse, rmse, mape, mspe, rse = metric(preds, trues)
-        mae_i, mse_i, rmse_i, mape_i, mspe_i, rse_i = metric(preds_inverse, trues_inverse)
-        print('mse:{}, mae:{}, rmse:{}, mape:{}, mspe:{}, rse:{}'.format(mse, mae, rmse, mape, mspe, rse))
-        print('mse_inverse:{}, mae_inverse:{}, rmse_inverse:{}, mape_inverse:{}, mspe_inverse:{}, rse_inverse:{}'.format(mse_i, mae_i, rmse_i, mape_i, mspe_i, rse_i))
-        f = open("result.txt", 'a')
+        folder_path = os.path.join('./results/', setting)
+        os.makedirs(folder_path, exist_ok=True)
+        
+        # calculate metrics with only generated power
+        mae, mse, rmse = metric(pred_np, trues_np)
+        mae_normalized, mse_normalized, rmse_normalized = metric(pred_normalized_np, true_normalized_np)
+        print('MSE:{}, MAE:{}, RMSE:{}'.format(mse, mae, rmse))
+        print('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}'.format(mse_normalized, mae_normalized, rmse_normalized))
+        
+        txt_save_path = os.path.join(folder_path,
+                                     f"{self.args.seq_len}_{self.args.pred_len}_result.txt")
+        f = open(txt_save_path, 'a')
         f.write(setting + "  \n")
-        f.write('mse:{}, mae:{}, rmse:{}, mape:{}, mspe:{}, rse:{}'.format(mse, mae, rmse, mape, mspe, rse))
-        f.write('mse_inverse:{}, mae_inverse:{}, rmse_inverse:{}, mape_inverse:{}, mspe_inverse:{}, rse_inverse:{}'.format(mse_i, mae_i, rmse_i, mape_i, mspe_i, rse_i))
-
+        f.write('MSE:{}, MAE:{}, RMSE:{}'.format(mse, mae, rmse))
+        f.write('\n')
+        f.write('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}'.format(mse_normalized, mae_normalized, rmse_normalized))
         f.write('\n')
         f.write('\n')
         f.close()
-
+        
         # np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe,rse, corr]))
-        np.save(folder_path + 'pred.npy', preds)
-        np.save(folder_path + 'pred_inverse.npy', preds_inverse)
-        # np.save(folder_path + 'true.npy', trues)
-        # np.save(folder_path + 'x.npy', inputx)
+        # np.save(folder_path + 'pred.npy', pred_np)
+        # np.save(folder_path + 'true.npy', trues_np)
+        # np.save(folder_path + 'x.npy', inputx_np)
         return
+
     
     def predict(self, setting, load=False):
             pred_data, pred_loader = self._get_data(flag='pred')
