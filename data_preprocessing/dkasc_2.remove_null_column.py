@@ -37,6 +37,9 @@ if __name__ == '__main__':
             if column in df_list:
                 df = df.drop(columns=[column])
         print('\n')
-        
+        col = df.pop('Active_Power')  
+        df['Active_Power'] = col
         df.to_csv(os.path.join(save_path, data_path), index=False)
         
+
+# %%

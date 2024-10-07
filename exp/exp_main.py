@@ -241,12 +241,12 @@ class Exp_Main(Exp_Basic):
                                 
                 if self.args.model != 'LSTM':
                     ### calculate metrics with only active power
-                    active_power = outputs[:, :, -1].detach().cpu()
-                    active_power_gt = batch_y[:, :, -1].detach().cpu()
+                    output_np = outputs[:, :].detach().cpu().numpy() 
+                    batch_y_np = batch_y[:, :].detach().cpu().numpy()
 
                     # de-normalize the data and prediction values
-                    active_power_np = vali_data.inverse_transform(active_power)
-                    active_power_gt_np = vali_data.inverse_transform(active_power_gt)
+                    active_power_np = vali_data.inverse_transform(output_np)[:, :, -1]
+                    active_power_gt_np = vali_data.inverse_transform(batch_y_np)[:, :, -1]
                 
                     pred = torch.from_numpy(active_power_np).to(self.device)
                     gt = torch.from_numpy(active_power_gt_np).to(self.device)
@@ -254,8 +254,8 @@ class Exp_Main(Exp_Basic):
                     pred_np = vali_data.inverse_transform(outputs.detach().cpu().numpy())
                     gt_np = vali_data.inverse_transform(batch_y.detach().cpu().numpy())
 
-                    pred = torch.from_numpy(pred_np)
-                    gt = torch.from_numpy(gt_np)
+                    pred = torch.from_numpy(pred_np[:, :, -1])
+                    gt = torch.from_numpy(gt_np[:, :, -1])
 
                 loss = criterion(pred, gt)
 
@@ -333,22 +333,22 @@ class Exp_Main(Exp_Basic):
                 # source domain
                 if self.args.model != 'LSTM':
                     ### calculate metrics with only active power
-                    active_power_s = outputs[:, :, -1].detach().cpu()
-                    active_power_gt_s = batch_y[:, :, -1].detach().cpu()
+                    outputs_np = outputs[:, :].detach().cpu().numpy()
+                    batch_y_np = batch_y[:, :].detach().cpu().numpy()
                     
                     # de-normalize the data and prediction values
-                    pred_s = test_data.inverse_transform(active_power_s)
-                    true_s = test_data.inverse_transform(active_power_gt_s)
+                    pred = test_data.inverse_transform(outputs_np)[:, :, -1]
+                    true = test_data.inverse_transform(batch_y_np)[:, :, -1]
                
                 else:
                     pred_np = test_data.inverse_transform(outputs.detach().cpu().numpy())
                     true_np = test_data.inverse_transform(batch_y.detach().cpu().numpy())
 
-                    pred_s = torch.from_numpy(pred_np)
-                    true_s = torch.from_numpy(true_np)
+                    pred = torch.from_numpy(pred_np)[:, :, -1]
+                    true = torch.from_numpy(true_np)[:, :, -1]
 
-                pred_list.append(pred_s)
-                true_list.append(true_s[:,-self.args.pred_len:])
+                pred_list.append(pred)
+                true_list.append(true[:,-self.args.pred_len:])
                 input_list.append(batch_x.detach().cpu().numpy())
                 
                 if i % 10 == 0:
@@ -357,8 +357,8 @@ class Exp_Main(Exp_Basic):
                         input_np_s = batch_x[:, :, -1].detach().cpu().numpy()
                         input_inverse_transform_s = test_data.inverse_transform(input_np_s)
                         input_seq_s = input_inverse_transform_s[0,:]
-                        gt_s = true_s[0, -self.args.pred_len:]
-                        pd_s = pred_s[0, :]
+                        gt_s = true[0, -self.args.pred_len:]
+                        pd_s = pred[0, :]
                         visual(input_seq_s, gt_s, pd_s, os.path.join(folder_path_inout, str(i) + '.png'))
                         # visual_out(input_seq, gt, pd, os.path.join(folder_path_out, str(i) + '.png'))
                         # TODO: visual, visual_out은 거의 같은데 하나는 input을 포함하고 하나는 input을 포함하지 않는다.
@@ -366,8 +366,8 @@ class Exp_Main(Exp_Basic):
                         input_np = batch_x.detach().cpu().numpy()
                         input_inverse_transform = test_data.inverse_transform(input_np)
 
-                        gt = np.concatenate((input_inverse_transform[0, :, -1], true_s[0, :, -1]), axis=0)
-                        pd = np.concatenate((input_inverse_transform[0, :, -1], pred_s[0, :, -1]), axis=0)
+                        gt = np.concatenate((input_inverse_transform[0, :, -1], true[0, :, -1]), axis=0)
+                        pd = np.concatenate((input_inverse_transform[0, :, -1], pred[0, :, -1]), axis=0)
                         visual_original(gt, pd, os.path.join(folder_path, str(i) + '.png'))
                     
 
