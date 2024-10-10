@@ -13,6 +13,8 @@ import random
 
 warnings.filterwarnings('ignore')
 
+__all__ = ['Dataset_DKASC_single', 'Dataset_DKASC', 'Dataset_GIST']
+
 
 class Dataset_DKASC_single(Dataset):
     def __init__(self, root_path, flag='train', size=None,
@@ -423,15 +425,21 @@ class Dataset_DKASC(Dataset):
         # self.ap_max_list = []
         # self.ap_min_list = []
 
-        # 각 모드에 맞는 파일 이름 (빠른 훈련을 위해서 데이터 미리 파일로 저장해서 불러옴)
-        self.train_file = os.path.join(root_path, f'DKASC_preprocessed_train.pkl')
-        self.val_file = os.path.join(root_path, f'DKASC_preprocessed_val.pkl')
-        self.test_file = os.path.join(root_path, f'DKASC_preprocessed_test.pkl')
-        
+        if self.data_path_list == 'ALL':
+            self.train_file = os.path.join(root_path, f'DKASC_preprocessed_train_ALL.pkl')
+            self.val_file = os.path.join(root_path, f'DKASC_preprocessed_val_ALL.pkl')
+            self.test_file = os.path.join(root_path, f'DKASC_preprocessed_test_ALL.pkl')
         # 파일이 존재하면 불러오고, 없으면 생성
-        if os.path.exists(self.train_file): 
-            self.__load_preprocessed_data__() 
+            if os.path.exists(self.train_file): 
+                self.__load_preprocessed_data__() 
+            else:
+                self.__preprocess_and_save_data__()
+                self.__load_preprocessed_data__()
         else:
+            self.train_file = os.path.join(root_path, f'DKASC_preprocessed_train_tmp.pkl')
+            self.val_file = os.path.join(root_path, f'DKASC_preprocessed_val_tmp.pkl')
+            self.test_file = os.path.join(root_path, f'DKASC_preprocessed_test_tmp.pkl')
+
             self.__preprocess_and_save_data__()
             self.__load_preprocessed_data__()
 
@@ -444,9 +452,8 @@ class Dataset_DKASC(Dataset):
         # preprocessed 데이터셋 불러오기
         if self.flag == 'train':
             self.data_frames = pd.read_pickle(self.train_file)
-            self.ds_frames = pd.read_pickle(self.train_file.replace('preprocessed', 'data_stamp')
+            self.ds_frames = pd.read_pickle(self.train_file.replace('preprocessed', 'data_stamp'))
     
-
         elif self.flag == 'val':
             self.data_frames = pd.read_pickle(self.val_file)
             self.ds_frames = pd.read_pickle(self.val_file.replace('preprocessed', 'data_stamp'))
@@ -749,30 +756,36 @@ class Dataset_GIST(Dataset):
         
 
         self.root_path = root_path
+
         if data_path != 'ALL':
             self.data_paths = data_path.split(',')
         else: self.data_paths = data_path
         
-        # Create scaler for each input_channels
-        # self.input_channels = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+        # 입력 채널, 타겟 채널
         self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
         self.input_channels = self.input_channels + [self.target]
-        # for i in self.input_channels:
-        #     setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
+        
             
-        
-        # 각 모드에 맞는 파일 이름 (빠른 훈련을 위해서 데이터 미리 파일로 저장해서 불러옴)
-        self.train_file = os.path.join(root_path, f'GIST_preprocessed_train.pkl')
-        self.val_file = os.path.join(root_path, f'GIST_preprocessed_val.pkl')
-        self.test_file = os.path.join(root_path, f'GIST_preprocessed_test.pkl')
-        
-        # 파일이 존재하면 불러오고, 없으면 생성
-        if os.path.exists(self.train_file): 
-            self.__load_preprocessed_data__() 
+    
+        if self.data_paths == 'ALL':
+            # 각 모드에 맞는 파일 이름 (빠른 훈련을 위해서 데이터 미리 파일로 저장해서 불러옴)
+            self.train_file = os.path.join(root_path, f'GIST_preprocessed_train.pkl')
+            self.val_file = os.path.join(root_path, f'GIST_preprocessed_val.pkl')
+            self.test_file = os.path.join(root_path, f'GIST_preprocessed_test.pkl')
+
+            if os.path.exists(self.train_file): 
+                self.__load_preprocessed_data__() 
+            else:
+                self.__preprocess_and_save_data__()
+                self.__load_preprocessed_data__()
         else:
+            # 각 모드에 맞는 파일 이름 (빠른 훈련을 위해서 데이터 미리 파일로 저장해서 불러옴)
+            self.train_file = os.path.join(root_path, f'GIST_preprocessed_train_temp.pkl')
+            self.val_file = os.path.join(root_path, f'GIST_preprocessed_val_temp.pkl')
+            self.test_file = os.path.join(root_path, f'GIST_preprocessed_test_temp.pkl')
+
             self.__preprocess_and_save_data__()
             self.__load_preprocessed_data__()
-
 
 
 
@@ -780,8 +793,8 @@ class Dataset_GIST(Dataset):
        
                # preprocessed 데이터셋 불러오기
         if self.flag == 'train':
-            self.data_frames = pd.read_pickle(self.train_file)#, encoding='ISO-8859-1')
-            self.ds_frames = pd.read_pickle(self.train_file.replace('preprocessed', 'data_stamp'))#, encoding='ISO-8859-1')
+            self.data_frames = pd.read_pickle(self.train_file)
+            self.ds_frames = pd.read_pickle(self.train_file.replace('preprocessed', 'data_stamp'))
             # print(self.data_frames.columns)
             # exit()
 
@@ -798,6 +811,7 @@ class Dataset_GIST(Dataset):
             self.scaler = joblib.load(self.scaler_path)
         else: self.scaler = joblib.load('/PV/GIST_ALL_scaler.pkl')
 
+        
         self.COLUMN_ORDER = {
             'timestep' : 0,
             'Global_Horizontal_Radiation' : 1,
@@ -806,12 +820,13 @@ class Dataset_GIST(Dataset):
             'Active_Power' : 3
         }
 
-
+        # 열 순서 정렬
+        ordered_columns = sorted(self.COLUMN_ORDER, key=self.COLUMN_ORDER.get)
+        self.data_frames = self.data_frames.reindex(columns=ordered_columns)
 
 
         self.x_list = self.data_frames[self.data_frames.columns[1:]].values
       
-     
 
         if self.remove_cols is not None:
             self.remove_cols_list = [self.COLUMN_ORDER[col] for col in self.remove_cols if col in self.COLUMN_ORDER]
@@ -824,7 +839,6 @@ class Dataset_GIST(Dataset):
         
 
 
-
     def __preprocess_and_save_data__(self):  
 
         train_data_frames, val_data_frames, test_data_frames = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
@@ -835,6 +849,7 @@ class Dataset_GIST(Dataset):
         # DKASC 모든 데이터 불러오기
         if self.data_paths == 'ALL':     
             self.data_paths = os.listdir(self.root_path)
+
 
         self.LOCATIONS = [
             'C07_Samsung-Env-Bldg.csv',
@@ -856,6 +871,7 @@ class Dataset_GIST(Dataset):
         ]
         
         # train 9, valid 4, test 2
+        # random for shuffling
         random.seed(42)
         random.shuffle(self.LOCATIONS)
         train_data_list = self.LOCATIONS[:9]
@@ -866,9 +882,8 @@ class Dataset_GIST(Dataset):
         self.data_path_list = sorted(self.data_paths)
         self.data_path_list = [d for d in self.data_path_list if '.csv' in d]
         for idx, data_path in enumerate(self.data_path_list):
-            if 'E12' in data_path:
-                continue
-
+            # if 'E12' in data_path:
+            #     continue
 
             df_raw = pd.read_csv(os.path.join(self.root_path, data_path))
             print(df_raw.columns)
@@ -888,6 +903,7 @@ class Dataset_GIST(Dataset):
 
             ## check if there is missing value
             print(data_path)
+            print(df_raw.columns)
             print(df_raw['Global_Horizontal_Radiation'].isnull().sum())
             print(df_raw['Weather_Temperature_Celsius'].isnull().sum())
             print(df_raw['Weather_Relative_Humidity'].isnull().sum())
@@ -995,8 +1011,6 @@ class Dataset_GIST(Dataset):
         return len(self.x_list) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
-        # ''' active power만 예측하고 검증할 때는 이거만 씀 '''
-        # return getattr(self, f'scaler_{self.domain}_Active_Power').inverse_transform(data)
         return self.scaler.inverse_transform(data)
     
 ###################################################3
