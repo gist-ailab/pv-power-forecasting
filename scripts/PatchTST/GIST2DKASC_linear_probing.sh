@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Linear_Probing_DKASC2GIST_$model_name"
+exp_id="${DATE}_Linear_Probing_GIST2DKASC_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id

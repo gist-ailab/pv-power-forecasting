@@ -24,8 +24,7 @@ do
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
-      --is_training 0 \
-      --checkpoints /home/pv/code/PatchTST/checkpoints/24100802_PatchTST_GIST_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth\
+      --is_training 1 \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \
