@@ -443,8 +443,8 @@ class Dataset_DKASC(Dataset):
 
         # preprocessed 데이터셋 불러오기
         if self.flag == 'train':
-            self.data_frames = pd.read_pickle(self.train_file)#, encoding='ISO-8859-1')
-            self.ds_frames = pd.read_pickle(self.train_file.replace('preprocessed', 'data_stamp'))#, encoding='ISO-8859-1')
+            self.data_frames = pd.read_pickle(self.train_file)
+            self.ds_frames = pd.read_pickle(self.train_file.replace('preprocessed', 'data_stamp')
     
 
         elif self.flag == 'val':
@@ -475,21 +475,22 @@ class Dataset_DKASC(Dataset):
             'Active_Power' : 11
         }
 
+        # 열 순서 정렬
+        ordered_columns = sorted(self.COLUMN_ORDER, key=self.COLLUMN_ORDER.get)
+        self.data_frames = self.data_frames.reindex(columns=ordered_columns)
+
+        # 입력에 date는 제외
         self.x_list = self.data_frames[self.data_frames.columns[1:]].values
       
-     
-
+        # 제거할 열이 있으면 제거
         if self.remove_cols is not None:
             self.remove_cols_list = [self.COLUMN_ORDER[col] for col in self.remove_cols if col in self.COLUMN_ORDER]
             self.x_list = np.delete(self.x_list, self.remove_cols_list, axis=1)
             
-     
+        # 타겟은 마지막 열인 Active_Power
         self.y_list = self.data_frames[self.data_frames.columns[-1]].values
         self.ds_list = self.ds_frames.values
         
-
-                                    
-
 
     # 1. 데이터셋 리스트 불러와서 훈련, 검증, 테스트 데이터셋 나누기
     # 2. 전체 훈련 데이터셋들을 불러와서 Scaler Fit
@@ -514,12 +515,18 @@ class Dataset_DKASC(Dataset):
 
             '''
             df_raw.columns: ['date', ...(other features), target feature]
+            'date', 'Active_Energy_Delivered_Received', 'Current_Phase_Average',
+            'Weather_Temperature_Celsius', 'Weather_Relative_Humidity',
+            'Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation',
+            'Wind_Direction', 'Weather_Daily_Rainfall', 'Radiation_Global_Tilted',
+            'Radiation_Diffuse_Tilted', 'Active_Power'
             '''
             cols = df_raw.columns.tolist()
             cols.remove('timestamp')
             cols.remove('date')
             cols.remove('Active_Power')
-            df_raw = df_raw[['date'] + cols + [self.target]]            
+            df_raw = df_raw[['date'] + cols + [self.target]]     
+                 
 
             # ## Creae scaler for each feature
             # for i in range(len(df_raw.columns)-1):
@@ -604,15 +611,17 @@ class Dataset_DKASC(Dataset):
 
             
 
-#
+        # 전체 데이터셋에 대해 스케일러 적용
         self.scaler = StandardScaler()  
         data_frames = [train_data_frames, val_data_frames, test_data_frames]
 
         for i, df_raw in enumerate(data_frames):
             if self.features == 'M' or self.features == 'MS':
-                cols_data = df_raw.columns[1:] 
+                # date 열을 제외
+                cols_data = df_raw.columns[1:]
                 df_data = df_raw[cols_data]
             elif self.features == 'S':
+                # Active Power만 추출
                 df_data = df_raw[[self.target]]
 
 
@@ -627,6 +636,7 @@ class Dataset_DKASC(Dataset):
                 else:  # val, test는 transform만 수행
                     df_data_values = self.scaler.transform(df_data_values)
 
+                # 스케일러 저장
                 with open('/PV/DKASC_ALL_scaler.pkl', 'wb') as f:
                     pickle.dump(self.scaler, f)
                 
@@ -652,6 +662,7 @@ class Dataset_DKASC(Dataset):
         test_data_frames.to_pickle(self.test_file)
         test_ds_frames.to_pickle(self.test_file.replace('preprocessed', 'data_stamp'))
         print("[INFO] Test data saved.")
+
 
             ###### TODO: 의논 후 정리 [이전] 각각의 column에 대해서 스케일러 적용 ######################
             
@@ -700,12 +711,8 @@ class Dataset_DKASC(Dataset):
     def __len__(self):    
         return len(self.x_list) - self.seq_len - self.pred_len + 1
 
-        return len(self.data_x) - self.seq_len - self.pred_len + 1
-
+    # 평가 시 필요함
     def inverse_transform(self, data):
-        ## change the scaler number .. if num of features changes
-        # return self.scaler_8.inverse_transform(data)
-
         return self.scaler.inverse_transform(data)
     
 

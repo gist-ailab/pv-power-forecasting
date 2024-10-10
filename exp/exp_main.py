@@ -202,7 +202,7 @@ class Exp_Main(Exp_Basic):
 
         return self.model
 
-    def vali(self, vali_data, vali_loader, criterion, cross_criterion=None, flatten=None):
+    def vali(self, vali_data, vali_loader, criterion):
         total_loss = []
         
         self.model.eval()
