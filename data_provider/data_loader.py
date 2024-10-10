@@ -417,6 +417,21 @@ class Dataset_DKASC(Dataset):
             '218-Site_DKA-M4_C-Phase_II.csv' : [2018, 2020,  2021, 2021,  2022, 2023],    # 9A
         }
 
+        self.COLUMN_ORDER = {
+            'date' : 0, 
+            'Active_Energy_Delivered_Received' : 1,
+            'Current_Phase_Average' : 2, 
+            'Weather_Temperature_Celsius' : 3,
+            'Weather_Relative_Humidity' : 4, 
+            'Global_Horizontal_Radiation' : 5,
+            'Diffuse_Horizontal_Radiation' : 6,
+            'Wind_Direction' : 7,
+            'Weather_Daily_Rainfall' : 8, 
+            'Radiation_Global_Tilted' : 9,
+            'Radiation_Diffuse_Tilted' : 10, 
+            'Active_Power' : 11
+        }
+
 
         self.pv_list = []
         self.x_list = []
@@ -443,8 +458,7 @@ class Dataset_DKASC(Dataset):
             self.__preprocess_and_save_data__()
             self.__load_preprocessed_data__()
 
-
-
+        
     # 저장된 데이터 불러오기    
     def __load_preprocessed_data__(self):
 
@@ -465,7 +479,7 @@ class Dataset_DKASC(Dataset):
         # Scaler 불러오기
         if self.scaler_path is not None:
             self.scaler = joblib.load(self.scaler_path)
-        else: self.scaler = joblib.load('/ailab_mat/dataset/PV/DKASC_ALL_scaler.pkl')
+        else: self.scaler = joblib.load('/SSDa/sowon_choi/DKASC_AliceSprings_1h/DKASC_ALL_scaler.pkl')
 
         self.COLUMN_ORDER = {
             'date' : 0, 
@@ -483,16 +497,16 @@ class Dataset_DKASC(Dataset):
         }
 
         # 열 순서 정렬
-        ordered_columns = sorted(self.COLUMN_ORDER, key=self.COLLUMN_ORDER.get)
+        ordered_columns = sorted(self.COLUMN_ORDER, key=self.COLUMN_ORDER.get)
         self.data_frames = self.data_frames.reindex(columns=ordered_columns)
 
         # 입력에 date는 제외
         self.x_list = self.data_frames[self.data_frames.columns[1:]].values
       
-        # 제거할 열이 있으면 제거
-        if self.remove_cols is not None:
-            self.remove_cols_list = [self.COLUMN_ORDER[col] for col in self.remove_cols if col in self.COLUMN_ORDER]
-            self.x_list = np.delete(self.x_list, self.remove_cols_list, axis=1)
+        # # 제거할 열이 있으면 제거
+        # if self.remove_cols is not None:
+        #     self.remove_cols_list = [self.COLUMN_ORDER[col] for col in self.remove_cols if col in self.COLUMN_ORDER]
+        #     self.x_list = np.delete(self.x_list, self.remove_cols_list, axis=1)
             
         # 타겟은 마지막 열인 Active_Power
         self.y_list = self.data_frames[self.data_frames.columns[-1]].values
@@ -518,6 +532,9 @@ class Dataset_DKASC(Dataset):
         for idx, data_path in enumerate(self.data_path_list):
             df_raw = pd.read_csv(os.path.join(self.root_path, data_path))
             
+            if self.remove_cols:
+                df_raw = df_raw.drop(columns=self.remove_cols)
+
             df_raw['date'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
 
             '''
@@ -644,7 +661,7 @@ class Dataset_DKASC(Dataset):
                     df_data_values = self.scaler.transform(df_data_values)
 
                 # 스케일러 저장
-                with open('/PV/DKASC_ALL_scaler.pkl', 'wb') as f:
+                with open('/SSDa/sowon_choi/DKASC_AliceSprings_1h/DKASC_ALL_scaler.pkl', 'wb') as f:
                     pickle.dump(self.scaler, f)
                 
                 df_data = pd.DataFrame(df_data_values, columns=df_data.columns)
@@ -809,7 +826,7 @@ class Dataset_GIST(Dataset):
         # Scaler 불러오기
         if self.scaler_path is not None:
             self.scaler = joblib.load(self.scaler_path)
-        else: self.scaler = joblib.load('/PV/GIST_ALL_scaler.pkl')
+        else: self.scaler = joblib.load('/SSDa/sowon_choi/GIST_dataset/GIST_ALL_scaler.pkl')
 
         
         self.COLUMN_ORDER = {
@@ -968,7 +985,7 @@ class Dataset_GIST(Dataset):
                 else:  # val, test는 transform만 수행
                     df_data_values = self.scaler.transform(df_data_values)
 
-                with open('/PV/GIST_ALL_scaler.pkl', 'wb') as f:
+                with open('/SSDa/sowon_choi/GIST_dataset/GIST_ALL_scaler.pkl', 'wb') as f:
                     pickle.dump(self.scaler, f)
                 
                 df_data = pd.DataFrame(df_data_values, columns=df_data.columns)

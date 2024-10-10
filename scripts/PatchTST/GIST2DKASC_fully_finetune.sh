@@ -12,7 +12,7 @@ fi
 seq_len=336
 label_len=0
 
-root_path_name=/ailab_mat/dataset/PV/DKASC_AliceSprings_1h
+root_path_name=/SSDa/sowon_choi/DKASC_AliceSprings_1h
 data_path_name=ALL
 data_name=DKASC
 random_seed=2024
@@ -20,7 +20,7 @@ random_seed=2024
 
 # remove_cols="Wind_Speed Performance_Ratio" 
 
-
+export CUDA_VISIBLE_DEVICES=2
 for pred_len in 24 #1 2 4 8 16
 do
     python -u run_finetune.py \
@@ -29,7 +29,7 @@ do
       --random_seed $random_seed \
       --is_training 1 \
       --is_fully_finetune 1 \
-      --checkpoints /ailab_mat/dataset/PV/checkpoint.pth\
+      --checkpoints /SSDa/sowon_choi/PatchTST/checkpoints/24101104_PatchTST_GIST_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth\
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

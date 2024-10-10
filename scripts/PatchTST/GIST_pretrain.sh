@@ -12,11 +12,12 @@ fi
 seq_len=336
 label_len=0
 
-root_path_name=/PV/GIST_dataset
+root_path_name=/SSDa/sowon_choi/GIST_dataset
 data_path_name=ALL
 data_name=GIST
 random_seed=2024
 
+export CUDA_VISIBLE_DEVICES=2
 #for pred_len in 1 2 4 8 16
 for pred_len in 24 #1 2 4 8 16  
 do

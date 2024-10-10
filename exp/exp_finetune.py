@@ -58,7 +58,7 @@ class Exp_Finetune(Exp_Main):
         
        
         # path = os.path.join('./checkpoints', exp_id, setting)
-        path = os.path.join('./checkpoints', exp_id, setting)
+        path = os.path.join('./checkpoints/fully_finetune', exp_id, setting)
 
 
         if not os.path.exists(path):
@@ -194,7 +194,7 @@ class Exp_Finetune(Exp_Main):
         test_data, test_loader = self._get_data(flag='test')
 
         # path = os.path.join('./checkpoints', exp_id, setting)
-        path = os.path.join('./checkpoints', setting)
+        path = os.path.join('./checkpoints/linear_probe',  exp_id, setting)
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -206,7 +206,7 @@ class Exp_Finetune(Exp_Main):
         for param in self.model.model.head.parameters():
             param.requires_grad = True
 
-        # 원하는 레이어만 학습되도록 optimizer 설정
+      
        
         time_now = time.time()
 
@@ -433,13 +433,13 @@ class Exp_Finetune(Exp_Main):
         input_list = []
 
         folder_path = os.path.join('./test_results/', setting)
-        folder_path_inout = os.path.join('./test_results/', 'in+out', setting)
-        folder_path_out = os.path.join('./test_results/', 'out', setting)
+        # folder_path_inout = os.path.join('./test_results/', 'in+out', setting)
+        # folder_path_out = os.path.join('./test_results/', 'out', setting)
 
-        if not os.path.exists(folder_path_inout):
-            os.makedirs(folder_path_inout)
-        if not os.path.exists(folder_path_out):
-            os.makedirs(folder_path_out)
+        # if not os.path.exists(folder_path_inout):
+        #     os.makedirs(folder_path_inout)
+        # if not os.path.exists(folder_path_out):
+        #     os.makedirs(folder_path_out)
         
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
