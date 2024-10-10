@@ -121,7 +121,7 @@ class Exp_Main(Exp_Basic):
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
                 # encoder - decoder
                 if self.args.use_amp:
-                    # TODO: mark가 들어간 건 TST나 LSTM에서만 쓰이는 듯. 학습해서 확인해보기
+                   
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
                             if  'LSTM' in self.args.model:
@@ -147,7 +147,7 @@ class Exp_Main(Exp_Basic):
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
                         else:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, batch_y)
-                            # TODO: batch_y 의 역할이 뭐지??? TST 계열에선 안 쓰긴 한다. train에만 들어가 있음.
+                            
                             
                 f_dim = -1 if self.args.features == 'MS' else 0
                 
@@ -250,26 +250,30 @@ class Exp_Main(Exp_Basic):
                     output_np = outputs.detach().cpu().numpy() 
                     batch_y_np = batch_y.detach().cpu().numpy()
 
-                    # de-normalize the data and prediction values
+                    # scaler는 입력이 2d array여야함
                     outputs_np_2d = output_np.reshape(-1, output_np.shape[-1])
                     batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
 
 
-
                     active_power_np = vali_data.inverse_transform(outputs_np_2d)
+                    # scaler 학습 시켰을 때의 데이터 크기로 만들기
                     active_power_gt_np = vali_data.inverse_transform(np.repeat(batch_y_np_2d, repeats=outputs.shape[-1], axis=-1))
                     # active_power_gt_np = active_power_gt_np[:, -1]
 
+                    # scaler적용 후, 다시 3d로 되돌리기
                     active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
                     active_power_gt_np = active_power_gt_np.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
 
+                    # 필요한 칼럼만 선택
                     f_dim = -1 if self.args.features == 'MS' else 0
                     active_power_np = active_power_np[:, :, f_dim:]
                     active_power_gt_np = active_power_gt_np[:, :, f_dim:]
 
                     pred = torch.from_numpy(active_power_np).to(self.device)
                     gt = torch.from_numpy(active_power_gt_np).to(self.device)
+                
                 else:
+                    # TODO: LSTM일 때, 코드 수정 필요
                     pred_np = vali_data.inverse_transform(outputs.reshape(-1, outputs.shape[-1]).detach().cpu().numpy())
                     gt_np = vali_data.inverse_transform(batch_y.reshape(-1, batch_y.shape[-1]).detach().cpu().numpy())
 
@@ -278,7 +282,6 @@ class Exp_Main(Exp_Basic):
                     gt = torch.from_numpy(gt_np[:, :, -1])
 
                 loss = criterion(pred, gt)
-
                 total_loss.append(loss.item())
         
         self.model.train()
@@ -286,11 +289,10 @@ class Exp_Main(Exp_Basic):
         return total_losses
 
 
+    # test == 0: test when training is done
+    # test == 1: test when --is_training is 0 in scripts
     def test(self, setting, model_path=None, test=0):
         test_data, test_loader = self._get_data(flag='test')
-        
-        # pv_max = test_loader.sampler.data_source.pv_max
-        # pv_min = test_loader.sampler.data_source.pv_min
         
         if test:
             print('loading model')
@@ -306,13 +308,13 @@ class Exp_Main(Exp_Basic):
         input_list = []
 
         folder_path = os.path.join('./test_results/', setting)
-        folder_path_inout = os.path.join('./test_results/', 'in+out', setting)
-        folder_path_out = os.path.join('./test_results/', 'out', setting)
+        # folder_path_inout = os.path.join('./test_results/', 'in+out', setting)
+        # folder_path_out = os.path.join('./test_results/', 'out', setting)
 
-        if not os.path.exists(folder_path_inout):
-            os.makedirs(folder_path_inout)
-        if not os.path.exists(folder_path_out):
-            os.makedirs(folder_path_out)
+        # if not os.path.exists(folder_path_inout):
+        #     os.makedirs(folder_path_inout)
+        # if not os.path.exists(folder_path_out):
+        #     os.makedirs(folder_path_out)
 
         self.model.eval()
         with torch.no_grad():
@@ -346,20 +348,17 @@ class Exp_Main(Exp_Basic):
                         else:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
-                f_dim = -1 if self.args.features == 'MS' else 0
-                # print(outputs.shape,batch_y.shape)
-
-                # outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
-                # batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+                
                 outputs = outputs[:, -self.args.pred_len:].to(self.device)
                 batch_y = batch_y[:, -self.args.pred_len:].to(self.device)
                 
-                # source domain
+               
                 if self.args.model != 'LSTM':
-                    ### calculate metrics with only active power
+                   
                     outputs_np = outputs.detach().cpu().numpy()
                     batch_y_np = batch_y.detach().cpu().numpy()
 
+                    # scaler는 입력이 2d array여야함
                     outputs_np_2d = outputs_np.reshape(-1, outputs_np.shape[-1])
                     batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
                 
@@ -370,9 +369,10 @@ class Exp_Main(Exp_Basic):
 
 
                     f_dim = -1 if self.args.features == 'MS' else 0
+                    # inverse한 결과
                     pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1)[:, :, f_dim:] 
                     true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)[:, :, f_dim:]
-
+                    # normalized된 결과
                     pred_normalized = outputs_np
                     true_normalized = batch_y_np
 
@@ -380,6 +380,7 @@ class Exp_Main(Exp_Basic):
                     # true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
                                  
                 else:
+                    # TODO: LSTM일 때, 코드 수정 필요
                     pred_np = test_data.inverse_transform(outputs.reshape(-1, outputs_np.shape[-1]).detach().cpu().numpy())
                     true_np = test_data.inverse_transform(batch_y.reshape(-1, outputs_np.shape[-1]).detach().cpu().numpy())
                     
@@ -389,12 +390,14 @@ class Exp_Main(Exp_Basic):
                     pred = torch.from_numpy(pred_np)[:, :, -1]
                     true = torch.from_numpy(true_np)[:, :, -1]
 
+
                 pred_list.append(pred)
                 true_list.append(true[:,-self.args.pred_len:])
                 pred_normalized_list.append(pred_normalized)
                 true_normalized_list.append(true_normalized)
                 input_list.append(batch_x.detach().cpu().numpy())
                 
+                # TODO: visualize code 수정 필요
                 # if i % 10 == 0:
                 #     if self.args.model != 'LSTM':
                 #     # visualize_input_length = outputs.shape[1]*3 # visualize three times of the prediction length
@@ -441,7 +444,7 @@ class Exp_Main(Exp_Basic):
         print('MSE:{}, MAE:{}, RMSE:{}'.format(mse, mae, rmse))
         print('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}'.format(mse_normalized, mae_normalized, rmse_normalized))
         
-        txt_save_path = os.path.join(folder_path,
+        txt_save_path = os.path.join(folder_path, model_path.split('.')[0],
                                      f"{self.args.seq_len}_{self.args.pred_len}_result.txt")
         f = open(txt_save_path, 'a')
         f.write(setting + "  \n")

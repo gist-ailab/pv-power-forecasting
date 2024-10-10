@@ -13,7 +13,7 @@ import random
 
 warnings.filterwarnings('ignore')
 
-__all__ = ['Dataset_DKASC_single', 'Dataset_DKASC', 'Dataset_GIST']
+__all__ = ['Dataset_DKASC_single', 'Dataset_DKASC', 'Dataset_GIST', 'Dataset_German']
 
 
 class Dataset_DKASC_single(Dataset):
