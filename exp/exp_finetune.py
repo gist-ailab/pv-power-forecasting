@@ -410,7 +410,7 @@ class Exp_Finetune(Exp_Main):
 
                 loss = criterion(pred, gt)
 
-                total_loss.append(loss)
+                total_loss.append(loss.item())
 
             total_loss = np.average(total_loss)
             self.model.train()
