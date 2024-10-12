@@ -10,17 +10,18 @@ def combine_into_each_site(file_list, index_of_site,
                            kor_name, eng_name,
                            weather_data,
                            save_dir, log_file_path):
-    df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity'])
+    preprocessed_df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity'])
     
     weather_info = pd.read_csv(weather_data, encoding='unicode_escape')
     weather_info.columns = ['datetime', 'temperature', 'wind_direction', 'precipitation', 'humidity']
     weather_info['datetime'] = pd.to_datetime(weather_info['datetime'])
     # print(weather_info)
 
-    env_columns = ['time', 'radiation_horizontal', 'temperature_outdoor', 'radiation_incline', 'temperature_module',]
+    # Define file paths for storing outliers
+    env_columns = ['datetime', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Direct_Normal_Irradiance', 'Module_Temperature_Celsius', ]
 
-    empty_rows = pd.concat([pd.DataFrame(df.columns)]*24, axis=1).T
-    empty_rows.columns = df.columns
+    empty_rows = pd.concat([pd.DataFrame(preprocessed_df.columns)]*24, axis=1).T
+    empty_rows.columns = preprocessed_df.columns
 
     for i, file in tqdm(enumerate(file_list), total=len(file_list), desc=f'Processing {kor_name}. Out of {index_of_site+1}/16'):
         ## read pv info
@@ -53,64 +54,172 @@ def combine_into_each_site(file_list, index_of_site,
                 log_file.write(f'No weather data for {pv_date}. Skipping...')
             continue
 
-        # Step 1: daily_pv_data에 있는 결측치 처리
+        # Simply copy the datetime from daily_weather_data to daily_pv_data
+        if len(daily_pv_data) != len(daily_weather_data):
+            raise ValueError("The number of rows in daily_pv_data and daily_weather_data do not match.")
+        daily_pv_data['datetime'] = daily_weather_data['datetime']
+
+        # daily_pv_data에 있는 결측치 처리
         flag = False
-        for column in daily_pv_data.columns:
-            missing_values_count = daily_pv_data[column].isnull().sum()
-            if missing_values_count == 1:
-                # 첫 번째 값이 NaN일 경우: 이후 값으로 채움
-                if pd.isna(daily_pv_data[column].iloc[0]):
-                    daily_pv_data[column] = daily_pv_data[column].bfill()
-
-                # 마지막 값이 NaN일 경우: 이전 값으로 채움
-                elif pd.isna(daily_pv_data[column].iloc[-1]):
-                    daily_pv_data[column] = daily_pv_data[column].ffill()
-
-                else:   # 결측치가 중간에 있는 경우: 앞뒤 값의 평균으로 채움
-                    ffill_values = daily_pv_data[column].ffill()
-                    bfill_values = daily_pv_data[column].bfill()
-                    daily_pv_data[column] = (ffill_values + bfill_values) / 2
-
-            elif missing_values_count >= 2:
-                # 결측치가 2개 이상인 경우: 해당 날을 스킵
-                with open(log_file_path, 'a') as log_file:
-                    log_file.write(f"Skipping {pv_date} due to too many missing values in {column}\n")
-                flag = True
-                break
+        daily_pv_data, flag = handling_missing_values(daily_pv_data, pv_date, flag)
 
         if flag:
             continue
 
-        # Step 1: 'date'와 'time' 데이터를 추출하여 새로운 DataFrame 생성
-        temp_df = pd.DataFrame(
-            columns=['timestamp', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
-                     'Weather_Relative_Humidity'])
+        filtered_df = create_combined_filtered_data(preprocessed_df, daily_pv_data, daily_weather_data)
 
-        # Step 2: temp_df에 데이터 채워넣기
-        temp_df['timestamp'] = daily_weather_data['datetime']
-        temp_df['Active_Power'] = daily_pv_data[kor_name].astype(float)
-        temp_df['Global_Horizontal_Radiation'] = daily_pv_data['radiation_horizontal'].astype(float)
-        temp_df['Weather_Temperature_Celsius'] = daily_weather_data['temperature']
-        temp_df['Weather_Relative_Humidity'] = daily_weather_data['humidity']
+        filtered_df = delete_outlier_data(filtered_df, save_dir)
 
-        # Step 3: 일출 시간 데이터만 사용
-        # Find the times where the Global Horizontal Radiation is greater than 0
-        temp_df['GHR_positive'] = temp_df['Global_Horizontal_Radiation'] > 0
-
-        # Shift the positive values by 2 hours to create the margin for sunrise and sunset
-        temp_df['GHR_margin'] = temp_df['GHR_positive'].shift(2, fill_value=False) | temp_df['GHR_positive'].shift(-2, fill_value=False) | temp_df['GHR_positive']
-        filtered_df = temp_df[temp_df['GHR_margin']]    # Filter the rows based on this margin
-        filtered_df = filtered_df.drop(columns=['GHR_positive', 'GHR_margin'])  # Drop the helper columns
-
-        # Step 3: DataFrame 결합 (concat)
-        if df.empty:
-            df = deepcopy(filtered_df)
+        # DataFrame 결합 (concat)
+        if preprocessed_df.empty:
+            preprocessed_df = deepcopy(filtered_df)
         else:
-            df = pd.concat([df, filtered_df], ignore_index=True)
+            preprocessed_df = pd.concat([preprocessed_df, filtered_df], ignore_index=True)
 
     save_path = os.path.join(save_dir, f'{eng_name}.csv')
     with open(save_path, 'w') as f:
-        df.to_csv(f, index=False)
+        preprocessed_df.to_csv(f, index=False)
+
+
+def handling_missing_values(daily_pv_data, pv_date, flag):
+    # daily_pv_data에 있는 결측치 처리
+    for column in daily_pv_data.columns:
+        missing_values_count = daily_pv_data[column].isnull().sum()
+        if missing_values_count == 1:
+            # 첫 번째 값이 NaN일 경우: 이후 값으로 채움
+            if pd.isna(daily_pv_data[column].iloc[0]):
+                daily_pv_data[column] = daily_pv_data[column].bfill()
+
+            # 마지막 값이 NaN일 경우: 이전 값으로 채움
+            elif pd.isna(daily_pv_data[column].iloc[-1]):
+                daily_pv_data[column] = daily_pv_data[column].ffill()
+
+            else:  # 결측치가 중간에 있는 경우: 앞뒤 값의 평균으로 채움
+                ffill_values = daily_pv_data[column].ffill()
+                bfill_values = daily_pv_data[column].bfill()
+                daily_pv_data[column] = (ffill_values + bfill_values) / 2
+
+        elif missing_values_count >= 2:
+            # 결측치가 2개 이상인 경우: 해당 날을 스킵
+            with open(log_file_path, 'a') as log_file:
+                log_file.write(f"Skipping {pv_date} due to too many missing values in {column}\n")
+            flag = True
+            return None, flag
+    return daily_pv_data, flag
+
+
+def create_combined_filtered_data(preprocessed_df, daily_pv_data, daily_weather_data):
+    # Step 1: 'date'와 'time' 데이터를 추출하여 새로운 DataFrame 생성
+    temp_df = pd.DataFrame(
+        columns=['timestamp', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
+                 'Weather_Relative_Humidity'])
+
+    # Step 2: temp_df에 데이터 채워넣기
+    temp_df['timestamp'] = daily_weather_data['datetime']
+    temp_df['Active_Power'] = daily_pv_data[kor_name].astype(float)
+    temp_df['Global_Horizontal_Radiation'] = daily_pv_data['Global_Horizontal_Radiation'].astype(float)
+    temp_df['Weather_Temperature_Celsius'] = daily_weather_data['temperature']
+    temp_df['Weather_Relative_Humidity'] = daily_weather_data['humidity']
+
+    # Step 3: 일출 시간 데이터만 사용
+    # Find the times where the Global Horizontal Radiation is greater than 0
+    temp_df['GHR_positive'] = temp_df['Global_Horizontal_Radiation'] > 0
+
+    # Shift the positive values by 2 hours to create the margin for sunrise and sunset
+    temp_df['GHR_margin'] = temp_df['GHR_positive'].shift(1, fill_value=False) | temp_df['GHR_positive'].shift(-1,
+                                                                                                               fill_value=False) | \
+                            temp_df['GHR_positive']
+    filtered_df = temp_df[temp_df['GHR_margin']]  # Filter the rows based on this margin
+    filtered_df = filtered_df.drop(columns=['GHR_positive', 'GHR_margin'])  # Drop the helper columns
+
+    return filtered_df
+
+
+def delete_outlier_data(df, save_dir):
+    ### 1. Detect rows with the same GHI value 3 times in a row
+    df['GHI_same'] = df['Global_Horizontal_Radiation'].shift(1) == df['Global_Horizontal_Radiation']
+    df['GHI_same_next'] = df['Global_Horizontal_Radiation'].shift(2) == df['Global_Horizontal_Radiation']
+
+    # Detect rows with 3 consecutive identical GHI values
+    df['GHI_3_consecutive'] = df['GHI_same'] & df['GHI_same_next']
+
+    # Find the days where this condition happens
+    dates_with_consecutive_GHI = df[df['GHI_3_consecutive']]['timestamp'].dt.date.unique()
+
+    # Filter out rows corresponding to those days
+    rows_with_consecutive_GHI = df[df['timestamp'].dt.date.isin(dates_with_consecutive_GHI)]
+
+    # Append rows with consecutive identical GHI values to a CSV
+    rows_with_consecutive_GHI.to_csv(os.path.join(save_dir, 'rows_with_consecutive_GHI.csv'),
+                                     mode='a', header=False, index=False)
+
+    # Exclude those days from the main dataframe
+    df_cleaned = df[~df['timestamp'].dt.date.isin(dates_with_consecutive_GHI)]
+
+    # Clean the dataframe by removing intermediate columns
+    df_cleaned = df_cleaned.drop(columns=['GHI_same', 'GHI_same_next', 'GHI_3_consecutive'])
+
+    ### 2. Remove entire days when Active Power is 0 for 3 consecutive records
+    df_cleaned['AP_zero'] = df_cleaned['Active_Power'] == 0
+    df_cleaned['AP_zero_next'] = df_cleaned['Active_Power'].shift(1) == 0
+    df_cleaned['AP_zero_prev'] = df_cleaned['Active_Power'].shift(2) == 0
+
+    # Find days when Active Power is 0 for 3 consecutive times
+    days_with_ap_zero = df_cleaned[(df_cleaned['AP_zero'] & df_cleaned['AP_zero_next'] & df_cleaned['AP_zero_prev'])]['timestamp'].dt.date.unique()
+
+    # Remove all rows for these days
+    df_cleaned = df_cleaned[~df_cleaned['timestamp'].dt.date.isin(days_with_ap_zero)]
+
+    # Clean the dataframe by removing intermediate columns
+    df_cleaned = df_cleaned.drop(columns=['AP_zero', 'AP_zero_next', 'AP_zero_prev'])
+
+    ### 3. Remove days when Active Power is negative for 2 consecutive records
+    df_cleaned['AP_negative'] = df_cleaned['Active_Power'] < 0
+    df_cleaned['AP_negative_next'] = df_cleaned['Active_Power'].shift(1) < 0
+
+    # Find days with 2 consecutive negative Active Power readings
+    days_with_consecutive_negative_ap = df_cleaned[(df_cleaned['AP_negative'] & df_cleaned['AP_negative_next'])]['timestamp'].dt.date.unique()
+
+    # Log the rows with 2 consecutive negative Active Power values
+    rows_with_consecutive_negative_ap = df_cleaned[
+        df_cleaned['timestamp'].dt.date.isin(days_with_consecutive_negative_ap)]
+    rows_with_consecutive_negative_ap.to_csv(os.path.join(save_dir, 'row_with_consecutive_negative_ap.csv'),
+                                             mode='a', header=False, index=False)
+
+    # Remove all rows for these days
+    df_cleaned = df_cleaned[~df_cleaned['timestamp'].dt.date.isin(days_with_consecutive_negative_ap)]
+
+    # Clean the dataframe by removing intermediate columns
+    df_cleaned = df_cleaned.drop(columns=['AP_negative', 'AP_negative_next'])
+
+    ### 4. Replace negative Active Power with 0 based on neighboring values
+    for idx, row in df_cleaned[df_cleaned['Active_Power'] < 0].iterrows():
+        # Get previous and next values for Active Power
+        prev_value = df_cleaned.loc[idx - 1, 'Active_Power'] if idx - 1 in df_cleaned.index else None
+        next_value = df_cleaned.loc[idx + 1, 'Active_Power'] if idx + 1 in df_cleaned.index else None
+
+        # Condition: If previous value is 0 and next value is positive, replace current value with 0
+        if prev_value == 0 and next_value > 0:
+            df_cleaned.at[idx, 'Active_Power'] = 0
+
+        # Condition: If next value is 0 and previous value is positive, replace current value with 0
+        elif next_value == 0 and prev_value > 0:
+            df_cleaned.at[idx, 'Active_Power'] = 0
+
+    ### 5. Detect rows with negative Active Power
+    rows_with_negative_active_power = df_cleaned[df_cleaned['Active_Power'] < 0]
+
+    # Replace remaining negative Active Power with 0
+    df_cleaned.loc[df_cleaned['Active_Power'] < 0, 'Active_Power'] = 0
+
+    # Append rows with negative Active Power to a CSV
+    rows_with_negative_active_power.to_csv(os.path.join(save_dir, 'rows_with_negative_active_power.csv'),
+                                           mode='a', header=False, index=False)
+
+    return df_cleaned
+
+
+
 
 
 def create_combined_weather_csv(create_path, project_root):
