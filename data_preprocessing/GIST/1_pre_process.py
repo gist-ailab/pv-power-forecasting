@@ -88,16 +88,25 @@ def combine_into_each_site(file_list, index_of_site,
 
         # Step 2: temp_df에 데이터 채워넣기
         temp_df['timestamp'] = daily_weather_data['datetime']
-        temp_df['Active_Power'] = daily_pv_data[kor_name]
-        temp_df['Global_Horizontal_Radiation'] = daily_pv_data['radiation_horizontal']
+        temp_df['Active_Power'] = daily_pv_data[kor_name].astype(float)
+        temp_df['Global_Horizontal_Radiation'] = daily_pv_data['radiation_horizontal'].astype(float)
         temp_df['Weather_Temperature_Celsius'] = daily_weather_data['temperature']
         temp_df['Weather_Relative_Humidity'] = daily_weather_data['humidity']
 
+        # Step 3: 일출 시간 데이터만 사용
+        # Find the times where the Global Horizontal Radiation is greater than 0
+        temp_df['GHR_positive'] = temp_df['Global_Horizontal_Radiation'] > 0
+
+        # Shift the positive values by 2 hours to create the margin for sunrise and sunset
+        temp_df['GHR_margin'] = temp_df['GHR_positive'].shift(2, fill_value=False) | temp_df['GHR_positive'].shift(-2, fill_value=False) | temp_df['GHR_positive']
+        filtered_df = temp_df[temp_df['GHR_margin']]    # Filter the rows based on this margin
+        filtered_df = filtered_df.drop(columns=['GHR_positive', 'GHR_margin'])  # Drop the helper columns
+
         # Step 3: DataFrame 결합 (concat)
         if df.empty:
-            df = deepcopy(temp_df)
+            df = deepcopy(filtered_df)
         else:
-            df = pd.concat([df, temp_df], ignore_index=True)
+            df = pd.concat([df, filtered_df], ignore_index=True)
 
     save_path = os.path.join(save_dir, f'{eng_name}.csv')
     with open(save_path, 'w') as f:
@@ -143,6 +152,7 @@ def create_combined_weather_csv(create_path, project_root):
 
     # Step 4: 해당 날짜들을 제거
     df_cleaned = df_resampled[~df_resampled.index.floor('D').isin(dates_to_remove)]
+
 
     # # Check for missing dates
     # unique_dates = pd.to_datetime(df_cleaned.index.date).unique()
@@ -209,7 +219,7 @@ if __name__ == '__main__':
     current_file_path = os.path.abspath(__file__)
 
     # Get the root directory (assuming the root is two levels up from the current file)
-    project_root = os.path.dirname(os.path.dirname(current_file_path))
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
     # # Get the path to the daily PV xls data
     # pv_xls_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_xls')
@@ -232,21 +242,21 @@ if __name__ == '__main__':
 
     site_dict = {
         '축구장': 'Soccer-Field',
-        '학생회관': 'W06_Student-Union',
-        '중앙창고': 'W13_Centeral-Storage',
-        '학사과정': 'E11_DormA',
-        '다산빌딩': 'C09_Dasan',
-        '시설관리동': 'W11_Facility-Maintenance-Bldg',
-        '대학C동': 'N06_College-Bldg',
-        '동물실험동': 'E02_Animal-Recource-Center',
-        '중앙도서관': 'N01_Central-Library',
-        'LG도서관': 'N02_LG-Library',
-        '신재생에너지동': 'C10_Renewable-E-Bldg',
-        '삼성환경동': 'C07_Samsung-Env-Bldg',
-        '중앙연구기기센터': 'C11_GAIA',
-        '산업협력관': 'E03_GTI',
-        '기숙사 B동': 'E12_DormB',
-        '자연과학동': 'E8_Natural-Science-Bldg'
+        # '학생회관': 'W06_Student-Union',
+        # '중앙창고': 'W13_Centeral-Storage',
+        # '학사과정': 'E11_DormA',
+        # '다산빌딩': 'C09_Dasan',
+        # '시설관리동': 'W11_Facility-Maintenance-Bldg',
+        # '대학C동': 'N06_College-Bldg',
+        # '동물실험동': 'E02_Animal-Recource-Center',
+        # '중앙도서관': 'N01_Central-Library',
+        # 'LG도서관': 'N02_LG-Library',
+        # '신재생에너지동': 'C10_Renewable-E-Bldg',
+        # '삼성환경동': 'C07_Samsung-Env-Bldg',
+        # '중앙연구기기센터': 'C11_GAIA',
+        # '산업협력관': 'E03_GTI',
+        # '기숙사 B동': 'E12_DormB',
+        # '자연과학동': 'E8_Natural-Science-Bldg'
     }
 
     log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
@@ -259,97 +269,97 @@ if __name__ == '__main__':
     
 
 
-
-#%%
-## TODO 나중에 코드 통합할 것! 추가 데이터 전처리 작업임 SW##
-
-import pandas as pd
-import numpy as np
-import os
-
-# 파일 경로 설정
-root_path = '/PV/GIST_dataset'
-data_paths = os.listdir(root_path)
-data_paths = [d for d in data_paths if '.csv' in d]
-
-# NaN으로 변환해야 하는 비정상적인 값 정의
-values_to_replace = ['-', 'nan', 'NaN', '', ' ', 'N/A', '  ', 'null', 'NULL', 'None', 'none', 'nil', 'NIL', 'NA', 'na']
-
-for data_path in data_paths:
-    if 'E12' in data_path:
-        continue
-
-    # 1. CSV 파일 읽기
-    df_raw = pd.read_csv(os.path.join(root_path, data_path))
-    print(f'***** {data_path} *****')
-
-    # 2. 비정상적인 값을 결측치(NaN)로 변환
-    df_raw.replace(values_to_replace, np.nan, inplace=True)
-
-    # 결측치가 제대로 변환되었는지 확인
-    print(f"Initial missing values count after replacing invalid values: {df_raw.isna().sum().sum()}")
-
-    # 3. `timestep` 컬럼을 datetime 형식으로 변환
-    df_raw['timestep'] = pd.to_datetime(df_raw['timestep'], errors='coerce')
-
-    # 4. `timestep`이 변환되지 않은 행 삭제
-    if df_raw['timestep'].isnull().sum() > 0:
-        print(f"Warning: {df_raw['timestep'].isnull().sum()} rows have invalid datetime format and will be dropped.")
-        df_raw = df_raw.dropna(subset=['timestep'])  # `timestep`이 변환되지 않은 행 삭제
-
-    # 5. 날짜별로 그룹화하여 결측치 처리
-    df_raw['date'] = df_raw['timestep'].dt.date
-    grouped = df_raw.groupby('date')
-
-    # 6. 결측치가 2개 이상인 날짜를 제거한 후 나머지 데이터에 대해 결측치 처리
-    cleaned_df_list = []
-
-    for date, daily_pv_data in grouped:
-        # 6-1. 결측치가 2개 이상인 날짜 제거
-        if daily_pv_data.isna().sum().sum() >= 2:  
-            continue  # 해당 날짜 스킵
-
-        # 6-2. 결측치 처리 전 상태 출력 (디버깅용)
-        print(f"\nDate: {date} - Missing values before processing:\n", daily_pv_data.isna().sum())
-
-        # 각 컬럼의 결측치 처리
-        for column in daily_pv_data.columns:
-            if column in ['date', 'timestep']:
-                continue  # 'date'와 'timestep' 컬럼은 스킵
-
-            # 1. 첫 번째 값이 NaN일 경우: 이후 값으로 채움 (forward fill)
-            if pd.isna(daily_pv_data[column].iloc[0]):
-                daily_pv_data[column].fillna(method='ffill', inplace=True)
-
-            # 2. 마지막 값이 NaN일 경우: 이전 값으로 채움 (backward fill)
-            if pd.isna(daily_pv_data[column].iloc[-1]):  # 여기서 elif 대신 if 사용
-                daily_pv_data[column].fillna(method='bfill', inplace=True)
-
-            # 3. 중간에 NaN이 있는 경우: 앞뒤 값의 평균으로 채움
-            if daily_pv_data[column].isna().sum() > 0:
-                daily_pv_data[column].interpolate(method='linear', inplace=True)
-
-        # 결측치 처리 후 확인 (디버깅용)
-        print(f"Missing values after processing for date {date}:\n", daily_pv_data.isna().sum())
-
-        # 결측치 처리가 완료된 daily 데이터프레임을 리스트에 저장
-        cleaned_df_list.append(daily_pv_data)
-
-    # 7. 모든 날짜별 처리된 데이터를 다시 합쳐서 최종 데이터프레임 생성
-    df_cleaned = pd.concat(cleaned_df_list, ignore_index=True)
-
-    # 8. 최종 결과 확인 및 저장
-    print("Cleaned DataFrame with processed missing values:\n", df_cleaned)
-    print(f"Total missing values after cleaning: {df_cleaned.isna().sum().sum()}")
-
-    # 데이터프레임 확인을 위해 결측치가 있는 열 출력
-    print("Columns with remaining missing values after cleaning:\n", df_cleaned.columns[df_cleaned.isna().any()])
-
-    df_cleaned = df_cleaned.drop(columns=['date'])
-    
-    # 9. 처리된 데이터 저장
-    df_cleaned.to_csv(os.path.join(root_path, data_path), index=False)
-
-
-
-# %%
+#
+# #%%
+# ## TODO 나중에 코드 통합할 것! 추가 데이터 전처리 작업임 SW##
+#
+# import pandas as pd
+# import numpy as np
+# import os
+#
+# # 파일 경로 설정
+# root_path = '/PV/GIST_dataset'
+# data_paths = os.listdir(root_path)
+# data_paths = [d for d in data_paths if '.csv' in d]
+#
+# # NaN으로 변환해야 하는 비정상적인 값 정의
+# values_to_replace = ['-', 'nan', 'NaN', '', ' ', 'N/A', '  ', 'null', 'NULL', 'None', 'none', 'nil', 'NIL', 'NA', 'na']
+#
+# for data_path in data_paths:
+#     if 'E12' in data_path:
+#         continue
+#
+#     # 1. CSV 파일 읽기
+#     df_raw = pd.read_csv(os.path.join(root_path, data_path))
+#     print(f'***** {data_path} *****')
+#
+#     # 2. 비정상적인 값을 결측치(NaN)로 변환
+#     df_raw.replace(values_to_replace, np.nan, inplace=True)
+#
+#     # 결측치가 제대로 변환되었는지 확인
+#     print(f"Initial missing values count after replacing invalid values: {df_raw.isna().sum().sum()}")
+#
+#     # 3. `timestep` 컬럼을 datetime 형식으로 변환
+#     df_raw['timestep'] = pd.to_datetime(df_raw['timestep'], errors='coerce')
+#
+#     # 4. `timestep`이 변환되지 않은 행 삭제
+#     if df_raw['timestep'].isnull().sum() > 0:
+#         print(f"Warning: {df_raw['timestep'].isnull().sum()} rows have invalid datetime format and will be dropped.")
+#         df_raw = df_raw.dropna(subset=['timestep'])  # `timestep`이 변환되지 않은 행 삭제
+#
+#     # 5. 날짜별로 그룹화하여 결측치 처리
+#     df_raw['date'] = df_raw['timestep'].dt.date
+#     grouped = df_raw.groupby('date')
+#
+#     # 6. 결측치가 2개 이상인 날짜를 제거한 후 나머지 데이터에 대해 결측치 처리
+#     cleaned_df_list = []
+#
+#     for date, daily_pv_data in grouped:
+#         # 6-1. 결측치가 2개 이상인 날짜 제거
+#         if daily_pv_data.isna().sum().sum() >= 2:
+#             continue  # 해당 날짜 스킵
+#
+#         # 6-2. 결측치 처리 전 상태 출력 (디버깅용)
+#         print(f"\nDate: {date} - Missing values before processing:\n", daily_pv_data.isna().sum())
+#
+#         # 각 컬럼의 결측치 처리
+#         for column in daily_pv_data.columns:
+#             if column in ['date', 'timestep']:
+#                 continue  # 'date'와 'timestep' 컬럼은 스킵
+#
+#             # 1. 첫 번째 값이 NaN일 경우: 이후 값으로 채움 (forward fill)
+#             if pd.isna(daily_pv_data[column].iloc[0]):
+#                 daily_pv_data[column].fillna(method='ffill', inplace=True)
+#
+#             # 2. 마지막 값이 NaN일 경우: 이전 값으로 채움 (backward fill)
+#             if pd.isna(daily_pv_data[column].iloc[-1]):  # 여기서 elif 대신 if 사용
+#                 daily_pv_data[column].fillna(method='bfill', inplace=True)
+#
+#             # 3. 중간에 NaN이 있는 경우: 앞뒤 값의 평균으로 채움
+#             if daily_pv_data[column].isna().sum() > 0:
+#                 daily_pv_data[column].interpolate(method='linear', inplace=True)
+#
+#         # 결측치 처리 후 확인 (디버깅용)
+#         print(f"Missing values after processing for date {date}:\n", daily_pv_data.isna().sum())
+#
+#         # 결측치 처리가 완료된 daily 데이터프레임을 리스트에 저장
+#         cleaned_df_list.append(daily_pv_data)
+#
+#     # 7. 모든 날짜별 처리된 데이터를 다시 합쳐서 최종 데이터프레임 생성
+#     df_cleaned = pd.concat(cleaned_df_list, ignore_index=True)
+#
+#     # 8. 최종 결과 확인 및 저장
+#     print("Cleaned DataFrame with processed missing values:\n", df_cleaned)
+#     print(f"Total missing values after cleaning: {df_cleaned.isna().sum().sum()}")
+#
+#     # 데이터프레임 확인을 위해 결측치가 있는 열 출력
+#     print("Columns with remaining missing values after cleaning:\n", df_cleaned.columns[df_cleaned.isna().any()])
+#
+#     df_cleaned = df_cleaned.drop(columns=['date'])
+#
+#     # 9. 처리된 데이터 저장
+#     df_cleaned.to_csv(os.path.join(root_path, data_path), index=False)
+#
+#
+#
+# # %%
