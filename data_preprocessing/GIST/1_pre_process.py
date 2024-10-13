@@ -209,17 +209,15 @@ def delete_outlier_data(df, save_dir):
     ### 5. Detect rows with negative Active Power
     rows_with_negative_active_power = df_cleaned[df_cleaned['Active_Power'] < 0]
 
-    # Replace remaining negative Active Power with 0
+    # Replace remaining negative Active Power with 0 (including -0.0) with 0
     df_cleaned.loc[df_cleaned['Active_Power'] < 0, 'Active_Power'] = 0
+    df_cleaned.loc[df_cleaned['Active_Power'].abs() == 0, 'Active_Power'] = 0
 
     # Append rows with negative Active Power to a CSV
     rows_with_negative_active_power.to_csv(os.path.join(save_dir, 'rows_with_negative_active_power.csv'),
                                            mode='a', header=False, index=False)
 
     return df_cleaned
-
-
-
 
 
 def create_combined_weather_csv(create_path, project_root):
@@ -380,7 +378,7 @@ if __name__ == '__main__':
 
 #
 # #%%
-# ## TODO 나중에 코드 통합할 것! 추가 데이터 전처리 작업임 SW##
+# ## TODO 나중에 코드 통합할 것! 추가 데이터 전처리 작업임 (최소원 추가한 부분)SW##
 #
 # import pandas as pd
 # import numpy as np
