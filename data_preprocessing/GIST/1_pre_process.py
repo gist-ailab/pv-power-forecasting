@@ -68,7 +68,7 @@ def combine_into_each_site(file_list, index_of_site,
 
         filtered_df = create_combined_filtered_data(preprocessed_df, daily_pv_data, daily_weather_data)
 
-        filtered_df = delete_outlier_data(filtered_df, save_dir)
+        filtered_df = delete_outlier_data(filtered_df, save_dir, kor_name)
 
         # DataFrame 결합 (concat)
         if preprocessed_df.empty:
@@ -135,7 +135,9 @@ def create_combined_filtered_data(preprocessed_df, daily_pv_data, daily_weather_
     return filtered_df
 
 
-def delete_outlier_data(df, save_dir):
+def delete_outlier_data(df, save_dir, kor_name):
+    log_path = os.path.join(save_dir, 'outlire_data_log')
+    os.makedirs(log_path, exist_ok=True)
     ### 1. Detect rows with the same GHI value 3 times in a row
     df['GHI_same'] = df['Global_Horizontal_Radiation'].shift(1) == df['Global_Horizontal_Radiation']
     df['GHI_same_next'] = df['Global_Horizontal_Radiation'].shift(2) == df['Global_Horizontal_Radiation']
@@ -150,7 +152,7 @@ def delete_outlier_data(df, save_dir):
     rows_with_consecutive_GHI = df[df['timestamp'].dt.date.isin(dates_with_consecutive_GHI)]
 
     # Append rows with consecutive identical GHI values to a CSV
-    rows_with_consecutive_GHI.to_csv(os.path.join(save_dir, 'rows_with_consecutive_GHI.csv'),
+    rows_with_consecutive_GHI.to_csv(os.path.join(log_path, f'{kor_name}_rows_with_consecutive_GHI.csv'),
                                      mode='a', header=False, index=False)
 
     # Exclude those days from the main dataframe
@@ -183,7 +185,7 @@ def delete_outlier_data(df, save_dir):
     # Log the rows with 2 consecutive negative Active Power values
     rows_with_consecutive_negative_ap = df_cleaned[
         df_cleaned['timestamp'].dt.date.isin(days_with_consecutive_negative_ap)]
-    rows_with_consecutive_negative_ap.to_csv(os.path.join(save_dir, 'row_with_consecutive_negative_ap.csv'),
+    rows_with_consecutive_negative_ap.to_csv(os.path.join(log_path, f'{kor_name}_row_with_consecutive_negative_ap.csv'),
                                              mode='a', header=False, index=False)
 
     # Remove all rows for these days
@@ -214,7 +216,7 @@ def delete_outlier_data(df, save_dir):
     df_cleaned.loc[df_cleaned['Active_Power'].abs() == 0, 'Active_Power'] = 0
 
     # Append rows with negative Active Power to a CSV
-    rows_with_negative_active_power.to_csv(os.path.join(save_dir, 'rows_with_negative_active_power.csv'),
+    rows_with_negative_active_power.to_csv(os.path.join(log_path, f'{kor_name}_rows_with_negative_active_power.csv'),
                                            mode='a', header=False, index=False)
 
     return df_cleaned
