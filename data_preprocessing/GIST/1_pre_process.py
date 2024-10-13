@@ -122,7 +122,7 @@ def create_combined_filtered_data(preprocessed_df, daily_pv_data, daily_weather_
     temp_df['Weather_Relative_Humidity'] = daily_weather_data['humidity']
 
     # Step 3: 일출 시간 데이터만 사용
-    # Find the times where the Global Horizontal Radiation is greater than 0
+    # Find the times when the Global Horizontal Radiation is greater than 0
     temp_df['GHR_positive'] = temp_df['Global_Horizontal_Radiation'] > 0
 
     # Shift the positive values by 2 hours to create the margin for sunrise and sunset
@@ -145,7 +145,7 @@ def delete_outlier_data(df, save_dir, kor_name):
     # Detect rows with 3 consecutive identical GHI values
     df['GHI_3_consecutive'] = df['GHI_same'] & df['GHI_same_next']
 
-    # Find the days where this condition happens
+    # Find the days when this condition happens
     dates_with_consecutive_GHI = df[df['GHI_3_consecutive']]['timestamp'].dt.date.unique()
 
     # Filter out rows corresponding to those days
@@ -169,6 +169,19 @@ def delete_outlier_data(df, save_dir, kor_name):
     # Find days when Active Power is 0 for 3 consecutive times
     days_with_ap_zero = df_cleaned[(df_cleaned['AP_zero'] & df_cleaned['AP_zero_next'] & df_cleaned['AP_zero_prev'])]['timestamp'].dt.date.unique()
 
+    #################
+    # Log the rows with 3 consecutive Active Power == 0 to a CSV
+    rows_with_ap_zero = df_cleaned[df_cleaned['timestamp'].dt.date.isin(days_with_ap_zero)]
+    rows_with_ap_zero.to_csv(os.path.join(log_path, f'{kor_name}_rows_with_ap_zero.csv'), mode='a', header=False, index=False)
+
+    # Log the dates with 3 consecutive Active Power == 0 to a TXT file
+    with open(os.path.join(log_path, f'{kor_name}_ap_zero_dates.txt'), 'a') as log_file:
+        for date in days_with_ap_zero:
+            log_file.write(f'{date}\n')
+    #################
+
+
+
     # Remove all rows for these days
     df_cleaned = df_cleaned[~df_cleaned['timestamp'].dt.date.isin(days_with_ap_zero)]
 
@@ -181,6 +194,11 @@ def delete_outlier_data(df, save_dir, kor_name):
 
     # Find days with 2 consecutive negative Active Power readings
     days_with_consecutive_negative_ap = df_cleaned[(df_cleaned['AP_negative'] & df_cleaned['AP_negative_next'])]['timestamp'].dt.date.unique()
+
+    # Log only the dates with 2 consecutive negative Active Power readings
+    with open(os.path.join(log_path, f'{kor_name}_consecutive_negative_ap_dates.txt'), 'a') as log_file:
+        for date in days_with_consecutive_negative_ap:
+            log_file.write(f'{date}\n')
 
     # Log the rows with 2 consecutive negative Active Power values
     rows_with_consecutive_negative_ap = df_cleaned[
@@ -195,22 +213,24 @@ def delete_outlier_data(df, save_dir, kor_name):
     df_cleaned = df_cleaned.drop(columns=['AP_negative', 'AP_negative_next'])
 
     ### 4. Replace negative Active Power with 0 based on neighboring values
+    rows_with_negative_active_power = df_cleaned[df_cleaned['Active_Power'] < 0]
     for idx, row in df_cleaned[df_cleaned['Active_Power'] < 0].iterrows():
         # Get previous and next values for Active Power
         prev_value = df_cleaned.loc[idx - 1, 'Active_Power'] if idx - 1 in df_cleaned.index else None
         next_value = df_cleaned.loc[idx + 1, 'Active_Power'] if idx + 1 in df_cleaned.index else None
 
+        # Condition: If at the end of the value with 0, replace with 0
+        if (prev_value is None and next_value >= 0) or (next_value is None and prev_value >= 0):
+            df_cleaned.at[idx, 'Active_Power'] = 0
         # Condition: If previous value is 0 and next value is positive, replace current value with 0
-        if prev_value == 0 and next_value > 0:
+        elif prev_value == 0 and next_value >= 0:
             df_cleaned.at[idx, 'Active_Power'] = 0
 
         # Condition: If next value is 0 and previous value is positive, replace current value with 0
-        elif next_value == 0 and prev_value > 0:
+        elif next_value == 0 and prev_value >= 0:
             df_cleaned.at[idx, 'Active_Power'] = 0
 
     ### 5. Detect rows with negative Active Power
-    rows_with_negative_active_power = df_cleaned[df_cleaned['Active_Power'] < 0]
-
     # Replace remaining negative Active Power with 0 (including -0.0) with 0
     df_cleaned.loc[df_cleaned['Active_Power'] < 0, 'Active_Power'] = 0
     df_cleaned.loc[df_cleaned['Active_Power'].abs() == 0, 'Active_Power'] = 0
@@ -350,12 +370,12 @@ if __name__ == '__main__':
     pv_file_list.sort()
 
     site_dict = {
-        '축구장': 'Soccer-Field',
+        # '축구장': 'Soccer-Field',
         # '학생회관': 'W06_Student-Union',
         # '중앙창고': 'W13_Centeral-Storage',
         # '학사과정': 'E11_DormA',
         # '다산빌딩': 'C09_Dasan',
-        # '시설관리동': 'W11_Facility-Maintenance-Bldg',
+        '시설관리동': 'W11_Facility-Maintenance-Bldg',
         # '대학C동': 'N06_College-Bldg',
         # '동물실험동': 'E02_Animal-Recource-Center',
         # '중앙도서관': 'N01_Central-Library',
