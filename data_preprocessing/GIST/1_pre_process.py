@@ -151,6 +151,9 @@ def delete_outlier_data(df, save_dir, kor_name):
     # Filter out rows corresponding to those days
     rows_with_consecutive_GHI = df[df['timestamp'].dt.date.isin(dates_with_consecutive_GHI)]
 
+    with open(os.path.join(log_path, f'{kor_name}_consecutive_GHI_dates.txt'), 'a') as log_file:
+        for date in dates_with_consecutive_GHI:
+            log_file.write(f'{date}\n')
     # Append rows with consecutive identical GHI values to a CSV
     rows_with_consecutive_GHI.to_csv(os.path.join(log_path, f'{kor_name}_rows_with_consecutive_GHI.csv'),
                                      mode='a', header=False, index=False)
@@ -161,83 +164,39 @@ def delete_outlier_data(df, save_dir, kor_name):
     # Clean the dataframe by removing intermediate columns
     df_cleaned = df_cleaned.drop(columns=['GHI_same', 'GHI_same_next', 'GHI_3_consecutive'])
 
-    ### 2. Remove entire days when Active Power is 0 for 3 consecutive records
+    ### 2. Remove entire days when Active Power is 0 for 4 consecutive records
     df_cleaned['AP_zero'] = df_cleaned['Active_Power'] == 0
-    df_cleaned['AP_zero_next'] = df_cleaned['Active_Power'].shift(1) == 0
-    df_cleaned['AP_zero_prev'] = df_cleaned['Active_Power'].shift(2) == 0
+    df_cleaned['AP_zero_1'] = df_cleaned['Active_Power'].shift(1) == 0
+    df_cleaned['AP_zero_2'] = df_cleaned['Active_Power'].shift(2) == 0
+    df_cleaned['AP_zero_3'] = df_cleaned['Active_Power'].shift(3) == 0
 
     # Find days when Active Power is 0 for 3 consecutive times
-    days_with_ap_zero = df_cleaned[(df_cleaned['AP_zero'] & df_cleaned['AP_zero_next'] & df_cleaned['AP_zero_prev'])]['timestamp'].dt.date.unique()
+    days_with_ap_zero = df_cleaned[(df_cleaned['AP_zero'] &
+                                    df_cleaned['AP_zero_1'] &
+                                    df_cleaned['AP_zero_2'] &
+                                    df_cleaned['AP_zero_3'])]['timestamp'].dt.date.unique()
 
-    #################
     # Log the rows with 3 consecutive Active Power == 0 to a CSV
     rows_with_ap_zero = df_cleaned[df_cleaned['timestamp'].dt.date.isin(days_with_ap_zero)]
     rows_with_ap_zero.to_csv(os.path.join(log_path, f'{kor_name}_rows_with_ap_zero.csv'), mode='a', header=False, index=False)
 
     # Log the dates with 3 consecutive Active Power == 0 to a TXT file
-    with open(os.path.join(log_path, f'{kor_name}_ap_zero_dates.txt'), 'a') as log_file:
+    with open(os.path.join(log_path, f'{kor_name}_ap_zero_4dates.txt'), 'a') as log_file:
         for date in days_with_ap_zero:
             log_file.write(f'{date}\n')
-    #################
-
-
 
     # Remove all rows for these days
     df_cleaned = df_cleaned[~df_cleaned['timestamp'].dt.date.isin(days_with_ap_zero)]
 
     # Clean the dataframe by removing intermediate columns
-    df_cleaned = df_cleaned.drop(columns=['AP_zero', 'AP_zero_next', 'AP_zero_prev'])
+    df_cleaned = df_cleaned.drop(columns=['AP_zero', 'AP_zero_1', 'AP_zero_2', 'AP_zero_3'])
 
-    ### 3. Remove days when Active Power is negative for 2 consecutive records
-    df_cleaned['AP_negative'] = df_cleaned['Active_Power'] < 0
-    df_cleaned['AP_negative_next'] = df_cleaned['Active_Power'].shift(1) < 0
-
-    # Find days with 2 consecutive negative Active Power readings
-    days_with_consecutive_negative_ap = df_cleaned[(df_cleaned['AP_negative'] & df_cleaned['AP_negative_next'])]['timestamp'].dt.date.unique()
-
-    # Log only the dates with 2 consecutive negative Active Power readings
-    with open(os.path.join(log_path, f'{kor_name}_consecutive_negative_ap_dates.txt'), 'a') as log_file:
-        for date in days_with_consecutive_negative_ap:
-            log_file.write(f'{date}\n')
-
-    # Log the rows with 2 consecutive negative Active Power values
-    rows_with_consecutive_negative_ap = df_cleaned[
-        df_cleaned['timestamp'].dt.date.isin(days_with_consecutive_negative_ap)]
-    rows_with_consecutive_negative_ap.to_csv(os.path.join(log_path, f'{kor_name}_row_with_consecutive_negative_ap.csv'),
-                                             mode='a', header=False, index=False)
-
-    # Remove all rows for these days
-    df_cleaned = df_cleaned[~df_cleaned['timestamp'].dt.date.isin(days_with_consecutive_negative_ap)]
-
-    # Clean the dataframe by removing intermediate columns
-    df_cleaned = df_cleaned.drop(columns=['AP_negative', 'AP_negative_next'])
-
-    ### 4. Replace negative Active Power with 0 based on neighboring values
+    ### 3. Convert Negative Active Power to Positive
     rows_with_negative_active_power = df_cleaned[df_cleaned['Active_Power'] < 0]
-    for idx, row in df_cleaned[df_cleaned['Active_Power'] < 0].iterrows():
-        # Get previous and next values for Active Power
-        prev_value = df_cleaned.loc[idx - 1, 'Active_Power'] if idx - 1 in df_cleaned.index else None
-        next_value = df_cleaned.loc[idx + 1, 'Active_Power'] if idx + 1 in df_cleaned.index else None
-
-        # Condition: If at the end of the value with 0, replace with 0
-        if (prev_value is None and next_value >= 0) or (next_value is None and prev_value >= 0):
-            df_cleaned.at[idx, 'Active_Power'] = 0
-        # Condition: If previous value is 0 and next value is positive, replace current value with 0
-        elif prev_value == 0 and next_value >= 0:
-            df_cleaned.at[idx, 'Active_Power'] = 0
-
-        # Condition: If next value is 0 and previous value is positive, replace current value with 0
-        elif next_value == 0 and prev_value >= 0:
-            df_cleaned.at[idx, 'Active_Power'] = 0
-
-    ### 5. Detect rows with negative Active Power
-    # Replace remaining negative Active Power with 0 (including -0.0) with 0
-    df_cleaned.loc[df_cleaned['Active_Power'] < 0, 'Active_Power'] = 0
-    df_cleaned.loc[df_cleaned['Active_Power'].abs() == 0, 'Active_Power'] = 0
-
     # Append rows with negative Active Power to a CSV
     rows_with_negative_active_power.to_csv(os.path.join(log_path, f'{kor_name}_rows_with_negative_active_power.csv'),
                                            mode='a', header=False, index=False)
+    df_cleaned['Active_Power'] = df_cleaned['Active_Power'].abs()   # Convert negative Active Power to positive
 
     return df_cleaned
 
@@ -325,7 +284,7 @@ def convert_excel_to_hourly_csv(file_list):
             if col + 1 < df.shape[1]:
                 df.iloc[row_index, col + 1] = df.iloc[row_index, col]
 
-        # 6번째 열부터 짝수 인덱스를 가진 열들을 삭제
+        # 6번째 열부터 짝수 인덱스를 가진 열들을 삭제 -> 시간당발전량만 남김
         columns_to_drop = [i for i in range(start_column, df.shape[1]) if (i - start_column) % 2 == 0]
         df.drop(df.columns[columns_to_drop], axis=1, inplace=True)
 
@@ -370,22 +329,22 @@ if __name__ == '__main__':
     pv_file_list.sort()
 
     site_dict = {
-        # '축구장': 'Soccer-Field',
-        # '학생회관': 'W06_Student-Union',
-        # '중앙창고': 'W13_Centeral-Storage',
-        # '학사과정': 'E11_DormA',
-        # '다산빌딩': 'C09_Dasan',
+        '축구장': 'Soccer-Field',
+        '학생회관': 'W06_Student-Union',
+        '중앙창고': 'W13_Centeral-Storage',
+        '학사과정': 'E11_DormA',
+        '다산빌딩': 'C09_Dasan',
         '시설관리동': 'W11_Facility-Maintenance-Bldg',
-        # '대학C동': 'N06_College-Bldg',
-        # '동물실험동': 'E02_Animal-Recource-Center',
-        # '중앙도서관': 'N01_Central-Library',
-        # 'LG도서관': 'N02_LG-Library',
-        # '신재생에너지동': 'C10_Renewable-E-Bldg',
-        # '삼성환경동': 'C07_Samsung-Env-Bldg',
-        # '중앙연구기기센터': 'C11_GAIA',
-        # '산업협력관': 'E03_GTI',
-        # '기숙사 B동': 'E12_DormB',
-        # '자연과학동': 'E8_Natural-Science-Bldg'
+        '대학C동': 'N06_College-Bldg',
+        '동물실험동': 'E02_Animal-Recource-Center',
+        '중앙도서관': 'N01_Central-Library',
+        'LG도서관': 'N02_LG-Library',
+        '신재생에너지동': 'C10_Renewable-E-Bldg',
+        '삼성환경동': 'C07_Samsung-Env-Bldg',
+        '중앙연구기기센터': 'C11_GAIA',
+        '산업협력관': 'E03_GTI',
+        '기숙사 B동': 'E12_DormB',
+        '자연과학동': 'E8_Natural-Science-Bldg'
     }
 
     log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
