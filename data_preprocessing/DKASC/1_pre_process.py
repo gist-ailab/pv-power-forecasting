@@ -80,7 +80,7 @@ def combine_into_each_site(file_path, index_of_site,
                                 (group['timestamp'] <= end_time_rounded)]
                 
                 # Weather_Relative_Humidity가 100 이상인 값이 있는지 확인
-                if (day_data['Weather_Relative_Humidity'] >= 100).any():
+                if (day_data['Weather_Relative_Humidity'] >= 100).any() or (day_data['Weather_Temperature_Celsius'] < -10).any():
                     count_date += 1
                     continue  # 100 이상인 값이 있으면 이 날의 데이터를 건너뜁니다.
                 
@@ -100,6 +100,7 @@ def combine_into_each_site(file_path, index_of_site,
     df_cleaned_6 = df_cleaned_6.reset_index(drop=True)
 
     total_dates = df_cleaned_6['timestamp'].dt.date.nunique()
+    print(count_date, total_dates)
 
     df_cleaned_6.to_csv(os.path.join(save_dir, f'{file_name}'), index=False)
 
