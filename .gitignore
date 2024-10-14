@@ -466,15 +466,11 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/emacs,jetbrains+all,jupyternotebooks,linux,macos,microsoftoffice,notepadpp,python,tortoisegit,vim,visualstudiocode,windows
 
 
-PatchTST_supervised/dataset/*
-checkpoints/*
-PatchTST_supervised/checkpoints_*/*
-results/*
-PatchTST_supervised/results_*/*
-test_results/*
-PatchTST_supervised/test_results_*/*
-PatchTST_supervised/result.txt
-PatchTST_supervised/result*.txt
 
-PatchTST_supervised/visualize/*
+data/*
+checkpoints/*
+results/*
+test_results/*
+
+
 .vscode/*
