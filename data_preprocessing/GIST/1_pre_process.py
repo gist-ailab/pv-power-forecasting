@@ -1,10 +1,10 @@
 import os
-import sys
 import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
 from copy import deepcopy
+
 
 def combine_into_each_site(file_list, index_of_site,
                            kor_name, eng_name,
@@ -24,7 +24,7 @@ def combine_into_each_site(file_list, index_of_site,
     empty_rows.columns = preprocessed_df.columns
 
     for i, file in tqdm(enumerate(file_list), total=len(file_list), desc=f'Processing {kor_name}. Out of {index_of_site+1}/16'):
-        ## read pv info
+        # read pv info
         daily_pv_data = pd.read_csv(file)
         daily_pv_data.columns = daily_pv_data.iloc[0]
         daily_pv_data.columns.values[:len(env_columns)] = env_columns
@@ -42,7 +42,7 @@ def combine_into_each_site(file_list, index_of_site,
         # 결측치 처리:'-' 또는 빈 값을 NaN으로 변환
         daily_pv_data = daily_pv_data.map(lambda x: np.nan if x in ['-', '', ' '] else x)
 
-        ## get date
+        # get date
         pv_date = file.split('_')[-2]
         pv_date = pd.to_datetime(pv_date).date()
         daily_weather_data = weather_info[weather_info['datetime'].dt.date == pv_date]
@@ -324,9 +324,9 @@ if __name__ == '__main__':
 
     # convert_excel_to_hourly_csv(pv_file_list)
 
-    pv_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')
-    pv_file_list = [os.path.join(pv_csv_data_dir, _) for _ in os.listdir(pv_csv_data_dir)]
-    pv_file_list.sort()
+    raw_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')
+    raw_file_list = [os.path.join(raw_csv_data_dir, _) for _ in os.listdir(raw_csv_data_dir)]
+    raw_file_list.sort()
 
     site_dict = {
         '축구장': 'Soccer-Field',
@@ -349,7 +349,7 @@ if __name__ == '__main__':
 
     log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
     for i, (kor_name, eng_name) in enumerate(site_dict.items()):
-        combine_into_each_site(pv_file_list, i,
+        combine_into_each_site(raw_file_list, i,
                                kor_name, eng_name,
                                weather_data,
                                os.path.join(project_root, 'data/GIST_dataset'),
