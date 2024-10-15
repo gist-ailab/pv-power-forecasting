@@ -13,20 +13,24 @@ def combine_into_each_site(file_path, index_of_site,
     file_name = file_path.split('/')[-1]
     raw_df = pd.read_csv(file_path, encoding='unicode_escape')
     raw_df['timestamp'] = pd.to_datetime(raw_df['timestamp'])
+    init_total_dates = raw_df['timestamp'].dt.date.nunique()
 
 
-    '''1. Delete unnecessary columns'''
-    unnecessary_columns = ['Active_Energy_Delivered_Received',
-                           'Current_Phase_Average',
-                           'Performance_Ratio',
-                           'Wind_Speed',
-                           'Wind_Direction',
-                           'Weather_Daily_Rainfall',
-                           'Radiation_Global_Tilted',
-                           'Radiation_Diffuse_Tilted']
-    df = raw_df.drop(columns=unnecessary_columns)
+    '''1. 데이터의 맨 처음과 끝을 일 단위로 끊고 불필요한 열 제거'''
+    # 데이터 시작 시간을 기준으로 다음날 00:00 이후 데이터 사용
+    start_date = raw_df['timestamp'].dt.normalize().iloc[0] + pd.Timedelta(days=1)
+    # 데이터 종료 시간을 기준으로 당일 23:59:59 이전 데이터 사용
+    end_date = raw_df['timestamp'].dt.normalize().iloc[-1]
+    raw_df = raw_df[(raw_df['timestamp'] >= start_date) & (raw_df['timestamp'] < end_date)]
+
+    necessary_columns = ['Active_Power',
+                         'Global_Horizontal_Radiation',
+                         'Diffuse_Horizontal_Radiation',
+                         'Weather_Temperature_Celsius',
+                         'Weather_Relative_Humidity']
+    df = raw_df.loc[:, ['timestamp'] + necessary_columns]
     
-    '''2. AP가 0.0001보다 작으면 0으로 변환'''
+    '''2. AP가 0.001보다 작으면 0으로 변환'''
     df['Active_Power'] = df['Active_Power'].abs()    
     df.loc[df['Active_Power'] < 0.001, 'Active_Power'] = 0
 
@@ -53,7 +57,7 @@ def combine_into_each_site(file_path, index_of_site,
     df_cleaned_4 = df_cleaned_3[~df_cleaned_3['timestamp'].dt.date.isin(days_to_exclude)]
 
 
-    '''5. 해가 떠 있는 시간 동안의 데이터만 추출하며 상대습도가 100이상인 날은 제거'''
+    '''5. 해가 떠 있는 시간 동안의 데이터만 추출하며 상대습도가 100이상인 날과 영하 -10도 이하는 제거'''
     # 날짜별로 그룹화
     grouped = df_cleaned_4.groupby(df_cleaned_4['timestamp'].dt.date)
 
@@ -62,27 +66,29 @@ def combine_into_each_site(file_path, index_of_site,
 
     count_date = 0
     for date, group in tqdm(grouped, desc=f'Processing {file_name}'):
-        # Active Power가 0이 아닌 첫 번째 행 찾기
-        first_non_zero = group[group['Active_Power'] != 0].first_valid_index()
-        if first_non_zero is not None:
-            start_time = group.loc[first_non_zero, 'timestamp']
+        # Step 1: AP가 0이 아니고 GHR이 6보다 큰 행 찾기
+        valid_rows = (group['Active_Power'] > 0) & (group['Global_Horizontal_Radiation'] > 6)
+
+        if valid_rows.any():
+            # AP > 0 이고 GHR > 6인 첫 번째 행 찾기
+            first_valid_index = valid_rows.idxmax()
+            start_time = group.loc[first_valid_index, 'timestamp']
             start_time_rounded = start_time.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
             
-            # Active Power가 0이 되는 마지막 행 찾기
-            last_non_zero = group[group['Active_Power'] != 0].last_valid_index()
-            if last_non_zero is not None:
-                end_time = group.loc[last_non_zero, 'timestamp']
-                # 종료 시간 설정 (마지막 기록 시간의 다음 시간대 끝까지)
-                end_time_rounded = (end_time + timedelta(hours=1)).replace(minute=55, second=0, microsecond=0)
+            # AP > 0 이고 GHR > 6인 마지막 행 찾기
+            last_valid_index = valid_rows[::-1].idxmax()
+            end_time = group.loc[last_valid_index, 'timestamp']
+            end_time_rounded = (end_time + timedelta(hours=1)).replace(minute=55, second=0, microsecond=0)
+
+            # Step 2: 시작 시간과 종료 시간 사이의 데이터만 선택
+            day_data = group[(group['timestamp'] >= start_time_rounded) &
+                            (group['timestamp'] <= end_time_rounded)]
                 
-                # 시작 시간과 종료 시간 사이의 데이터만 선택
-                day_data = group[(group['timestamp'] >= start_time_rounded) & 
-                                (group['timestamp'] <= end_time_rounded)]
-                
-                # Weather_Relative_Humidity가 100 이상인 값이 있는지 확인
+            if not day_data.empty:
+                # Weather_Relative_Humidity가 100 이상이고 Weather_Temperature_Celsiusrk -10 이하인 값이 있는지 확인
                 if (day_data['Weather_Relative_Humidity'] >= 100).any() or (day_data['Weather_Temperature_Celsius'] < -10).any():
                     count_date += 1
-                    continue  # 100 이상인 값이 있으면 이 날의 데이터를 건너뜁니다.
+                    continue  # 조건에 맞는 날의 데이터를 건너뜁니다.
                 
                 # 결과 데이터프레임에 추가
                 df_cleaned_5 = pd.concat([df_cleaned_5, day_data])
@@ -100,7 +106,7 @@ def combine_into_each_site(file_path, index_of_site,
     df_cleaned_6 = df_cleaned_6.reset_index(drop=True)
 
     total_dates = df_cleaned_6['timestamp'].dt.date.nunique()
-    print(count_date, total_dates)
+    print(f'Total changes in the number of dates: {init_total_dates} -> {total_dates}')
 
     df_cleaned_6.to_csv(os.path.join(save_dir, f'{file_name}'), index=False)
 
