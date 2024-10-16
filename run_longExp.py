@@ -18,7 +18,7 @@ if __name__ == '__main__':
                         help='model name, options: [Autoformer, Informer, Transformer, DLinear, NLinear, Linear, PatchTST, PatchCDTST, Naive_repeat, Arima]')
     parser.add_argument('--scaler_path', type=str, default=None, help='location of scaler')
     # data loader
-    parser.add_argument('--data', type=str, default='DKASC_single', help='dataset type. ex: DKASC, GIST')
+    parser.add_argument('--data', type=str, default='DKASC', help='dataset type. ex: DKASC, GIST')
     parser.add_argument('--root_path', type=str, default='./data/DKASC_AliceSprings/', help='root path of the source domain data file')
     parser.add_argument('--data_path', nargs="+", type=str, default='79-Site_DKA-M6_A-Phase.csv', help='source domain data file')
     # parser.add_argument('--root_path', type=str, default='./data/GIST_dataset/', help='root path of the source domain data file')
