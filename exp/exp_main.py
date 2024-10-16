@@ -71,7 +71,7 @@ class Exp_Main(Exp_Basic):
 
         # Initialize wandb with the current settings
         wandb.init(
-            project="PV_forecasting",
+            project="pv-forecasting",
             config={
                 "model": self.args.model,
                 "num_parameters": count,
@@ -87,7 +87,6 @@ class Exp_Main(Exp_Basic):
                 "prediction_sequence_length": self.args.pred_len,
                 'patch_length': self.args.patch_len,
                 'stride': self.args.stride,
-
             }
         )     
         
