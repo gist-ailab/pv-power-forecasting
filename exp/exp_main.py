@@ -274,9 +274,9 @@ class Exp_Main(Exp_Basic):
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                             
                 
-
-                # outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
-                # batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+                f_dim = -1 if self.args.features == 'MS' else 0
+                outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
+                batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
 
                 outputs = outputs[:, -self.args.pred_len:].to(self.device)
                 batch_y = batch_y[:, -self.args.pred_len:].to(self.device)
@@ -286,34 +286,24 @@ class Exp_Main(Exp_Basic):
                     output_np = outputs.detach().cpu().numpy() 
                     batch_y_np = batch_y.detach().cpu().numpy()
 
-                    # scaler는 입력이 2d array여야함
-                    outputs_np_2d = output_np.reshape(-1, output_np.shape[-1])
-                    batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
 
+                    active_power_np = vali_data.inverse_transform(output_np)
+                    active_power_gt_np = vali_data.inverse_transform(batch_y_np)
 
-                    active_power_np = vali_data.inverse_transform(outputs_np_2d)
-                    # scaler 학습 시켰을 때의 데이터 크기로 만들기
-                    active_power_gt_np = vali_data.inverse_transform(np.repeat(batch_y_np_2d, repeats=outputs.shape[-1], axis=-1))
-                    # active_power_gt_np = active_power_gt_np[:, -1]
+                    # # scaler적용 후, 다시 3d로 되돌리기
+                    # active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
+                    # active_power_gt_np = active_power_gt_np.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
 
-                    # scaler적용 후, 다시 3d로 되돌리기
-                    active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
-                    active_power_gt_np = active_power_gt_np.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
-
-                    # 필요한 칼럼만 선택
-                    f_dim = -1 if self.args.features == 'MS' else 0
-                    active_power_np = active_power_np[:, :, f_dim:]
-                    active_power_gt_np = active_power_gt_np[:, :, f_dim:]
 
                     pred = torch.from_numpy(active_power_np).to(self.device)
                     gt = torch.from_numpy(active_power_gt_np).to(self.device)
                 
                 else:
                     # TODO: LSTM일 때, 코드 수정 필요
-                    pred_np = vali_data.inverse_transform(outputs.reshape(-1, outputs.shape[-1]).detach().cpu().numpy())
-                    gt_np = vali_data.inverse_transform(batch_y.reshape(-1, batch_y.shape[-1]).detach().cpu().numpy())
+                    pred_np = vali_data.inverse_transform(outputs.detach().cpu().numpy())
+                    gt_np = vali_data.inverse_transform(batch_y.detach().cpu().numpy())
 
-                    pred_np = pred_np.reshape(-1, vali_data[-2], batch_y_np.shape[-1])
+                    # pred_np = pred_np.reshape(-1, vali_data[-2], batch_y_np.shape[-1])
                     pred = torch.from_numpy(pred_np[:, :, -1])
                     gt = torch.from_numpy(gt_np[:, :, -1])
 
@@ -384,7 +374,7 @@ class Exp_Main(Exp_Basic):
                         else:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
-                
+                f_dim = -1 if self.args.features == 'MS' else 0
                 outputs = outputs[:, -self.args.pred_len:].to(self.device)
                 batch_y = batch_y[:, -self.args.pred_len:].to(self.device)
                 
@@ -394,20 +384,11 @@ class Exp_Main(Exp_Basic):
                     outputs_np = outputs.detach().cpu().numpy()
                     batch_y_np = batch_y.detach().cpu().numpy()
 
-                    # scaler는 입력이 2d array여야함
-                    outputs_np_2d = outputs_np.reshape(-1, outputs_np.shape[-1])
-                    batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
-                
-
                     # de-normalize the data and prediction values
-                    pred = test_data.inverse_transform(outputs_np_2d)
-                    true = test_data.inverse_transform(np.repeat(batch_y_np_2d, repeats=outputs.shape[-1], axis=-1))
+                    pred = test_data.inverse_transform(outputs_np)
+                    true = test_data.inverse_transform(batch_y_np)
 
 
-                    f_dim = -1 if self.args.features == 'MS' else 0
-                    # inverse한 결과
-                    pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1)[:, :, f_dim:] 
-                    true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)[:, :, f_dim:]
                     # normalized된 결과
                     pred_normalized = outputs_np
                     true_normalized = batch_y_np
@@ -417,11 +398,11 @@ class Exp_Main(Exp_Basic):
                                  
                 else:
                     # TODO: LSTM일 때, 코드 수정 필요
-                    pred_np = test_data.inverse_transform(outputs.reshape(-1, outputs_np.shape[-1]).detach().cpu().numpy())
-                    true_np = test_data.inverse_transform(batch_y.reshape(-1, outputs_np.shape[-1]).detach().cpu().numpy())
+                    pred_np = test_data.inverse_transform(outputs.detach().cpu().numpy())
+                    true_np = test_data.inverse_transform(batch_y.detach().cpu().numpy())
                     
-                    pred_np = pred_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
-                    true_np = true_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
+                    # pred_np = pred_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
+                    # true_np = true_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
 
                     pred = torch.from_numpy(pred_np)[:, :, -1]
                     true = torch.from_numpy(true_np)[:, :, -1]
