@@ -17,6 +17,7 @@ import time
 import warnings
 import matplotlib.pyplot as plt
 import numpy as np
+import wandb
 
 warnings.filterwarnings('ignore')
 
@@ -66,7 +67,29 @@ class Exp_Main(Exp_Basic):
         def count_parameters(model):
             return sum(p.numel() for p in model.parameters() if p.requires_grad)
         count = count_parameters(self.model)
-        print(f'The number of parameters of the model is {count}.')        
+        print(f'The number of parameters of the model is {count}.')
+
+        # Initialize wandb with the current settings
+        wandb.init(
+            project="PV_forecasting",
+            config={
+                "model": self.args.model,
+                "num_parameters": count,
+                "batch_size": self.args.batch_size,
+                "num_workers": self.args.num_workers,
+                "learning_rate": self.args.learning_rate,
+                "loss_function": self.args.loss,
+
+                "dataset": self.args.data,
+                "epochs": self.args.train_epochs,
+                
+                "input_seqeunce_length": self.args.seq_len,
+                "prediction_sequence_length": self.args.pred_len,
+                'patch_length': self.args.patch_len,
+                'stride': self.args.stride,
+
+            }
+        )     
         
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
@@ -158,6 +181,11 @@ class Exp_Main(Exp_Basic):
                 train_losses.append(loss.item())
 
                 if (i + 1) % 100 == 0:
+                    # Log iteration-level metrics every 100 iterations
+                    wandb.log({
+                        "iteration": (epoch * len(train_loader)) + i + 1,
+                        "train_loss_iteration": loss.item()
+                    })
                     print(f"\titers: {i+1}, epoch: {epoch+1} | loss: {loss.item():.7f}, ")
                     
                     speed = (time.time() - time_now) / iter_count
@@ -185,6 +213,14 @@ class Exp_Main(Exp_Basic):
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             test_loss = self.vali(test_data, test_loader, criterion)
             print(f"Epoch: {epoch + 1} | Train Loss: {train_losses:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
+
+            # Log metrics for each epoch
+            wandb.log({
+                "epoch": epoch + 1,
+                "train_loss": train_losses,
+                "validation_loss": vali_loss,
+                "test_loss": test_loss,
+            })
             
             early_stopping(vali_loss, self.model, path)
             if early_stopping.early_stop:
