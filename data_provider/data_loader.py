@@ -376,6 +376,7 @@ class Dataset_DKASC(Dataset):
         self.scaler_path = scaler_path
 
         self.root_path = root_path
+        self.data_path = data_path
         
 
         # Total 개
@@ -425,7 +426,7 @@ class Dataset_DKASC(Dataset):
 
 
         random.seed(42)
-        if self.data_path_list[0] == 'ALL':
+        if self.data_path[0] == 'ALL':
             random.shuffle(self.LOCATIONS)  # 데이터 섞기
 
             total_size = len(self.LOCATIONS)
@@ -601,7 +602,7 @@ class Dataset_DKASC(Dataset):
     def inverse_transform(self, data, columns_name=['Active_Power']):
         data_org = data.copy()
         for col in columns_name:
-            data[col] = self.scaler[col].inverse_transform(data[col].values.reshape(-1, 1))
+            data[col] = self.scalers[col].inverse_transform(data[col].values.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
 
@@ -638,6 +639,7 @@ class Dataset_GIST(Dataset):
         
 
         self.root_path = root_path
+        self.data_path = data_path
         
 
         
@@ -667,7 +669,7 @@ class Dataset_GIST(Dataset):
 
 
         random.seed(42)
-        if self.data_path_list[0] == 'ALL':
+        if self.data_path[0] == 'ALL':
             random.shuffle(self.LOCATIONS)  # 데이터 섞기
             total_size = len(self.LOCATIONS)
             train_size = int(0.6 * total_size)
@@ -829,7 +831,7 @@ class Dataset_GIST(Dataset):
     def inverse_transform(self, data, columns_name=['Active_Power']):
         data_org = data.clone()
         for col in columns_name:
-            data[col] = self.scaler[col].inverse_transform(data[col].values.reshape(-1, 1))
+            data[col] = self.scalers[col].inverse_transform(data[col].values.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
     
