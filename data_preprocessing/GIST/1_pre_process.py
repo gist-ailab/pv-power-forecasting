@@ -349,11 +349,12 @@ if __name__ == '__main__':
 
     log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
     for i, (kor_name, eng_name) in enumerate(site_dict.items()):
-        combine_into_each_site(raw_file_list, i,
-                               kor_name, eng_name,
-                               weather_data,
-                               os.path.join(project_root, 'data/GIST_dataset'),
-                               log_file_path)
+        combine_into_each_site(file_list=raw_file_list,
+                               index_of_site=i,
+                               kor_name=kor_name, eng_name=eng_name,
+                               weather_data=weather_data,
+                               save_dir=os.path.join(project_root, 'data/GIST_dataset/converted'),
+                               log_file_path=log_file_path)
     
 
 
