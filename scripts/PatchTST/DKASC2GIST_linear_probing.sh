@@ -18,13 +18,11 @@ data_name=DKASC
 random_seed=2024
 
 
-remove_cols="Wind_Speed Performance_Ratio" 
 
 
 for pred_len in 24 1 2 4 8 16
 do
     python -u run_finetune.py \
-      --remove_cols $remove_cols \
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \

@@ -16,7 +16,6 @@ if __name__ == '__main__':
     parser.add_argument('--model_id', type=str, default='test', help='model id')
     parser.add_argument('--model', type=str, default='PatchTST',
                         help='model name, options: [Autoformer, Informer, Transformer, DLinear, NLinear, Linear, PatchTST, PatchCDTST, Naive_repeat, Arima]')
-    parser.add_argument('--remove_cols', nargs='+', default=None)
     parser.add_argument('--scaler_path', type=str, default=None, help='location of scaler')
     # data loader
     parser.add_argument('--data', type=str, default='DKASC_single', help='dataset type. ex: DKASC, GIST')

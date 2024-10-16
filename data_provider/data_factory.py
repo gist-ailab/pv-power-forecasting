@@ -46,7 +46,6 @@ def data_provider(args, flag):
         target=args.target,
         timeenc=timeenc,
         freq=freq,
-        remove_cols=args.remove_cols,
         scaler_path=args.scaler_path
     )
     print(flag, data_set.__len__())

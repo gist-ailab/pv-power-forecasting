@@ -18,7 +18,6 @@ data_name=DKASC
 random_seed=2024
 
 
-remove_cols="Active_Energy_Delivered_Received Current_Phase_Average Diffuse_Horizontal_Radiation Wind_Direction Weather_Daily_Rainfall Radiation_Global_Tilted Radiation_Diffuse_Tilted" 
 
 
 for pred_len in 24 #1 2 4 8 16

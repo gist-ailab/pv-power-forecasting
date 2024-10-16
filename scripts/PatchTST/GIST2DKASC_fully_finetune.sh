@@ -18,7 +18,6 @@ data_name=DKASC
 random_seed=2024
 
 
-# remove_cols="Wind_Speed Performance_Ratio" 
 
 export CUDA_VISIBLE_DEVICES=2
 for pred_len in 24 #1 2 4 8 16

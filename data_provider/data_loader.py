@@ -603,7 +603,7 @@ class Dataset_DKASC(Dataset):
 class Dataset_GIST(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                  features='MS', data_path='GIST_sisuldong.csv', target='Active_Power',
-                 scale=True, timeenc=0, freq='h', remove_cols=None, scaler_path=None):
+                 scale=True, timeenc=0, freq='h', scaler_path=None):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
@@ -626,7 +626,7 @@ class Dataset_GIST(Dataset):
         self.freq = freq
         self.flag = flag
 
-        self.remove_cols = remove_cols
+    
         self.scaler_path = scaler_path
         
 
