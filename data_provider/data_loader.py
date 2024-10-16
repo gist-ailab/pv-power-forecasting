@@ -18,8 +18,8 @@ __all__ = ['Dataset_DKASC_single', 'Dataset_DKASC', 'Dataset_GIST', 'Dataset_Ger
 
 class Dataset_DKASC_single(Dataset):
     def __init__(self, root_path, flag='train', size=None,
-                 features='MS', data_path='79-Site_DKA-M6_A-Phase.csv', target='Active_Power',
-                 scale=True, timeenc=0, freq='h', domain='source'):
+                 features='MS', data_path='79-Site_DKA-M6_A-Phase.csv', scaler_path=None,
+                 target='Active_Power', scale=True, timeenc=0, freq='h', domain='source'):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
