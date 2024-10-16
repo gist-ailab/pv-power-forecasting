@@ -376,9 +376,7 @@ class Dataset_DKASC(Dataset):
         self.scaler_path = scaler_path
 
         self.root_path = root_path
-        if data_path != 'ALL':
-            self.data_path_list = data_path
-        else: self.data_path_list = data_path
+        
 
         # Total 개
         self.LOCATIONS = [
@@ -427,29 +425,32 @@ class Dataset_DKASC(Dataset):
 
 
         random.seed(42)
-        if self.data_path_list == 'ALL':
+        if self.data_path_list[0] == 'ALL':
             random.shuffle(self.LOCATIONS)  # 데이터 섞기
-        else:
-            random.shuffle(self.data_path_list)
-        
-        total_size = len(self.LOCATIONS)
-        train_size = int(0.6 * total_size)
-        val_size = int(0.3 * total_size)
-        
-        if self.flag == 'train':
-            self.train = self.LOCATIONS[:train_size]
-            print(f'[INFO] Train Locations: total {len(self.train)}')
-            print(f'[INFO] Location List: {self.train}')
-              
-        elif self.flag == 'val':
-            self.val = self.LOCATIONS[train_size:train_size + val_size]
-            print(f'[INFO] Valid Locations: total {len(self.val)}')
-            print(f'[INFO] Location List: {self.val}')
 
-        elif self.flag == 'test':
-            self.test = self.LOCATIONS[train_size + val_size:]
-            print(f'[INFO] Test Locations: total {len(self.test)}')
-            print(f'[INFO] Location List: {self.test}')
+            total_size = len(self.LOCATIONS)
+            train_size = int(0.6 * total_size)
+            val_size = int(0.3 * total_size)
+            
+            if self.flag == 'train':
+                self.train = self.LOCATIONS[:train_size]
+                print(f'[INFO] Train Locations: total {len(self.train)}')
+                print(f'[INFO] Location List: {self.train}')
+                
+            elif self.flag == 'val':
+                self.val = self.LOCATIONS[train_size:train_size + val_size]
+                print(f'[INFO] Valid Locations: total {len(self.val)}')
+                print(f'[INFO] Location List: {self.val}')
+
+            elif self.flag == 'test':
+                self.test = self.LOCATIONS[train_size + val_size:]
+                print(f'[INFO] Test Locations: total {len(self.test)}')
+                print(f'[INFO] Location List: {self.test}')
+        
+
+        else:
+            # TODO: ALL이 아닐 때, 코드 수정
+            random.shuffle(self.data_path_list)
         
         
         self.__load_preprocessed_data__()
@@ -598,7 +599,7 @@ class Dataset_DKASC(Dataset):
 
     # 평가 시 필요함
     def inverse_transform(self, data, columns_name=['Active_Power']):
-        data_org = data.clone()
+        data_org = data.copy()
         for col in columns_name:
             data[col] = self.scaler[col].inverse_transform(data[col].values.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
@@ -638,10 +639,6 @@ class Dataset_GIST(Dataset):
 
         self.root_path = root_path
         
-        self.root_path = root_path
-        if data_path != 'ALL':
-            self.data_path_list = data_path
-        else: self.data_path_list = data_path
 
         
         self.LOCATIONS = [
@@ -670,15 +667,12 @@ class Dataset_GIST(Dataset):
 
 
         random.seed(42)
-        if self.data_path_list == 'ALL':
+        if self.data_path_list[0] == 'ALL':
             random.shuffle(self.LOCATIONS)  # 데이터 섞기
-        else:
-            random.shuffle(self.data_path_list)
-
-        total_size = len(self.LOCATIONS)
-        train_size = int(0.6 * total_size)
-        val_size = int(0.3 * total_size)
-        
+            total_size = len(self.LOCATIONS)
+            train_size = int(0.6 * total_size)
+            val_size = int(0.3 * total_size)
+                    
 
         if self.flag == 'train':
             self.train = self.LOCATIONS[:train_size]
@@ -694,6 +688,11 @@ class Dataset_GIST(Dataset):
             self.test = self.LOCATIONS[train_size + val_size:]
             print(f'[INFO] Test Locations: total {len(self.test)}')
             print(f'[INFO] Location List: {self.test}')
+
+
+        else:
+            # TODO: ALL아닐 때, 수정할 것
+            random.shuffle(self.data_path_list)
 
 
 
