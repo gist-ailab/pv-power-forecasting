@@ -592,10 +592,11 @@ class Dataset_DKASC(Dataset):
 
     # 평가 시 필요함
     def inverse_transform(self, data, columns_name=['Active_Power']):
+        data_org = data.clone()
         for col in columns_name:
-            return self.scaler[col].inverse_transform(data[col].values.reshape(-1, 1))
+            data[col] = self.scaler[col].inverse_transform(data[col].values.reshape(-1, 1))
+        data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
-    
 
 
 
@@ -816,8 +817,10 @@ class Dataset_GIST(Dataset):
 
     # 평가 시 필요함
     def inverse_transform(self, data, columns_name=['Active_Power']):
+        data_org = data.clone()
         for col in columns_name:
-            return self.scaler[col].inverse_transform(data[col].values.reshape(-1, 1))
+            data[col] = self.scaler[col].inverse_transform(data[col].values.reshape(-1, 1))
+        data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
     
 
