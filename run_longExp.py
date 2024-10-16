@@ -20,7 +20,7 @@ if __name__ == '__main__':
     # data loader
     parser.add_argument('--data', type=str, default='DKASC_single', help='dataset type. ex: DKASC, GIST')
     parser.add_argument('--root_path', type=str, default='./data/DKASC_AliceSprings/', help='root path of the source domain data file')
-    parser.add_argument('--data_path', type=str, default='79-Site_DKA-M6_A-Phase.csv', help='source domain data file')
+    parser.add_argument('--data_path', nargs="+", type=str, default='79-Site_DKA-M6_A-Phase.csv', help='source domain data file')
     # parser.add_argument('--root_path', type=str, default='./data/GIST_dataset/', help='root path of the source domain data file')
     # parser.add_argument('--data_path', type=str, default='GIST_sisuldong.csv', help='source domain data file')
     parser.add_argument('--features', type=str, default='MS',

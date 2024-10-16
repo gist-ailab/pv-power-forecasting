@@ -377,7 +377,7 @@ class Dataset_DKASC(Dataset):
 
         self.root_path = root_path
         if data_path != 'ALL':
-            self.data_path_list = data_path.split(',')
+            self.data_path_list = data_path
         else: self.data_path_list = data_path
 
         # Total 개
@@ -420,7 +420,7 @@ class Dataset_DKASC(Dataset):
             '218-Site_DKA-M4_C-Phase_II.csv'      # 9A
         ]
 
-
+        self.scalers = {}
         self.x_list = []
         self.y_list = []
         self.ds_list = []
@@ -494,28 +494,32 @@ class Dataset_DKASC(Dataset):
             data_stamp = time_features(pd.to_datetime(df_raw['timestamp'].values), freq=self.freq)
             data_stamp = data_stamp.transpose(1, 0)
         
-        # 3. Encoding 후, 'date' column 생성
-        df_raw['date'] == data_stamp
+        # # 3. Encoding 후, 'date' column 생성
+        # df_raw['date'] = data_stamp
        
         # 4. Columns 순서 정렬 (timestamp, date, ..... , target)
         cols = df_raw.columns.tolist()
-        cols.remove('date')
         cols.remove('timestamp')
         cols.remove('Active_Power')
-        df_raw = df_raw[['date'] + cols + [self.target]]
+        # df_raw = df_raw[['date'] + cols + [self.target]]
+        df_raw = df_raw[cols + [self.target]]
+
 
         # 5. Scaler 적용
         if self.scale: 
             # Train일 때는, Scaler Fit 후에, 저장
             if self.flag == 'train':
                 for col in df_raw.columns:
-                    if col != 'date':
-                        scaler = StandardScaler()
-                        df_raw[col] = scaler.fit_transform(df_raw[[col]])
-                        self.scalers[col] = scaler 
-                        # Scaler를 pickle 파일로 저장
-                        with open(os.path.join(self.scaler_path, f'{col}_scaler.pkl'), 'wb') as f:
-                            pickle.dump(scaler, f)
+                    scaler = StandardScaler()
+                    df_raw[col] = scaler.fit_transform(df_raw[[col]])
+                    self.scalers[col] = scaler 
+                    # Scaler를 pickle 파일로 저장
+                    if not self.scaler_path:
+                        path = os.path.join(self.root_path, f'{col}_scaler.pkl')
+                    else:
+                        path = self.scaler_path
+                    with open(path, 'wb') as f:
+                        pickle.dump(scaler, f)
         
             else:
                 # Val, Test일 때는, 저장된 Scaler 불러와서 적용
@@ -523,20 +527,22 @@ class Dataset_DKASC(Dataset):
                 transformed_df = df_raw.copy()  
 
                 for col in df_raw.columns:
-                    if cols != 'date':
-                        scaler_path = os.path.join(self.scaler_path, f'{col}_scaler.pkl') 
+                    if not self.scaler_path:
+                         path = os.path.join(self.root_path, f'{col}_scaler.pkl')
+                    else:
+                        path = self.scaler_path
+            
+                    # Scaler가 존재하는지 확인
+                    if os.path.exists(path):
+                        with open(path, 'rb') as f:
+                            scaler = pickle.load(f) 
                 
-                        # Scaler가 존재하는지 확인
-                        if os.path.exists(scaler_path):
-                            with open(scaler_path, 'rb') as f:
-                                scaler = pickle.load(f) 
-                    
-                            # 해당 칼럼에 스케일러 적용 (transform)
-                            df_raw[col] = scaler.transform(transformed_df[[col]]) 
-                            self.scalers[col] = scaler
-                    
-                        else:
-                            print(f"Scaler for column {col} not found.")
+                        # 해당 칼럼에 스케일러 적용 (transform)
+                        df_raw[col] = scaler.transform(transformed_df[[col]]) 
+                        self.scalers[col] = scaler
+                
+                    else:
+                        print(f"Scaler for column {col} not found.")
             
 
         # 6. 입력할 칼럼들 지정하여 리스트 생성
@@ -553,7 +559,7 @@ class Dataset_DKASC(Dataset):
         # 타겟은 마지막 열인 Active_Power
         self.y_list = df_raw[[self.target]].values
         # date columns만 선택
-        self.ds_list = df_raw[df_raw.columns[0]].values
+        self.ds_list = data_stamp
 
 
     
@@ -634,7 +640,7 @@ class Dataset_GIST(Dataset):
         
         self.root_path = root_path
         if data_path != 'ALL':
-            self.data_path_list = data_path.split(',')
+            self.data_path_list = data_path
         else: self.data_path_list = data_path
 
         
@@ -657,6 +663,7 @@ class Dataset_GIST(Dataset):
             'Soccer-Field.csv',
         ]
         
+        self.scalers = {}
         self.x_list = []
         self.y_list = []
         self.ds_list = []
@@ -727,36 +734,38 @@ class Dataset_GIST(Dataset):
             data_stamp['weekday'] = df_raw.date.apply(lambda row: row.weekday(), 1)
             data_stamp['hour'] = df_raw.date.apply(lambda row: row.hour, 1)
             
-            data_stamp = data_stamp[['month', 'day', 'weekday', 'hour']].values
+            data_stamp = data_stamp.drop(['date'], axis=1).values()
 
         elif self.timeenc == 1:
             data_stamp = time_features(pd.to_datetime(df_raw['timestamp'].values), freq=self.freq)
             data_stamp = data_stamp.transpose(1, 0)
         
         # 3. Encoding 후, date columns 생성
-        df_raw['date'] == data_stamp
+        # df_raw['date'] = data_stamp
 
 
                
         # 4. Columns 순서 정렬 (timestamp, date, ..... , target)
         cols = df_raw.columns.tolist()
-        cols.remove('date')
+        # cols.remove('date')
         cols.remove('timestamp')
         cols.remove('Active_Power')
-        df_raw = df_raw[['date'] + cols + [self.target]]
+        df_raw = df_raw[cols + [self.target]]
 
-        # 5. Scaler 적용
         if self.scale: 
             # Train일 때는, Scaler Fit 후에, 저장
             if self.flag == 'train':
                 for col in df_raw.columns:
-                    if col != 'date':
-                        scaler = StandardScaler()
-                        df_raw[col] = scaler.fit_transform(df_raw[[col]])
-                        self.scalers[col] = scaler 
-                        # Scaler를 pickle 파일로 저장
-                        with open(os.path.join(self.scaler_path, f'{col}_scaler.pkl'), 'wb') as f:
-                            pickle.dump(scaler, f)
+                    scaler = StandardScaler()
+                    df_raw[col] = scaler.fit_transform(df_raw[[col]])
+                    self.scalers[col] = scaler 
+                    # Scaler를 pickle 파일로 저장
+                    if not self.scaler_path:
+                        path = os.path.join(self.root_path, f'{col}_scaler.pkl')
+                    else:
+                        path = self.scaler_path
+                    with open(path, 'wb') as f:
+                        pickle.dump(scaler, f)
         
             else:
                 # Val, Test일 때는, 저장된 Scaler 불러와서 적용
@@ -764,20 +773,22 @@ class Dataset_GIST(Dataset):
                 transformed_df = df_raw.copy()  
 
                 for col in df_raw.columns:
-                    if cols != 'date':
-                        scaler_path = os.path.join(self.scaler_path, f'{col}_scaler.pkl') 
+                    if not self.scaler_path:
+                         path = os.path.join(self.root_path, f'{col}_scaler.pkl')
+                    else:
+                        path = self.scaler_path
+            
+                    # Scaler가 존재하는지 확인
+                    if os.path.exists(path):
+                        with open(path, 'rb') as f:
+                            scaler = pickle.load(f) 
                 
-                        # Scaler가 존재하는지 확인
-                        if os.path.exists(scaler_path):
-                            with open(scaler_path, 'rb') as f:
-                                scaler = pickle.load(f) 
-                    
-                            # 해당 칼럼에 스케일러 적용 (transform)
-                            df_raw[col] = scaler.transform(transformed_df[[col]]) 
-                            self.scalers[col] = scaler
-                    
-                        else:
-                            print(f"Scaler for column {col} not found.")
+                        # 해당 칼럼에 스케일러 적용 (transform)
+                        df_raw[col] = scaler.transform(transformed_df[[col]]) 
+                        self.scalers[col] = scaler
+                
+                    else:
+                        print(f"Scaler for column {col} not found.")
 
 
         # 6. 입력할 칼럼들 지정하여 리스트 생성
@@ -794,7 +805,7 @@ class Dataset_GIST(Dataset):
         # 타겟은 마지막 열인 Active_Power
         self.y_list = df_raw[[self.target]].values
         # date columns만 선택
-        self.ds_list = df_raw[df_raw.columns[0]].values        
+        self.ds_list = data_stamp      
         
 
     def __getitem__(self, index):

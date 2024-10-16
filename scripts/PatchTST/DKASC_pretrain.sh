@@ -12,8 +12,8 @@ fi
 seq_len=336
 label_len=0
 
-root_path_name=/SSDa/sowon_choi/DKASC_AliceSprings_1h
-data_path_name=ALL
+root_path_name=/ailab_mat/dataset/PV/DKASC_AliceSprings/preprocessed
+data_path_name='100-Site_DKA-M1_A-Phase.csv 212-Site_DKA-M15_C-Phase_II.csv'
 data_name=DKASC
 random_seed=2024
 
