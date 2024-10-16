@@ -474,3 +474,4 @@ test_results/*
 
 
 .vscode/*
+wandb/*
