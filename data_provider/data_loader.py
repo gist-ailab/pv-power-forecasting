@@ -647,7 +647,7 @@ class Dataset_GIST(Dataset):
             'C07_Samsung-Env-Bldg.csv',
             'C09_Dasan.csv',
             'C10_Renewable-E-Bldg.csv',
-            'C11_GAIA.csv ',
+            'C11_GAIA.csv',
             'E02_Animal-Recource-Center.csv',
             'E03_GTI.csv',
             'E08_Natural-Science-Bldg.csv',
@@ -808,6 +808,15 @@ class Dataset_GIST(Dataset):
         # date columns만 선택
         self.ds_list = data_stamp      
         
+    # 파일 경로를 가져와서 DataFrame으로 합치는 함수
+    def load_and_concat_data(self, file_list):
+        df_list = []
+        for file in file_list:
+            file_path = f"{self.root_path}/{file}"  
+            df = pd.read_csv(file_path)  
+            assert (df.isnull().sum()).sum() == 0, "허용되지 않은 열에 결측치가 존재합니다."            
+            df_list.append(df) 
+        return pd.concat(df_list, ignore_index=True) 
 
     def __getitem__(self, index):
         s_begin = index
@@ -828,10 +837,10 @@ class Dataset_GIST(Dataset):
 
 
     # 평가 시 필요함
-    def inverse_transform(self, data, columns_name=['Active_Power']):
-        data_org = data.clone()
-        for col in columns_name:
-            data[col] = self.scalers[col].inverse_transform(data[col].values.reshape(-1, 1))
+    def inverse_transform(self, data):
+        data_org = data.copy()
+       
+        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
     
