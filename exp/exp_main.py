@@ -284,8 +284,8 @@ class Exp_Main(Exp_Basic):
                     batch_y_np = batch_y.detach().cpu().numpy()
 
 
-                    active_power_np = vali_data.inverse_transform(output_np)
-                    active_power_gt_np = vali_data.inverse_transform(batch_y_np)
+                    active_power_np = vali_data.inverse_transform(output_np.copy())
+                    active_power_gt_np = vali_data.inverse_transform(batch_y_np.copy())
 
                     # # scaler적용 후, 다시 3d로 되돌리기
                     # active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
@@ -382,8 +382,8 @@ class Exp_Main(Exp_Basic):
                     batch_y_np = batch_y.detach().cpu().numpy()
 
                     # de-normalize the data and prediction values
-                    pred = test_data.inverse_transform(outputs_np)
-                    true = test_data.inverse_transform(batch_y_np)
+                    pred = test_data.inverse_transform(outputs_np.copy())
+                    true = test_data.inverse_transform(batch_y_np.copy())
 
 
                     # normalized된 결과
@@ -458,7 +458,7 @@ class Exp_Main(Exp_Basic):
         print('MSE:{}, MAE:{}, RMSE:{}'.format(mse, mae, rmse))
         print('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}'.format(mse_normalized, mae_normalized, rmse_normalized))
         
-        txt_save_path = os.path.join(folder_path, model_path.split('.')[0],
+        txt_save_path = os.path.join(folder_path,
                                      f"{self.args.seq_len}_{self.args.pred_len}_result.txt")
         f = open(txt_save_path, 'a')
         f.write(setting + "  \n")

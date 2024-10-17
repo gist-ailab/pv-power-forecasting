@@ -599,10 +599,10 @@ class Dataset_DKASC(Dataset):
 
 
     # 평가 시 필요함
-    def inverse_transform(self, data, columns_name=['Active_Power']):
+    def inverse_transform(self, data):
         data_org = data.copy()
-        for col in columns_name:
-            data[col] = self.scalers[col].inverse_transform(data[col].values.reshape(-1, 1))
+       
+        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
 
