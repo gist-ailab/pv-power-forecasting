@@ -6,6 +6,7 @@ from exp.exp_finetune import Exp_Finetune
 import random
 import numpy as np
 import torch.multiprocessing as mp
+from utils.tools import StoreDictKeyPair
 
 
 if __name__ == '__main__':
@@ -30,7 +31,9 @@ if __name__ == '__main__':
     # data loader
     parser.add_argument('--data', type=str, default='DKASC_single', help='dataset type')
     parser.add_argument('--root_path', type=str, default='./data/DKASC/', help='root path of the source domain data file')
-    parser.add_argument('--data_path', type=str, default='91-Site_DKA-M9_B-Phase.csv', help='source domain data file')
+    parser.add_argument('--data_path', dest="data_path", action=StoreDictKeyPair, metavar="KEY1=VAL1,KEY2=VAL2...", default="type=all", \
+                        help='In Debuggig, "type=debug,train=79-Site_DKA-M6_A-Phase.csv,val=100-Site_DKA-M1_A-Phase.csv,test=85-Site_DKA-M7_A-Phase.csv"')
+    
     parser.add_argument('--features', type=str, default='MS',
                         help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
     parser.add_argument('--target', type=str, default='Active_Power', help='target feature in S or MS task')

@@ -4,6 +4,7 @@ import torch
 from exp.exp_main import Exp_Main
 import random
 import numpy as np
+from utils.tools import StoreDictKeyPair 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Autoformer & Transformer family for Time Series Forecasting')
@@ -16,11 +17,11 @@ if __name__ == '__main__':
     parser.add_argument('--model_id', type=str, default='test', help='model id')
     parser.add_argument('--model', type=str, default='PatchTST',
                         help='model name, options: [Autoformer, Informer, Transformer, DLinear, NLinear, Linear, PatchTST, PatchCDTST, Naive_repeat, Arima]')
-    parser.add_argument('--scaler_path', type=str, default=None, help='location of scaler')
     # data loader
     parser.add_argument('--data', type=str, default='DKASC', help='dataset type. ex: DKASC, GIST')
     parser.add_argument('--root_path', type=str, default='./data/DKASC_AliceSprings/', help='root path of the source domain data file')
-    parser.add_argument('--data_path', nargs="+", type=str, default='79-Site_DKA-M6_A-Phase.csv', help='source domain data file')
+    parser.add_argument('--data_path', dest="data_path", action=StoreDictKeyPair, metavar="KEY1=VAL1,KEY2=VAL2...", default="type=all", \
+                        help='In Debuggig, "type=debug,train=79-Site_DKA-M6_A-Phase.csv,val=100-Site_DKA-M1_A-Phase.csv,test=85-Site_DKA-M7_A-Phase.csv"')
     # parser.add_argument('--root_path', type=str, default='./data/GIST_dataset/', help='root path of the source domain data file')
     # parser.add_argument('--data_path', type=str, default='GIST_sisuldong.csv', help='source domain data file')
     parser.add_argument('--features', type=str, default='MS',
@@ -103,6 +104,7 @@ if __name__ == '__main__':
     parser.add_argument('--resume', action='store_true', default=False, help='resume')
 
     args = parser.parse_args()
+   
 
     # random seed
     fix_seed = args.random_seed

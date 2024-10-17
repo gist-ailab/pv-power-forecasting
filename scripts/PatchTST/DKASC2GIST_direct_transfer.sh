@@ -12,24 +12,22 @@ fi
 seq_len=336
 label_len=0
 
-root_path_name=/PV/GIST_dataset
-data_path_name=ALL
+root_path_name=/PV/GIST_dataset/converted
+data_path_name=type=all
 data_name=GIST
 random_seed=2024
 
 
-remove_cols="Wind_Speed Performance_Ratio" 
 
 
 for pred_len in 24 #1 2 4 8 16
 do
     python -u run_longExp.py \
-      --remove_cols $remove_cols \
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
       --is_training 0 \
-      --checkpoints \
+      --checkpoints  /home/pv/code/PatchTST/checkpoints/24101614_PatchTST_DKASC_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

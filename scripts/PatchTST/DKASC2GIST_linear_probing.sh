@@ -12,8 +12,8 @@ fi
 seq_len=336
 label_len=0
 
-root_path_name=/PV/DKASC_AliceSprings_1h
-data_path_name=ALL
+root_path_name=/PV/GIST_dataset/converted
+data_path_name='type=all'
 data_name=DKASC
 random_seed=2024
 
@@ -27,6 +27,7 @@ do
       --use_amp \
       --random_seed $random_seed \
       --is_training 1 \
+      --is_linear_probe 1 \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

@@ -13,7 +13,7 @@ seq_len=336
 label_len=0
 
 root_path_name=/ailab_mat/dataset/PV/DKASC_AliceSprings/preprocessed
-data_path_name=ALL
+data_path_name='type=all'
 data_name=DKASC
 random_seed=2024
 
