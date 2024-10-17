@@ -20,6 +20,7 @@ import time
 import warnings
 import matplotlib.pyplot as plt
 import numpy as np
+import wandb
 
 warnings.filterwarnings('ignore')
 
@@ -51,6 +52,38 @@ class Exp_Finetune(Exp_Main):
         return model
 
     def fully_finetune(self, setting, exp_id, resume):
+        
+        def count_parameters(model):
+            return sum(p.numel() for p in model.parameters() if p.requires_grad)
+        count = count_parameters(self.model)
+        print(f'The number of parameters of the model is {count}.')
+
+        # Initialize wandb with the current settings
+        wandb.init(
+            project="pv-forecasting",
+            config={
+                "model": self.args.model,
+                "finetune": 'fully_finetune',
+                "num_parameters": count,
+                "batch_size": self.args.batch_size,
+                "num_workers": self.args.num_workers,
+                "learning_rate": self.args.learning_rate,
+                "loss_function": self.args.loss,
+
+                "dataset": self.args.data,
+                "epochs": self.args.train_epochs,
+                
+                "input_seqeunce_length": self.args.seq_len,
+                "prediction_sequence_length": self.args.pred_len,
+                'patch_length': self.args.patch_len,
+                'stride': self.args.stride,
+            }
+        )     
+        
+       
+        
+        
+        
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
@@ -91,7 +124,7 @@ class Exp_Finetune(Exp_Main):
 
         for epoch in range(self.args.train_epochs):
             iter_count = 0
-            train_loss = []
+            train_losses = []
 
             self.model.train()
             epoch_time = time.time()
@@ -141,9 +174,14 @@ class Exp_Finetune(Exp_Main):
                 outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                 loss = criterion(outputs, batch_y)
-                train_loss.append(loss.item())
+                train_losses.append(loss.item())
 
                 if (i + 1) % 100 == 0:
+                    wandb.log({
+                        "iteration": (epoch * len(train_loader)) + i + 1,
+                        "train_loss_iteration": loss.item()
+                    })
+
                     print(f"\titers: {i+1}, epoch: {epoch+1} | loss: {loss.item():.7f}, ")
                     
                     speed = (time.time() - time_now) / iter_count
@@ -164,14 +202,20 @@ class Exp_Finetune(Exp_Main):
                     adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=False)
                     scheduler.step()      
 
-            print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
-            train_loss = np.average(train_loss)
+            print(f"Epoch: {epoch + 1} | cost time: {time.time() - epoch_time}")
+            train_losses = np.average(train_losses)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             test_loss = self.vali(test_data, test_loader, criterion)                
             
-            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
-                epoch + 1, train_steps, train_loss, vali_loss, test_loss))
-            
+            print(f"Epoch: {epoch + 1} | Train Loss: {train_losses:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
+           
+            # Log metrics for each epoch
+            wandb.log({
+                "epoch": epoch + 1,
+                "train_loss": train_losses,
+                "validation_loss": vali_loss,
+                "test_loss": test_loss,
+            })
             early_stopping(vali_loss, self.model, path)
             
             if early_stopping.early_stop:
@@ -189,6 +233,38 @@ class Exp_Finetune(Exp_Main):
         return self.model
     
     def linear_probe(self, setting, exp_id, resume):
+        def count_parameters(model):
+            return sum(p.numel() for p in model.parameters() if p.requires_grad)
+        count = count_parameters(self.model)
+        print(f'The number of parameters of the model is {count}.')
+
+        # Initialize wandb with the current settings
+        wandb.init(
+            project="pv-forecasting",
+            config={
+                "model": self.args.model,
+                "finetune": 'linear_probe',
+                "num_parameters": count,
+                "batch_size": self.args.batch_size,
+                "num_workers": self.args.num_workers,
+                "learning_rate": self.args.learning_rate,
+                "loss_function": self.args.loss,
+
+                "dataset": self.args.data,
+                "epochs": self.args.train_epochs,
+                
+                "input_seqeunce_length": self.args.seq_len,
+                "prediction_sequence_length": self.args.pred_len,
+                'patch_length': self.args.patch_len,
+                'stride': self.args.stride,
+            }
+        )     
+
+
+
+
+
+
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
@@ -234,7 +310,7 @@ class Exp_Finetune(Exp_Main):
 
         for epoch in range(self.args.train_epochs):
             iter_count = 0
-            train_loss = []
+            train_losses = []
 
             self.model.train()
             epoch_time = time.time()
@@ -286,9 +362,16 @@ class Exp_Finetune(Exp_Main):
                 outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                 loss = criterion(outputs, batch_y)
-                train_loss.append(loss.item())
+                train_losses.append(loss.item())
 
                 if (i + 1) % 100 == 0:
+                    # Log iteration-level metrics every 100 iterations
+                    wandb.log({
+                        "iteration": (epoch * len(train_loader)) + i + 1,
+                        "train_loss_iteration": loss.item()
+                    })
+
+
                     print(f"\titers: {i+1}, epoch: {epoch+1} | loss: {loss.item():.7f}, ")
                     
                     speed = (time.time() - time_now) / iter_count
@@ -309,14 +392,23 @@ class Exp_Finetune(Exp_Main):
                     adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=False)
                     scheduler.step()      
 
-            print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+            print(f"Epoch: {epoch + 1} | cost time: {time.time() - epoch_time}")
             train_loss = np.average(train_loss)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             test_loss = self.vali(test_data, test_loader, criterion)                
             
-            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
-                epoch + 1, train_steps, train_loss, vali_loss, test_loss))
+            print(f"Epoch: {epoch + 1} | Train Loss: {train_losses:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
+            # Log metrics for each epoch
+            wandb.log({
+                "epoch": epoch + 1,
+                "train_loss": train_losses,
+                "validation_loss": vali_loss,
+                "test_loss": test_loss,
+            })
             
+
+
+
             early_stopping(vali_loss, self.model, path)
             
             if early_stopping.early_stop:
@@ -372,8 +464,11 @@ class Exp_Finetune(Exp_Main):
                         else:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
-                outputs = outputs[:, -self.args.pred_len:].to(self.device)
-                batch_y = batch_y[:, -self.args.pred_len:].to(self.device)
+                f_dim = -1 if self.args.features == 'MS' else 0
+                outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
+                batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+
+                
                 
 
                 if self.args.model != 'LSTM':
@@ -381,32 +476,29 @@ class Exp_Finetune(Exp_Main):
                     output_np = outputs.detach().cpu().numpy() 
                     batch_y_np = batch_y.detach().cpu().numpy()
 
-                    # de-normalize the data and prediction values
-                    outputs_np_2d = output_np.reshape(-1, output_np.shape[-1])
-                    batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
 
 
 
-                    active_power_np = vali_data.inverse_transform(outputs_np_2d)
-                    active_power_gt_np = vali_data.inverse_transform(np.repeat(batch_y_np_2d, repeats=outputs.shape[-1], axis=-1))
-                    # active_power_gt_np = active_power_gt_np[:, -1]
+                    active_power_np = vali_data.inverse_transform(output_np.copy())
+                    active_power_gt_np = vali_data.inverse_transform(batch_y_np.copy())
 
-                    active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
-                    active_power_gt_np = active_power_gt_np.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
+                    # # scaler적용 후, 다시 3d로 되돌리기
+                    # active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
+                    # active_power_gt_np = active_power_gt_np.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
 
-                    f_dim = -1 if self.args.features == 'MS' else 0
-                    active_power_np = active_power_np[:, :, f_dim:]
-                    active_power_gt_np = active_power_gt_np[:, :, f_dim:]
 
                     pred = torch.from_numpy(active_power_np).to(self.device)
                     gt = torch.from_numpy(active_power_gt_np).to(self.device)
+                
                 else:
-                    pred_np = vali_data.inverse_transform(outputs.reshape(-1, outputs.shape[-1]).detach().cpu().numpy())
-                    gt_np = vali_data.inverse_transform(batch_y.reshape(-1, batch_y.shape[-1]).detach().cpu().numpy())
+                    # TODO: LSTM일 때, 코드 수정 필요
+                    pred_np = vali_data.inverse_transform(outputs.detach().cpu().numpy())
+                    gt_np = vali_data.inverse_transform(batch_y.detach().cpu().numpy())
 
-                    pred_np = pred_np.reshape(-1, vali_data[-2], batch_y_np.shape[-1])
+                    # pred_np = pred_np.reshape(-1, vali_data[-2], batch_y_np.shape[-1])
                     pred = torch.from_numpy(pred_np[:, :, -1])
                     gt = torch.from_numpy(gt_np[:, :, -1])
+
 
                 loss = criterion(pred, gt)
 
@@ -481,40 +573,38 @@ class Exp_Finetune(Exp_Main):
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
                 f_dim = -1 if self.args.features == 'MS' else 0
-                # print(outputs.shape,batch_y.shape)
-                outputs = outputs[:, -self.args.pred_len:].to(self.device)
-                batch_y = batch_y[:, -self.args.pred_len:].to(self.device)
+                outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
+                batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                 
+               
                 if self.args.model != 'LSTM':
-                    ### calculate metrics with only active power
+                   
                     outputs_np = outputs.detach().cpu().numpy()
                     batch_y_np = batch_y.detach().cpu().numpy()
 
-                    outputs_np_2d = outputs_np.reshape(-1, outputs_np.shape[-1])
-                    batch_y_np_2d = batch_y_np.reshape(-1, batch_y_np.shape[-1])
-                
-
                     # de-normalize the data and prediction values
-                    pred = test_data.inverse_transform(outputs_np_2d)
-                    true = test_data.inverse_transform(np.repeat(batch_y_np_2d, repeats=outputs.shape[-1], axis=-1))
+                    pred = test_data.inverse_transform(outputs_np.copy())
+                    true = test_data.inverse_transform(batch_y_np.copy())
 
 
-                    f_dim = -1 if self.args.features == 'MS' else 0
-                    pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1)[:, :, f_dim:] 
-                    true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)[:, :, f_dim:]
-
+                    # normalized된 결과
                     pred_normalized = outputs_np
                     true_normalized = batch_y_np
 
+                    # pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1)
+                    # true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
+                                 
                 else:
-                    pred_np = test_data.inverse_transform(outputs.reshape(-1, outputs_np.shape[-1]).detach().cpu().numpy())
-                    true_np = test_data.inverse_transform(batch_y.reshape(-1, outputs_np.shape[-1]).detach().cpu().numpy())
+                    # TODO: LSTM일 때, 코드 수정 필요
+                    pred_np = test_data.inverse_transform(outputs.detach().cpu().numpy())
+                    true_np = test_data.inverse_transform(batch_y.detach().cpu().numpy())
                     
-                    pred_np = pred_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
-                    true_np = true_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
+                    # pred_np = pred_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
+                    # true_np = true_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
 
                     pred = torch.from_numpy(pred_np)[:, :, -1]
                     true = torch.from_numpy(true_np)[:, :, -1]
+
 
                 pred_list.append(pred)
                 true_list.append(true[:,-self.args.pred_len:])
