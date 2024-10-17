@@ -464,7 +464,7 @@ class Dataset_DKASC(Dataset):
             
         
         
-        self.__load_preprocessed_data__()
+        self.load_preprocessed_data()
 
         
         
@@ -476,7 +476,7 @@ class Dataset_DKASC(Dataset):
     # 4. Columns 순서 정렬 (timestamp, date, ..... , target)
     # 5. Scaler 적용
     # 6. 입력할 칼럼들 지정하여 리스트 생성
-    def __load_preprocessed_data__(self):
+    def load_preprocessed_data(self):
 
         # 1. Flag에 맞게 데이터 불러오기
         if self.flag == 'train':
@@ -728,11 +728,11 @@ class Dataset_GIST(Dataset):
         # test_data_list = self.LOCATIONS[13:]
         
     
-        self.__load_preprocessed_data__() 
+        self.load_preprocessed_data() 
        
 
 
-    def __load_preprocessed_data__(self):
+    def load_preprocessed_data(self):
        
         # 1. Flag에 맞게 데이터 불러오기
         if self.flag == 'train':

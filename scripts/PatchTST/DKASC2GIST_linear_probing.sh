@@ -14,7 +14,7 @@ label_len=0
 
 root_path_name=/PV/GIST_dataset/converted
 data_path_name='type=all'
-data_name=DKASC
+data_name=GIST
 random_seed=2024
 
 
@@ -28,6 +28,7 @@ do
       --random_seed $random_seed \
       --is_training 1 \
       --is_linear_probe 1 \
+      --checkpoints  /home/pv/code/PatchTST/checkpoints/24101614_PatchTST_DKASC_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

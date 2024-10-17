@@ -393,7 +393,7 @@ class Exp_Finetune(Exp_Main):
                     scheduler.step()      
 
             print(f"Epoch: {epoch + 1} | cost time: {time.time() - epoch_time}")
-            train_loss = np.average(train_loss)
+            train_losses = np.average(train_losses)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             test_loss = self.vali(test_data, test_loader, criterion)                
             
