@@ -7,3 +7,4 @@ pillow
 scikit-learn
 tqdm
 xlrd
+xmltodict
