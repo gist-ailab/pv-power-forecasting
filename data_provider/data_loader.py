@@ -540,7 +540,7 @@ class Dataset_DKASC(Dataset):
 
                 for col in df_raw.columns:
                     if not self.scaler_path:
-                         path = os.path.join(self.root_path, f'{col}_scaler.pkl')
+                        path = os.path.join(self.root_path, f'{col}_scaler.pkl')
                     else:
                         path = self.scaler_path
             
@@ -550,7 +550,7 @@ class Dataset_DKASC(Dataset):
                             scaler = pickle.load(f) 
                 
                         # 해당 칼럼에 스케일러 적용 (transform)
-                        df_raw[col] = scaler.transform(transformed_df[[col]]) 
+                        df_raw[col] = scaler.transform(transformed_df[[col]])
                         self.scalers[col] = scaler
                 
                     else:
@@ -565,8 +565,7 @@ class Dataset_DKASC(Dataset):
         elif self.features == 'S':
             # Active Power만 추출
             df_x = df_raw[[self.target]]
-       
-  
+
         self.x_list = df_x.values
         # 타겟은 마지막 열인 Active_Power
         self.y_list = df_raw[[self.target]].values
@@ -579,16 +578,12 @@ class Dataset_DKASC(Dataset):
     def load_and_concat_data(self, file_list):
         df_list = []
         for file in file_list:
-            file_path = f"{self.root_path}/{file}"  
+            file_path = os.path.join(self.root_path, file)
             df = pd.read_csv(file_path)  
             assert (df.isnull().sum()).sum() == 0, "허용되지 않은 열에 결측치가 존재합니다."            
             df_list.append(df) 
         return pd.concat(df_list, ignore_index=True) 
 
-
-
-    #   TODO: 전처리로 인해 끊어진 날짜들은 불러올 때 어떻게 할 것인가?
-    #   TODO: 일몰 시간을 제외 반영하여 2주분을 입력(182) or 일몰 시간 제외한 것 상관없이 2주분 입력(336)
     def __getitem__(self, index):
         s_begin = index
         s_end = s_begin + self.seq_len
