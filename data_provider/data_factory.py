@@ -1,5 +1,5 @@
 from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
-     Dataset_DKASC_single, Dataset_DKASC, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia
+     Dataset_DKASC_single, Dataset_DKASC, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California
 from torch.utils.data import DataLoader
 
 data_dict = {
@@ -9,6 +9,7 @@ data_dict = {
     'German': Dataset_German,
     'UK': Dataset_UK,
     'OEDI_Georgia': Dataset_OEDI_Georgia,
+    'OEDI_California': Dataset_OEDI_California,
     'ETTh1': Dataset_ETT_hour,
     'ETTh2': Dataset_ETT_hour,
     'ETTm1': Dataset_ETT_minute,

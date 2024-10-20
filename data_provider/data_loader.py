@@ -1777,6 +1777,248 @@ class Dataset_OEDI_Georgia(Dataset):
         data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
+    
+class Dataset_OEDI_California(Dataset):
+    def __init__(self, root_path, flag='train', size=None,
+                 features='MS', data_path='', target='Active_Power',
+                 scale=True, timeenc=0, freq='h', scaler_path=None):
+        # size [seq_len, label_len, pred_len]
+        # info
+        print("start")
+        if size == None:
+            self.seq_len = 24 * 4 * 4
+            self.label_len = 24 * 4
+            self.pred_len = 24 * 4
+        else:
+            self.seq_len = size[0]
+            self.label_len = size[1]
+            self.pred_len = size[2]
+        # init
+        assert flag in ['train', 'test', 'val']
+        type_map = {'train': 0, 'val': 1, 'test': 2}
+        self.set_type = type_map[flag]
+
+        self.features = features
+        self.target = target
+        self.scale = scale
+        self.timeenc = timeenc
+        self.freq = freq
+        self.flag = flag
+
+    
+        self.scaler_path = scaler_path
+        
+
+        self.root_path = root_path
+        self.data_path = data_path
+        
+
+        
+        import os
+
+        # 현재 파일의 경로 기준으로 preprocessed 디렉토리 경로 생성
+        current_file_path = os.path.abspath(__file__)
+        preprocessed_dir = os.path.join(os.path.dirname(current_file_path), '../data/OEDI/2107(Arbuckle_California)/preprocessed')
+
+        # preprocessed 폴더 내의 CSV 파일명들을 LOCATIONS에 저장
+        self.LOCATIONS = [
+            file_name for file_name in os.listdir(preprocessed_dir) if file_name.endswith('.csv')
+        ]
+        
+        self.scalers = {}
+        self.x_list = []
+        self.y_list = []
+        self.ds_list = []
+
+       
+        random.seed(42)
+        if self.data_path['type'] == 'all':
+            print("all")
+            random.shuffle(self.LOCATIONS)  # 데이터 섞기
+            total_size = len(self.LOCATIONS)
+            train_size = int(0.6 * total_size)
+            val_size = int(0.3 * total_size)
+                    
+            if self.flag == 'train':
+                self.train = self.LOCATIONS[:train_size]
+                print(f'[INFO] Train Locations: total {len(self.train)}')
+                print(f'[INFO] Location List: {self.train}')
+                
+            elif self.flag == 'val':
+                self.val = self.LOCATIONS[train_size:train_size + val_size]
+                print(f'[INFO] Valid Locations: total {len(self.val)}')
+                print(f'[INFO] Location List: {self.val}')
+
+            elif self.flag == 'test':
+                self.test = self.LOCATIONS[train_size + val_size:]
+                print(f'[INFO] Test Locations: total {len(self.test)}')
+                print(f'[INFO] Location List: {self.test}')
+
+
+
+        elif self.data_path['type'] == 'debug':
+            
+            if self.flag == 'train':
+                self.train = self.data_path['train']
+            
+            elif self.flag == 'val':
+                self.val = self.data_path['val']
+            
+            elif self.flag == 'test':
+                self.test = self.data_path['test']
+            
+
+            
+            
+
+
+
+        # # train 9, valid 4, test 2
+        # # random for shuffling
+        # random.seed(42)
+        # random.shuffle(self.LOCATIONS)
+        # train_data_list = self.LOCATIONS[:9]
+        # val_data_list = self.LOCATIONS[9:13]
+        # test_data_list = self.LOCATIONS[13:]
+
+        self.load_preprocessed_data() 
+       
+
+
+    def load_preprocessed_data(self):
+
+       
+        # 1. Flag에 맞게 데이터 불러오기
+        if self.flag == 'train':
+            df_raw = self.load_and_concat_data(self.train)
+        
+        elif self.flag == 'val':
+            df_raw = self.load_and_concat_data(self.val)
+
+        elif self.flag == 'test':
+            df_raw = self.load_and_concat_data(self.test)
+
+        # 칼럼 순서와 이름 확인
+        print(f"[INFO] Loaded columns: {df_raw.columns}")
+
+        # 2. Time encoding (년, 월, 일, 요일, 시간)
+        if self.timeenc == 0:
+            data_stamp = pd.DataFrame()
+            data_stamp['date'] = pd.to_datetime(df_raw.timestamp)
+            data_stamp['year'] = df_raw.date.apply(lambda row: row.year, 1)
+            data_stamp['month'] = df_raw.timestamp.apply(lambda row: row.month, 1)
+            data_stamp['day'] = df_raw.date.apply(lambda row: row.day, 1)
+            data_stamp['weekday'] = df_raw.date.apply(lambda row: row.weekday(), 1)
+            data_stamp['hour'] = df_raw.date.apply(lambda row: row.hour, 1)
+            
+            data_stamp = data_stamp.drop(['date'], axis=1).values()
+
+        elif self.timeenc == 1:
+            data_stamp = time_features(pd.to_datetime(df_raw['timestamp'].values), freq=self.freq)
+            data_stamp = data_stamp.transpose(1, 0)
+        
+        # 3. Encoding 후, date columns 생성
+        # df_raw['date'] = data_stamp
+
+
+               
+        # 4. Columns 순서 정렬 (timestamp, date, ..... , target)
+        cols = df_raw.columns.tolist()
+        # cols.remove('date')
+        cols.remove('timestamp')
+        cols.remove('Active_Power')
+        df_raw = df_raw[cols + [self.target]]
+
+        if self.scale: 
+            # Train일 때는, Scaler Fit 후에, 저장
+            if self.flag == 'train' or self.flag == 'val' or self.flag == 'test':
+                for col in df_raw.columns:
+                    scaler = StandardScaler()
+                    df_raw[col] = scaler.fit_transform(df_raw[[col]])
+                    self.scalers[col] = scaler 
+                    # Scaler를 pickle 파일로 저장
+                    if not self.scaler_path:
+                        path = os.path.join(self.root_path, f'{col}_scaler.pkl')
+                    else:
+                        path = self.scaler_path
+                    with open(path, 'wb') as f:
+                        pickle.dump(scaler, f)
+        
+            else:
+                # Val, Test일 때는, 저장된 Scaler 불러와서 적용
+                self.scalers = {}
+                transformed_df = df_raw.copy()  
+
+                for col in df_raw.columns:
+                    if not self.scaler_path:
+                         path = os.path.join(self.root_path, f'{col}_scaler.pkl')
+                    else:
+                        path = self.scaler_path
+            
+                    # Scaler가 존재하는지 확인
+                    if os.path.exists(path):
+                        with open(path, 'rb') as f:
+                            scaler = pickle.load(f) 
+                
+                        # 해당 칼럼에 스케일러 적용 (transform)
+                        df_raw[col] = scaler.transform(transformed_df[[col]]) 
+                        self.scalers[col] = scaler
+                
+                    else:
+                        print(f"Scaler for column {col} not found.")
+
+
+        # 6. 입력할 칼럼들 지정하여 리스트 생성
+        if self.features == 'M' or self.features == 'MS':
+            # date 열을 제외
+            cols_data = df_raw.columns[1:]
+            df_x = df_raw[cols_data]
+        elif self.features == 'S':
+            # Active Power만 추출
+            df_x = df_raw[[self.target]]
+       
+  
+        self.x_list = df_x.values
+        # 타겟은 마지막 열인 Active_Power
+        self.y_list = df_raw[[self.target]].values
+        # date columns만 선택
+        self.ds_list = data_stamp      
+        
+    # 파일 경로를 가져와서 DataFrame으로 합치는 함수
+    def load_and_concat_data(self, file_list):
+        df_list = []
+        for file in file_list:
+            file_path = f"{self.root_path}/{file}"  
+            df = pd.read_csv(file_path)  
+            assert (df.isnull().sum()).sum() == 0, "허용되지 않은 열에 결측치가 존재합니다."            
+            df_list.append(df) 
+        return pd.concat(df_list, ignore_index=True) 
+
+    def __getitem__(self, index):
+        s_begin = index
+        s_end = s_begin + self.seq_len
+        r_begin = s_end - self.label_len
+        r_end = r_begin + self.label_len + self.pred_len
+        
+        seq_x = self.x_list[s_begin:s_end]
+        seq_y = self.y_list[r_begin:r_end]
+        seq_x_mark = self.ds_list[s_begin:s_end]
+        seq_y_mark = self.ds_list[r_begin:r_end]
+
+        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark
+
+
+    def __len__(self):
+        return len(self.x_list) - self.seq_len - self.pred_len + 1
+
+
+    # 평가 시 필요함
+    def inverse_transform(self, data):
+        data_org = data.copy()
+       
+        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+        data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
+        return data
 
 
 ####################################################
