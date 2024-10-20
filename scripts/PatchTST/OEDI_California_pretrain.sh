@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_German_$model_name"
+exp_id="${DATE}_Pretrain_OEDI_Georgia_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -11,10 +11,9 @@ fi
 
 seq_len=336
 label_len=0
-
-root_path_name=/home/intern/doyoon/innovation/PatchTST/data/Germany_Household_Data/preprocessed
+root_path_name=/home/intern/doyoon/innovation/PatchTST/data/OEDI/2107\(Arbuckle_California\)/preprocessed
 data_path_name='type=all'
-data_name=German
+data_name=OEDI_California
 random_seed=2024
 
 
