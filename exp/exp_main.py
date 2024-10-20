@@ -13,17 +13,23 @@ from torch.optim import lr_scheduler
 
 import os
 import time
+import datetime
 
 import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import wandb
+from utils.wandb_uploader import upload_files_to_wandb
 
 warnings.filterwarnings('ignore')
 
 class Exp_Main(Exp_Basic):
     def __init__(self, args):
         super(Exp_Main, self).__init__(args)
+
+        self.project_name = "pv-forecasting"
+        current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.run_name = f"{self.args.model}_run_{current_time}"
 
     def _build_model(self):
         model_dict = {
@@ -64,30 +70,25 @@ class Exp_Main(Exp_Basic):
         return criterion
 
     def train(self, setting, resume):
-        def count_parameters(model):
-            return sum(p.numel() for p in model.parameters() if p.requires_grad)
-        count = count_parameters(self.model)
-        print(f'The number of parameters of the model is {count}.')
-
         # Initialize wandb with the current settings
-        wandb.init(
-            project="pv-forecasting",
-            config={
-                "model": self.args.model,
-                "num_parameters": count,
-                "batch_size": self.args.batch_size,
-                "num_workers": self.args.num_workers,
-                "learning_rate": self.args.learning_rate,
-                "loss_function": self.args.loss,
-
-                "dataset": self.args.data,
-                "epochs": self.args.train_epochs,
-                
-                "input_seqeunce_length": self.args.seq_len,
-                "prediction_sequence_length": self.args.pred_len,
-                'patch_length': self.args.patch_len,
-                'stride': self.args.stride,
-            }
+        config = {
+            "model": self.args.model,
+            "num_parameters": sum(p.numel() for p in self.model.parameters()),  # 모델 파라미터 개수,
+            "batch_size": self.args.batch_size,
+            "num_workers": self.args.num_workers,
+            "learning_rate": self.args.learning_rate,
+            "loss_function": self.args.loss,
+            "dataset": self.args.data,
+            "epochs": self.args.train_epochs,
+            "input_seqeunce_length": self.args.seq_len,
+            "prediction_sequence_length": self.args.pred_len,
+            "patch_length": self.args.patch_len,
+            "stride": self.args.stride,
+        }
+        upload_files_to_wandb(
+            project_name=self.project_name,
+            run_name=self.run_name,
+            config=config
         )     
         
         train_data, train_loader = self._get_data(flag='train')
@@ -120,7 +121,6 @@ class Exp_Main(Exp_Basic):
             latest_model_path = path + '/' + 'model_latest.pth'
             self.model.load_state_dict(torch.load(latest_model_path))
             print('model loaded from {}'.format(latest_model_path))
-
 
         for epoch in range(self.args.train_epochs):
             iter_count = 0
@@ -231,8 +231,20 @@ class Exp_Main(Exp_Basic):
             else:
                 print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
             
+        best_model_path = os.path.join(path, 'checkpoint.pth')
 
-        best_model_path = path + '/' + 'checkpoint.pth'
+        # Save the best model to wandb
+        upload_files_to_wandb(
+            project_name=self.project_name,
+            run_name=self.run_name,
+            model_weights_path=best_model_path
+        )
+
+        # Save the last model to WandB
+        final_model_artifact = wandb.Artifact('final_model_weights', type='model')
+        final_model_artifact.add_file(best_model_path)
+        wandb.log_artifact(final_model_artifact)
+
         self.model.load_state_dict(torch.load(best_model_path))
 
         return self.model
