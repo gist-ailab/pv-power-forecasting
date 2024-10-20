@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Linear_Probing_DKASC2GIST_$model_name"
+exp_id="${DATE}_Fully_Finetune_DKASC2GIST_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -26,9 +26,9 @@ do
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
-      --is_training 1 \
-      --is_linear_probe 1 \
-      --checkpoints  /home/pv/code/PatchTST/checkpoints/24101614_PatchTST_DKASC_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth \
+      --is_training 0 \
+      --is_fully_finetune 1 \
+      --checkpoints  /home/pv/code/PatchTST/checkpoints/fully_finetune/debug/24101714_PatchTST_GIST_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth\
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \
@@ -52,5 +52,5 @@ do
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --itr 1 --batch_size 512 --learning_rate 0.001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
+      --itr 1 --batch_size 512 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
 done

@@ -49,7 +49,7 @@ def data_provider(args, flag):
         target=args.target,
         timeenc=timeenc,
         freq=freq,
-        scaler_path=args.scaler_path
+        scaler=args.scaler,
     )
     print(flag, data_set.__len__())
     data_loader = DataLoader(
