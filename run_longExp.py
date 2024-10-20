@@ -20,7 +20,7 @@ if __name__ == '__main__':
     # data loader
     parser.add_argument('--data', type=str, default='DKASC', help='dataset type. ex: DKASC, GIST')
     parser.add_argument('--root_path', type=str, default='./data/DKASC_AliceSprings/converted', help='root path of the source domain data file')
-    parser.add_argument('--data_path', type=dict, action=StoreDictKeyPair, metavar="KEY1=VAL1,KEY2=VAL2...", default={"type":"all"},
+    parser.add_argument('--data_path', type=str, action=StoreDictKeyPair, metavar="KEY1=VAL1,KEY2=VAL2...", default={"type":"all"},
                         help='In Debuggig, "type=debug,train=79-Site_DKA-M6_A-Phase.csv,val=100-Site_DKA-M1_A-Phase.csv,test=85-Site_DKA-M7_A-Phase.csv"')
     # parser.add_argument('--root_path', type=str, default='./data/GIST_dataset/', help='root path of the source domain data file')
     # parser.add_argument('--data_path', type=str, default='GIST_sisuldong.csv', help='source domain data file')
