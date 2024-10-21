@@ -11,8 +11,8 @@ current_file_path = os.path.abspath(__file__)
 project_root = os.path.dirname(os.path.dirname(current_file_path))
 
 # Each sites' data directory
-# data_dir = os.path.join(project_root, 'data/GIST_dataset/converted')
-data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings')
+data_dir = os.path.join(project_root, 'data/GIST_dataset/converted')
+# data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings')
 data_list = os.listdir(data_dir)
 data_list = [file for file in data_list if file.endswith('.csv')]
 
@@ -36,11 +36,12 @@ correlations = combined_df.corr()['Active_Power']
 plt.figure(figsize=(18, 12))
 
 # List of features to plot
-features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-colors = ['blue', 'green', 'red']
+features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed']
+colors = ['blue', 'green', 'red', 'purple']
 titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
           'Active Power [kW] vs Weather Temperature [℃]',
-          'Active Power [kW] vs Weather Relative Humidity [%]']
+          'Active Power [kW] vs Weather Relative Humidity [%]',
+          'Active Power [kW] vs Wind Speed [m/s]']
 
 # Loop through each feature and create a scatter plot
 for i, feature in enumerate(features):
