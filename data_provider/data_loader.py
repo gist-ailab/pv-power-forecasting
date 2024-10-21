@@ -522,7 +522,7 @@ class Dataset_DKASC(Dataset):
             # Train일 때는, Scaler Fit 후에, 저장
             if self.flag == 'train':
                 for col in df_raw.columns:
-                    if self.scaler is 'MinMaxScaler':
+                    if self.scaler == 'MinMaxScaler':
                         scaler = MinMaxScaler()
                     else: scaler = StandardScaler()
                     df_raw[col] = scaler.fit_transform(df_raw[[col]])
@@ -769,7 +769,7 @@ class Dataset_GIST(Dataset):
             # Train일 때는, Scaler Fit 후에, 저장
             if self.flag == 'train':
                 for col in df_raw.columns:
-                    if self.scaler is 'MinMaxScaler':
+                    if self.scaler == 'MinMaxScaler':
                         scaler = MinMaxScaler()
                     else: scaler = StandardScaler()
                     df_raw[col] = scaler.fit_transform(df_raw[[col]])
