@@ -10,10 +10,10 @@ def combine_into_each_site(file_list, index_of_site,
                            kor_name, eng_name,
                            weather_data,
                            save_dir, log_file_path):
-    preprocessed_df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity'])
+    preprocessed_df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Weend_Speed'])
     
     weather_info = pd.read_csv(weather_data, encoding='unicode_escape')
-    weather_info.columns = ['datetime', 'temperature', 'wind_direction', 'precipitation', 'humidity']
+    weather_info.columns = ['datetime', 'temperature', 'wind_speed', 'precipitation', 'humidity']
     weather_info['datetime'] = pd.to_datetime(weather_info['datetime'])
     # print(weather_info)
 
@@ -112,7 +112,7 @@ def create_combined_filtered_data(preprocessed_df, daily_pv_data, daily_weather_
     # Step 1: 'date'와 'time' 데이터를 추출하여 새로운 DataFrame 생성
     temp_df = pd.DataFrame(
         columns=['timestamp', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
-                 'Weather_Relative_Humidity'])
+                 'Weather_Relative_Humidity', 'Wind_Speed'])
 
     # Step 2: temp_df에 데이터 채워넣기
     temp_df['timestamp'] = daily_weather_data['datetime']
@@ -120,6 +120,8 @@ def create_combined_filtered_data(preprocessed_df, daily_pv_data, daily_weather_
     temp_df['Global_Horizontal_Radiation'] = daily_pv_data['Global_Horizontal_Radiation'].astype(float)
     temp_df['Weather_Temperature_Celsius'] = daily_weather_data['temperature']
     temp_df['Weather_Relative_Humidity'] = daily_weather_data['humidity']
+    temp_df['Wind_Speed'] = daily_weather_data['wind_speed']
+
 
     # Step 3: 일출 시간 데이터만 사용
     # Find the times when the Global Horizontal Radiation is greater than 0
@@ -221,7 +223,7 @@ def create_combined_weather_csv(create_path, project_root):
     combined_df.drop(combined_df.columns[:2], axis=1, inplace=True)
 
     # Define the column names the add
-    column_names = ['datetime', 'temperature', 'wind_direction', 'precipitation', 'humidity']
+    column_names = ['datetime', 'temperature', 'wind_speed', 'precipitation', 'humidity']
     combined_df.columns = column_names
     combined_df['datetime'] = pd.to_datetime(combined_df.iloc[:, 0])    # 3번째 컬럼을 datetime 형식으로 변환 (시간 관련 처리를 위해)
 
