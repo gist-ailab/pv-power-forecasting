@@ -11,8 +11,9 @@ current_file_path = os.path.abspath(__file__)
 project_root = os.path.dirname(os.path.dirname(current_file_path))
 
 # Each sites' data directory
-data_dir = os.path.join(project_root, 'data/GIST_dataset/converted')
+# data_dir = os.path.join(project_root, 'data/GIST_dataset/converted')
 # data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings')
+data_dir = os.path.join(project_root, 'data/Miryang/PV_merged')
 data_list = os.listdir(data_dir)
 data_list = [file for file in data_list if file.endswith('.csv')]
 
