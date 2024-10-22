@@ -5,8 +5,9 @@ from exp.exp_main import Exp_Main
 import random
 import numpy as np
 from utils.tools import StoreDictKeyPair 
-
+import wandb
 if __name__ == '__main__':
+    wandb.login(key='59b6335c1210c476af746542d2e4768c161a712c')
     parser = argparse.ArgumentParser(description='Autoformer & Transformer family for Time Series Forecasting')
 
     # random seed
