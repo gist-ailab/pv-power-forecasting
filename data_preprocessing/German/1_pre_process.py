@@ -33,18 +33,23 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
     df['Active_Power'] = df['Active_Power'].abs()    
     df.loc[df['Active_Power'] < 0.001, 'Active_Power'] = 0
 
-    '''3. Drop days where any column has 4 consecutive NaN values'''
+    '''3. Drop days where any column has 2 consecutive NaN values'''
+    # 1시간 단위 데이터이므로 연속된 2개의 Nan 값 존재 시 drop
     # Step 1: Replace empty strings or spaces with NaN
     df.replace(to_replace=["", " ", "  "], value=np.nan, inplace=True)
     # Step 2: Find days where any column has 4 consecutive NaN values
-    consecutive_nan_mask = detect_consecutive_nans(df, max_consecutive=4)
+    consecutive_nan_mask = detect_consecutive_nans(df, max_consecutive=2)
     # Remove entire days where 4 consecutive NaNs were found
-    days_with_4_nan = df[consecutive_nan_mask]['timestamp'].dt.date.unique()
-    df_cleaned = df[~df['timestamp'].dt.date.isin(days_with_4_nan)]
-    # Step 3: Interpolate up to 3 consecutive missing values
-    df_cleaned_3 = df_cleaned.interpolate(method='linear', limit=3)
+    days_with_2_nan = df[consecutive_nan_mask]['timestamp'].dt.date.unique()
+    df_cleaned = df[~df['timestamp'].dt.date.isin(days_with_2_nan)]
+    # Step 3: Interpolate up to 1 consecutive missing values
+    # 날짜가 포함되지 않은 숫자형 열만 선택해서 보간
+    df_cleaned_3 = df_cleaned.copy()
+    numeric_cols = df_cleaned_3.select_dtypes(include=[float, int]).columns
+    df_cleaned_3[numeric_cols] = df_cleaned_3[numeric_cols].interpolate(method='polynomial', limit=1, order=2)
 
-    '''4. AP 값이 있지만 GHR이 있는 날 제거'''
+
+    '''4. AP 값이 있지만 GHR이 없는 날 제거'''
     # Step 1: AP > 0 and GHR = 0
     rows_to_exclude = (df_cleaned_3['Active_Power'] > 0) & (df_cleaned_3['Global_Horizontal_Radiation'] == 0)
 
@@ -89,7 +94,8 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
                 df_cleaned_5 = pd.concat([df_cleaned_5, day_data])
     '''6. 1시간 단위로 데이터를 sampling. Margin은 1시간으로 유지'''
     # 1. 1시간 단위로 평균 계산
-    df_hourly = df_cleaned_5.resample('h', on='timestamp').mean().reset_index()
+    # df_hourly = df_cleaned_5.resample('h', on='timestamp').mean().reset_index()
+    df_hourly = df_cleaned_5
     df_hourly = df_hourly.dropna(how='all', subset=df.columns[1:])
 
     # 2. AP 값이 0.001보다 작은 경우 0으로 설정
@@ -192,7 +198,7 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    active_power_path = os.path.join(project_root, 'data/Germany_Household_Data/household_data_15min_singleindex.csv')
+    active_power_path = os.path.join(project_root, 'data/Germany_Household_Data/household_data_60min_singleindex(selected_column).csv')
     temp_path = os.path.join(project_root, 'data/Germany_Household_Data/Konstanz_weather_data/air_temperature/stundenwerte_TU_02712_19710101_20231231_hist/produkt_tu_stunde_19710101_20231231_02712.txt')
     ghi_path = os.path.join(project_root, 'data/Germany_Household_Data/Konstanz_weather_data/GHI_DHI/stundenwerte_ST_02712_row/produkt_st_stunde_19770101_20240731_02712.txt')
     moisture_path = os.path.join(project_root, 'data/Germany_Household_Data/Konstanz_weather_data/moisture/stundenwerte_TF_02712_19520502_20231231_hist/produkt_tf_stunde_19520502_20231231_02712.txt')

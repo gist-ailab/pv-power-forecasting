@@ -43,8 +43,8 @@ def convert_excel_to_csv(file_list):
                            header=None,
                            engine='calamine') # calaminefor reading xlsx files
         
-        # 첫 번째 열을 'timestamp'로 지정하고 나머지 컬럼 이름 생성
-        df.columns = ['timestamp'] + [f'Inverter_{i}' for i in range(1, df.shape[1])]
+        # 첫 번째 열은 'timestamp'로, 두 번째 열은 'Active_Power'로 지정하고 나머지 컬럼 이름 생성
+        df.columns = ['timestamp', 'Active_Power'] + [f'Inverter_{i}' for i in range(1, df.shape[1] - 1)]
         df['timestamp'] = pd.to_datetime(df['timestamp'])   # 'timestamp' 컬럼을 datetime 타입으로 변환
 
         # 결측치 처리:'-' 또는 빈 값을 NaN으로 변환
@@ -106,7 +106,7 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
         weather_df = weather_df.drop(weather_df.columns[0:4], axis=1)
         weather_df = weather_df.rename(columns={'date': 'timestamp'})
         # timestamp, temp, hum, sun_Qy 열만 남기고 나머지 열 삭제
-        columns_to_keep = ['timestamp', 'temp', 'hum', 'sun_Qy']
+        columns_to_keep = ['timestamp', 'temp', 'hum', 'sun_Qy', 'wind']
         weather_df = weather_df[columns_to_keep]
         # 'sun_Qy' 값을 시간 단위의 일사량으로 변환 (현재 값에서 이전 값을 뺌)
         weather_df['sun_Qy']= weather_df['sun_Qy'].diff()
@@ -118,7 +118,8 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
         weather_df = weather_df.rename(columns={
             'temp': 'Weather_Temperature_Celsius',
             'hum': 'Weather_Relative_Humidity',
-            'sun_Qy': 'Global_Horizontal_Radiation'
+            'sun_Qy': 'Global_Horizontal_Radiation',
+            'wind': 'Wind_Speed'
         })
         # 파일 이름에 따라 데이터프레임 저장
         if '산내면' in i:
@@ -129,14 +130,13 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
     # Combine the CSV files
     for file in csv_file_list:
         power_df = pd.read_csv(file, parse_dates=['timestamp'])
-        
-        # 발전량 데이터프레임에서 인버터별 발전량 합산하여 'Active_Power' 열 생성
-        inverter_columns = [col for col in power_df.columns if 'Inverter' in col]
-        power_df['Active_Power'] = power_df[inverter_columns].sum(axis=1)
 
-        # 'Active_Power' 열을 'timestamp' 다음 열로 이동
-        cols = ['timestamp', 'Active_Power'] + [col for col in power_df.columns if col not in ['timestamp', 'Active_Power'] + inverter_columns]
-        power_df = power_df[cols]
+        maximum_ap = int(file.split('_')[-1].split('kW')[0])
+        
+        # 기존의 'Active_Power' 열을 그대로 사용
+        # 불필요한 인버터별 합산 부분 제거
+        # 발전량 데이터프레임에서 'Active_Power' 열만 유지하고 사용
+        power_df = power_df[['timestamp', 'Active_Power']]
         
         # 발전량 데이터와 기상 데이터를 'timestamp'를 기준으로 병합 (left join)
         if 'A' in file:
@@ -160,6 +160,12 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
         # 인덱스를 정렬하여 최종 데이터프레임 필터링
         expanded_indices = sorted(expanded_indices)
         filtered_df = merged_df.loc[expanded_indices]
+
+        # GHR이 0보다 큰데 Active_Power가 0과 같거나 0보다 작은 경우 필터링
+        filtered_df = filtered_df[~((filtered_df['Global_Horizontal_Radiation'] > 0) & (filtered_df['Active_Power'] <= 0))]
+
+        # Active_Power가 maximum_ap보다 큰 경우 maximum_ap로 변환
+        filtered_df['Active_Power'] = filtered_df['Active_Power'].clip(upper=maximum_ap)
 
         # 최종 데이터프레임 저장 또는 처리
         base_filename = os.path.basename(file)
@@ -186,6 +192,7 @@ if __name__ == '__main__':
     pv_file_list.sort()
 
     csv_file_dir = convert_excel_to_csv(pv_file_list)   # Convert Excel files to CSV files
+    # csv_file_dir = os.path.join(project_root, 'data/Miryang/PV_csv')
     weather_file_dir = os.path.join(project_root, 'data/Miryang/weather')
 
     combine_csv_files(csv_file_dir, weather_file_dir)
