@@ -1287,7 +1287,7 @@ class Dataset_German(Dataset):
 class Dataset_UK(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                  features='MS', data_path='', target='Active_Power',
-                 scale=True, timeenc=0, freq='h', scaler_path=None):
+                 scale=True, timeenc=0, freq='h', scaler='MinMaxScaler'):
         # size [seq_len, label_len, pred_len]
         # info
         print("start")
@@ -1312,8 +1312,7 @@ class Dataset_UK(Dataset):
         self.flag = flag
 
     
-        self.scaler_path = scaler_path
-        
+        self.scaler = scaler
 
         self.root_path = root_path
         self.data_path = data_path
@@ -1434,14 +1433,15 @@ class Dataset_UK(Dataset):
             # Train일 때는, Scaler Fit 후에, 저장
             if self.flag == 'train' or self.flag == 'val' or self.flag == 'test':
                 for col in df_raw.columns:
-                    scaler = StandardScaler()
+                    if self.scaler == 'MinMaxScaler':
+                        scaler = MinMaxScaler()
+                    else: scaler = StandardScaler()
                     df_raw[col] = scaler.fit_transform(df_raw[[col]])
                     self.scalers[col] = scaler 
                     # Scaler를 pickle 파일로 저장
-                    if not self.scaler_path:
-                        path = os.path.join(self.root_path, f'{col}_scaler.pkl')
-                    else:
-                        path = self.scaler_path
+               
+                    path = os.path.join(self.root_path, f'{col}_scaler.pkl')
+                    
                     with open(path, 'wb') as f:
                         pickle.dump(scaler, f)
         
@@ -1451,10 +1451,8 @@ class Dataset_UK(Dataset):
                 transformed_df = df_raw.copy()  
 
                 for col in df_raw.columns:
-                    if not self.scaler_path:
-                         path = os.path.join(self.root_path, f'{col}_scaler.pkl')
-                    else:
-                        path = self.scaler_path
+                    path = os.path.join(self.root_path, f'{col}_scaler.pkl')
+                 
             
                     # Scaler가 존재하는지 확인
                     if os.path.exists(path):
