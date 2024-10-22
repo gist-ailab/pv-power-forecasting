@@ -37,9 +37,9 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
     # 1시간 단위 데이터이므로 연속된 2개의 Nan 값 존재 시 drop
     # Step 1: Replace empty strings or spaces with NaN
     df.replace(to_replace=["", " ", "  "], value=np.nan, inplace=True)
-    # Step 2: Find days where any column has 4 consecutive NaN values
+    # Step 2: Find days where any column has 2 consecutive NaN values
     consecutive_nan_mask = detect_consecutive_nans(df, max_consecutive=2)
-    # Remove entire days where 4 consecutive NaNs were found
+    # Remove entire days where 2 consecutive NaNs were found
     days_with_2_nan = df[consecutive_nan_mask]['timestamp'].dt.date.unique()
     df_cleaned = df[~df['timestamp'].dt.date.isin(days_with_2_nan)]
     # Step 3: Interpolate up to 1 consecutive missing values
@@ -107,6 +107,9 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
 
     total_dates = df_cleaned_6['timestamp'].dt.date.nunique()
     print(count_date, total_dates)
+
+    # 5. 단위 조정
+    df_cleaned_6['Global_Horizontal_Radiation'] *= 2.78 # J/cm^2 to w/m^2 
 
     df_cleaned_6.to_csv(os.path.join(save_dir, f'{invertor_name}.csv'), index=False)
 
