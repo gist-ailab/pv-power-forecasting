@@ -20,7 +20,7 @@ random_seed=2024
 export CUDA_VISIBLE_DEVICES=6
 
 #for pred_len in 1 2 4 8 16
-for seq_len in 64 128 256 512
+for seq_len in 512 256 128 64
 do
     for pred_len in 16 8 4 2 1 
     do
