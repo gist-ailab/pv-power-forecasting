@@ -195,19 +195,19 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    active_power_path = os.path.join(project_root, 'data/UK_data/2014-11-28 Cleansed and Processed/EXPORT HourlyData/EXPORT HourlyData - Customer Endpoints.csv')
-    weather_path = os.path.join(project_root, 'data/UK_data/Weather_Data_2014-11-30.csv')
+    active_power_path = os.path.join(project_root, '/ailab_mat/dataset/PV/UK_data/2014-11-28 Cleansed and Processed/EXPORT HourlyData/EXPORT HourlyData - Customer Endpoints.csv')
+    weather_path = os.path.join(project_root, '/ailab_mat/dataset/PV/UK_data/Weather_Data_2014-11-30.csv')
     merged_data = merge_raw_data(active_power_path, weather_path)
 
     # site_list = ['YMCA', 'Maple Drive East', 'Forest Road', 'Elm Crescent','Easthill Road']
     site_list = ['YMCA', 'Maple Drive East', 'Forest Road']
 
-    log_file_path = os.path.join(project_root, 'data/Germany_Household_Data/log.txt')
+    log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/UK_data/log.txt')
     for i, invertor_name in enumerate(site_list):
         combine_into_each_invertor(
             invertor_name, 
             i, 
-            save_dir=os.path.join(project_root, 'data/UK_data/preprocessed'),
+            save_dir=os.path.join(project_root, '/ailab_mat/dataset/PV/UK_data/preprocessed'),
             log_file_path=log_file_path,
             raw_df= merged_data
         )
