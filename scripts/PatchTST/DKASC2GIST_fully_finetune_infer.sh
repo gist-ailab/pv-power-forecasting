@@ -12,13 +12,13 @@ fi
 seq_len=336
 label_len=0
 
-root_path_name=/PV/GIST_dataset/converted
+root_path_name=/ailab_mat/dataset/PV/GIST_dataset/converted
 data_path_name='type=all'
 data_name=GIST
 random_seed=2024
 
 
-
+export CUDA_VISIBLE_DEVICES=1
 
 for pred_len in 24 #1 2 4 8 16
 do
@@ -28,7 +28,7 @@ do
       --random_seed $random_seed \
       --is_training 0 \
       --is_fully_finetune 1 \
-      --checkpoints  /home/pv/code/PatchTST/checkpoints/fully_finetune/debug/24101714_PatchTST_GIST_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth\
+      --checkpoints  /SSDe/sowon_choi/PatchTST/checkpoints/fully_finetune/debug/24102115_PatchTST_GIST_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth\
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

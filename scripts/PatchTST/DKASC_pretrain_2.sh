@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Linear_Probing_DKASC2GIST_$model_name"
+exp_id="${DATE}_Pretrain_DKASC_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -12,13 +12,13 @@ fi
 seq_len=336
 label_len=0
 
-root_path_name=/ailab_mat/dataset/PV/GIST_dataset/converted
+root_path_name=/ailab_mat/dataset/PV/DKASC_AliceSprings/preprocessed
 data_path_name='type=all'
-data_name=GIST
+data_name=DKASC
 random_seed=2024
 
 
-
+export CUDA_VISIBLE_DEVICES=4
 
 for pred_len in 24 #1 2 4 8 16
 do
@@ -26,8 +26,7 @@ do
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
-      --is_training 0 \
-      --checkpoints /SSDe/sowon_choi/PatchTST/checkpoints/linear_probe/debug/24102115_PatchTST_GIST_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth \
+      --is_training 1 \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \
@@ -37,10 +36,10 @@ do
       --seq_len $seq_len \
       --label_len $label_len \
       --pred_len $pred_len \
-      --enc_in 5 \
-      --e_layers 5 \
-      --n_heads 16 \
-      --d_model 128 \
+      --enc_in 10 \
+      --e_layers 10 \
+      --n_heads 32 \
+      --d_model 384 \
       --d_ff 1024 \
       --dropout 0.05\
       --fc_dropout 0.05\

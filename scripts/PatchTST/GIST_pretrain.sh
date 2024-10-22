@@ -12,12 +12,12 @@ fi
 seq_len=336
 label_len=0
 
-root_path_name=/PV/GIST_dataset/converted
+root_path_name=/ailab_mat/dataset/PV/GIST_dataset/converted
 data_path_name='type=all'
 data_name=GIST
 random_seed=2024
 
-
+export CUDA_VISIBLE_DEVICES=3
 #for pred_len in 1 2 4 8 16
 for pred_len in 24 #1 2 4 8 16  
 do

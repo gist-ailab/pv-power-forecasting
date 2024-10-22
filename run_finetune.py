@@ -26,7 +26,7 @@ if __name__ == '__main__':
                         help='model name, options: [Autoformer, Informer, Transformer, DLinear, NLinear, Linear, PatchTST, PatchCDTST, Naive_repeat, Arima]')
     parser.add_argument('--remove_cols', nargs='+', default=None)
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
-    parser.add_argument('--scaler_path', type=str, default=None, help='location of scaler')
+    parser.add_argument('--scaler', type=str, default='MinMiaxScaler', help='StandardScaler, MinMaxScaler')
     
     # data loader
     parser.add_argument('--data', type=str, default='DKASC_single', help='dataset type')
