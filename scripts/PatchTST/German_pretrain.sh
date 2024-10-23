@@ -11,7 +11,7 @@ fi
 
 
 label_len=0
-
+export CUDA_VISIBLE_DEVICES=3
 # root_path_name=/home/intern/doyoon/innovation/PatchTST/data/Germany_Household_Data/preprocessed
 root_path_name=/ailab_mat/dataset/PV/Germany_Household_Data/preprocessed
 data_path_name='type=all'

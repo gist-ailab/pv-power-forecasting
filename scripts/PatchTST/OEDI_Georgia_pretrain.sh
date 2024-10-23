@@ -18,7 +18,7 @@ data_path_name='type=all'
 data_name=OEDI_Georgia
 random_seed=2024
 
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=6
 
 for seq_len in 512 256 128 64
 do

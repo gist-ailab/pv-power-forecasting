@@ -763,6 +763,7 @@ class Dataset_GIST(Dataset):
         # cols.remove('date')
         cols.remove('timestamp')
         cols.remove('Active_Power')
+        cols.remove('Wind_Speed')
         df_raw = df_raw[cols + [self.target]]
 
         if self.scale: 
@@ -1557,13 +1558,13 @@ class Dataset_OEDI_Georgia(Dataset):
         
         import os
 
-        # 현재 파일의 경로 기준으로 preprocessed 디렉토리 경로 생성
-        current_file_path = os.path.abspath(__file__)
-        preprocessed_dir = os.path.join(os.path.dirname(current_file_path), '../data/OEDI/9069(Georgia)/preprocessed')
+        # # 현재 파일의 경로 기준으로 preprocessed 디렉토리 경로 생성
+        # current_file_path = os.path.abspath(__file__)
+        # preprocessed_dir = os.path.join(os.path.dirname(current_file_path), '../data/OEDI/9069(Georgia)/preprocessed')
 
         # preprocessed 폴더 내의 CSV 파일명들을 LOCATIONS에 저장
         self.LOCATIONS = [
-            file_name for file_name in os.listdir(preprocessed_dir) if file_name.endswith('.csv')
+            file_name for file_name in os.listdir(self.root_path) if file_name.endswith('.csv')
         ]
         
         self.scalers = {}

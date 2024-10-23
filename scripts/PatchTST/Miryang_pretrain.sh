@@ -13,14 +13,14 @@ fi
 label_len=0
 
 # root_path_name=/home/intern/doyoon/innovation/PatchTST/data/UK_data/preprocessed
-root_path_name=/ailab_mat/dataset/PV/Miryang/preprocessed
+root_path_name=/ailab_mat/dataset/PV/Miryang/converted
 
 data_path_name='type=all'
 data_name=Miryang
 random_seed=2024
 
 
-export CUDA_VISIBLE_DEVICES=6
+export CUDA_VISIBLE_DEVICES=3
 
 for seq_len in 512 256 128 64
 do
