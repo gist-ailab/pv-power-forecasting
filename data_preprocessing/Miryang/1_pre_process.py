@@ -169,7 +169,7 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
 
         # 최종 데이터프레임 저장 또는 처리
         base_filename = os.path.basename(file)
-        save_dir = os.path.join(csv_file_dir.split('PV_csv')[0], 'PV_merged')
+        save_dir = os.path.join(csv_file_dir.split('PV_csv')[0], 'preprocessed')
         os.makedirs(save_dir, exist_ok=True)
 
         output_filename = os.path.splitext(base_filename)[0] + '_merged.csv'
