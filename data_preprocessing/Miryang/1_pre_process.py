@@ -48,7 +48,8 @@ def convert_excel_to_csv(file_list):
         df['timestamp'] = pd.to_datetime(df['timestamp'])   # 'timestamp' 컬럼을 datetime 타입으로 변환
 
         # 결측치 처리:'-' 또는 빈 값을 NaN으로 변환
-        df = df.map(lambda x: np.nan if x in ['-', '', ' '] else x)
+        # df = df.map(lambda x: np.nan if x in ['-', '', ' '] else x)
+        df = df.replace(['-', '', ' '], np.nan, inplace=True)
 
         # 첫 번째 열을 제외한 나머지 열에 대해 결측치 처리 적용
         for column in df.columns[1:]:
@@ -121,11 +122,20 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
             'sun_Qy': 'Global_Horizontal_Radiation',
             'wind': 'Wind_Speed'
         })
+
+        # 날짜별로 그룹화하고 각 날짜의 row 개수를 확인하여 24가 아닌 경우 필터링
+        # 하루에 24개의 row가 아닌 경우 해당 날짜를 제거
+        day_counts = weather_df['timestamp'].dt.date.value_counts()
+        days_with_missing_data = day_counts[day_counts != 24].index
+
+        # 결측치가 있는 날짜를 제거
+        filtered_weather_df = weather_df[~weather_df['timestamp'].dt.date.isin(days_with_missing_data)].reset_index(drop=True)
+
         # 파일 이름에 따라 데이터프레임 저장
         if '산내면' in i:
-            산내면_기상 = weather_df
+            산내면_기상 = filtered_weather_df
         elif '상남면' in i:
-            상남면_기상 = weather_df
+            상남면_기상 = filtered_weather_df
 
     # Combine the CSV files
     for file in csv_file_list:
@@ -169,12 +179,13 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
 
         # 최종 데이터프레임 저장 또는 처리
         base_filename = os.path.basename(file)
-        save_dir = os.path.join(csv_file_dir.split('PV_csv')[0], 'preprocessed')
+        save_dir = os.path.join(csv_file_dir.split('PV_csv')[0], 'converted')
         os.makedirs(save_dir, exist_ok=True)
 
         output_filename = os.path.splitext(base_filename)[0] + '_merged.csv'
         output_path = os.path.join(save_dir, output_filename)
         filtered_df.to_csv(output_path, index=False)
+        print(f'Saved: {output_path}')
 
     print('Combination and merging completed!')
 
@@ -184,15 +195,15 @@ if __name__ == '__main__':
     # Get the absolute path of the current file
     current_file_path = os.path.abspath(__file__)
 
-    # # Get the root directory (assuming the root is two levels up from the current file)
-    # project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
+    # Get the root directory (assuming the root is two levels up from the current file)
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
     pv_xls_data_dir = '/ailab_mat/dataset/PV/Miryang/PV_xls'
     pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
     pv_file_list.sort()
 
-    csv_file_dir = convert_excel_to_csv(pv_file_list)   # Convert Excel files to CSV files
-    # csv_file_dir = os.path.join(project_root, 'data/Miryang/PV_csv')
+    # csv_file_dir = convert_excel_to_csv(pv_file_list)   # Convert Excel files to CSV files
+    csv_file_dir = os.path.join(project_root, 'data/Miryang/PV_csv')
     weather_file_dir = '/ailab_mat/dataset/PV/Miryang/weather'
 
     combine_csv_files(csv_file_dir, weather_file_dir)
