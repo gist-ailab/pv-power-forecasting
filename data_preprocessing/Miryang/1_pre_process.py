@@ -155,6 +155,10 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
             weather_df = deepcopy(상남면_기상)
         merged_df = pd.merge(power_df, weather_df, on='timestamp', how='left')
 
+        # Remove rows where weather data has missing values but Active_Power has data
+        merged_df = merged_df.dropna(subset=['Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 
+                                     'Global_Horizontal_Radiation', 'Wind_Speed'])
+
         # GHR 값이 0보다 큰 구간 찾기
         filtered_indices = merged_df[merged_df['Global_Horizontal_Radiation'] > 0].index
 
@@ -167,8 +171,9 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
             if idx + 1 < len(merged_df):   # 뒤의 인덱스 추가 (범위를 벗어나지 않는지 확인)
                 expanded_indices.add(idx + 1)
 
-        # 인덱스를 정렬하여 최종 데이터프레임 필터링
-        expanded_indices = sorted(expanded_indices)
+        # 유효한 인덱스만 남기기 위해 교차 확인
+        expanded_indices = sorted(i for i in expanded_indices if i in merged_df.index)
+        
         filtered_df = merged_df.loc[expanded_indices]
 
         # GHR이 0보다 큰데 Active_Power가 0과 같거나 0보다 작은 경우 필터링
