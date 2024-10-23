@@ -3,23 +3,26 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_OEDI_Georgia_$model_name"
+exp_id="${DATE}_Pretrain_OEDI_California_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-seq_len=336
 label_len=0
-root_path_name=/home/intern/doyoon/innovation/PatchTST/data/OEDI/2107\(Arbuckle_California\)/preprocessed
+# root_path_name=/home/intern/doyoon/innovation/PatchTST/data/OEDI/2107\(Arbuckle_California\)/preprocessed
+root_path_name=/ailab_mat/dataset/PV/OEDI/2107\(Arbuckle_California\)/preprocessed
 data_path_name='type=all'
 data_name=OEDI_California
 random_seed=2024
 
 
-#for pred_len in 1 2 4 8 16
-for pred_len in 24 #1 2 4 8 16  
+export CUDA_VISIBLE_DEVICES=5
+
+for seq_len in 512 256 128 64
 do
+    for pred_len in 16 8 4 2 1 
+    do
     python -u run_longExp.py \
       --gpu 0 \
       --use_amp \
@@ -48,6 +51,6 @@ do
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --scaler_path 'practice.pkl' \
       --itr 1 --batch_size 512 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
+    done
 done

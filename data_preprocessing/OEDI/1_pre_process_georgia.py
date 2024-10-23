@@ -203,21 +203,21 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    active_power_path = os.path.join(project_root, 'data/OEDI/9069(Georgia)/9069_electrical_ac.csv')
-    env_path = os.path.join(project_root, 'data/OEDI/9069(Georgia)/9069_environment_data.csv')
-    irrad_path = os.path.join(project_root, 'data/OEDI/9069(Georgia)/9069_irradiance_data.csv')
-    meter_path = os.path.join(project_root, 'data/OEDI/9069(Georgia)/9069_meter_data.csv')
+    active_power_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_electrical_ac.csv')
+    env_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_environment_data.csv')
+    irrad_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_irradiance_data.csv')
+    meter_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_meter_data.csv')
     merged_data = merge_raw_data(active_power_path, env_path, irrad_path, meter_path)
 
     # site_list = ['YMCA', 'Maple Drive East', 'Forest Road', 'Elm Crescent','Easthill Road']
     invertor_list = [f'inv{i}' for i in range(1,41)]
 
-    log_file_path = os.path.join(project_root, 'data/OEDI/9069(Georgia)/log.txt')
+    log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/log.txt')
     for i, invertor_name in enumerate(invertor_list):
         combine_into_each_invertor(
             invertor_name, 
             i, 
-            save_dir=os.path.join(project_root, 'data/OEDI/9069(Georgia)/preprocessed'),
+            save_dir=os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/preprocessed'),
             log_file_path=log_file_path,
             raw_df= merged_data
         )

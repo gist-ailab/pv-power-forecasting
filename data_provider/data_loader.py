@@ -1522,7 +1522,7 @@ class Dataset_UK(Dataset):
 class Dataset_OEDI_Georgia(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                  features='MS', data_path='', target='Active_Power',
-                 scale=True, timeenc=0, freq='h', scaler_path=None):
+                 scale=True, timeenc=0, freq='h', scaler='MinMaxScaler'):
         # size [seq_len, label_len, pred_len]
         # info
         print("start")
@@ -1547,7 +1547,7 @@ class Dataset_OEDI_Georgia(Dataset):
         self.flag = flag
 
     
-        self.scaler_path = scaler_path
+        self.scaler = scaler
         
 
         self.root_path = root_path
@@ -1678,10 +1678,9 @@ class Dataset_OEDI_Georgia(Dataset):
                     df_raw[col] = scaler.fit_transform(df_raw[[col]])
                     self.scalers[col] = scaler 
                     # Scaler를 pickle 파일로 저장
-                    if not self.scaler_path:
-                        path = os.path.join(self.root_path, f'{col}_scaler.pkl')
-                    else:
-                        path = self.scaler_path
+                 
+                    path = os.path.join(self.root_path, f'{col}_scaler.pkl')
+             
                     with open(path, 'wb') as f:
                         pickle.dump(scaler, f)
         
@@ -1691,10 +1690,7 @@ class Dataset_OEDI_Georgia(Dataset):
                 transformed_df = df_raw.copy()  
 
                 for col in df_raw.columns:
-                    if not self.scaler_path:
-                         path = os.path.join(self.root_path, f'{col}_scaler.pkl')
-                    else:
-                        path = self.scaler_path
+                    path = os.path.join(self.root_path, f'{col}_scaler.pkl')
             
                     # Scaler가 존재하는지 확인
                     if os.path.exists(path):
@@ -1764,7 +1760,7 @@ class Dataset_OEDI_Georgia(Dataset):
 class Dataset_OEDI_California(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                  features='MS', data_path='', target='Active_Power',
-                 scale=True, timeenc=0, freq='h', scaler_path=None):
+                 scale=True, timeenc=0, freq='h', scaler='MinMaxScaler'):
         # size [seq_len, label_len, pred_len]
         # info
         print("start")
@@ -1789,7 +1785,7 @@ class Dataset_OEDI_California(Dataset):
         self.flag = flag
 
     
-        self.scaler_path = scaler_path
+        self.scaler = scaler
         
 
         self.root_path = root_path
@@ -1799,13 +1795,13 @@ class Dataset_OEDI_California(Dataset):
         
         import os
 
-        # 현재 파일의 경로 기준으로 preprocessed 디렉토리 경로 생성
-        current_file_path = os.path.abspath(__file__)
-        preprocessed_dir = os.path.join(os.path.dirname(current_file_path), '../data/OEDI/2107(Arbuckle_California)/preprocessed')
+        # # 현재 파일의 경로 기준으로 preprocessed 디렉토리 경로 생성
+        # current_file_path = os.path.abspath(__file__)
+        # preprocessed_dir = os.path.join(os.path.dirname(current_file_path), '../data/OEDI/2107(Arbuckle_California)/preprocessed')
 
         # preprocessed 폴더 내의 CSV 파일명들을 LOCATIONS에 저장
         self.LOCATIONS = [
-            file_name for file_name in os.listdir(preprocessed_dir) if file_name.endswith('.csv')
+            file_name for file_name in os.listdir(self.root_path) if file_name.endswith('.csv')
         ]
         
         self.scalers = {}
@@ -1920,10 +1916,7 @@ class Dataset_OEDI_California(Dataset):
                     df_raw[col] = scaler.fit_transform(df_raw[[col]])
                     self.scalers[col] = scaler 
                     # Scaler를 pickle 파일로 저장
-                    if not self.scaler_path:
-                        path = os.path.join(self.root_path, f'{col}_scaler.pkl')
-                    else:
-                        path = self.scaler_path
+                    path = os.path.join(self.root_path, f'{col}_scaler.pkl')
                     with open(path, 'wb') as f:
                         pickle.dump(scaler, f)
         
@@ -1933,10 +1926,7 @@ class Dataset_OEDI_California(Dataset):
                 transformed_df = df_raw.copy()  
 
                 for col in df_raw.columns:
-                    if not self.scaler_path:
-                         path = os.path.join(self.root_path, f'{col}_scaler.pkl')
-                    else:
-                        path = self.scaler_path
+                    path = os.path.join(self.root_path, f'{col}_scaler.pkl')
             
                     # Scaler가 존재하는지 확인
                     if os.path.exists(path):

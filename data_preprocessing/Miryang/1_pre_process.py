@@ -184,15 +184,15 @@ if __name__ == '__main__':
     # Get the absolute path of the current file
     current_file_path = os.path.abspath(__file__)
 
-    # Get the root directory (assuming the root is two levels up from the current file)
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
+    # # Get the root directory (assuming the root is two levels up from the current file)
+    # project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    pv_xls_data_dir = os.path.join(project_root, 'data/Miryang/PV_xls')
+    pv_xls_data_dir = '/ailab_mat/dataset/PV/Miryang/PV_xls'
     pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
     pv_file_list.sort()
 
     csv_file_dir = convert_excel_to_csv(pv_file_list)   # Convert Excel files to CSV files
     # csv_file_dir = os.path.join(project_root, 'data/Miryang/PV_csv')
-    weather_file_dir = os.path.join(project_root, 'data/Miryang/weather')
+    weather_file_dir = '/ailab_mat/dataset/PV/Miryang/weather'
 
     combine_csv_files(csv_file_dir, weather_file_dir)
