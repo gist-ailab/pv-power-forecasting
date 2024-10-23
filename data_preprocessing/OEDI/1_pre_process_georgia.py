@@ -155,7 +155,7 @@ def merge_raw_data(active_power_path, env_path, irrad_path, meter_path):
     df_filtered.set_index('timestamp', inplace=True)
     df_resampled = df_filtered.resample('1H').mean()
     df_resampled.reset_index(inplace=True)
-    df_resampled['Active_Power'] = df_resampled['Active_Power']
+    # df_resampled['Active_Power'] = df_resampled['Active_Power']
     combined_data = df_resampled
 
     return combined_data
