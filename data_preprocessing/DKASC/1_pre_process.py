@@ -163,12 +163,15 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    raw_csv_data_dir = os.path.join(project_root, '/ailab_mat/dataset/PV/DKASC_AliceSprings')
+    # raw_csv_data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings/raw')  # for local
+    raw_csv_data_dir = '/ailab_mat/dataset/PV/DKASC_AliceSprings/raw'
     raw_file_list = [os.path.join(raw_csv_data_dir, _) for _ in os.listdir(raw_csv_data_dir)]
     raw_file_list.sort()
 
-    log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/DKASC_AliceSprings/log.txt')
+    # log_file_path = os.path.join(project_root, 'data/DKASC_AliceSprings/log.txt') # for local
+    log_file_path = '/ailab_mat/dataset/PV/DKASC_AliceSprings/log.txt'
     for i, file_path in enumerate(raw_file_list):
         combine_into_each_site(file_path, i,
-                               os.path.join(project_root, '/ailab_mat/dataset/PV/DKASC_AliceSprings/preprocessed'),
+                            #    os.path.join(project_root, 'data/DKASC_AliceSprings/converted'),  # for local
+                               '/ailab_mat/dataset/PV/DKASC_AliceSprings/converted',
                                log_file_path)
