@@ -70,6 +70,9 @@ class Exp_Main(Exp_Basic):
         return criterion
 
     def train(self, setting, resume):
+
+        self._set_wandb(setting)
+        
         # Initialize wandb with the current settings
         config = {
             "model": self.args.model,

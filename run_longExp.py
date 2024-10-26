@@ -2,19 +2,26 @@ import argparse
 import os
 import torch
 from exp.exp_main import Exp_Main
+from exp.exp_finetune import Exp_Finetune
 import random
 import numpy as np
 from utils.tools import StoreDictKeyPair 
 import wandb
 if __name__ == '__main__':
-    wandb.login(key='59b6335c1210c476af746542d2e4768c161a712c')
+    
     parser = argparse.ArgumentParser(description='Autoformer & Transformer family for Time Series Forecasting')
 
     # random seed
     parser.add_argument('--random_seed', type=int, default=2021, help='random seed')
 
     # basic config
-    parser.add_argument('--is_training', type=int, default=1, help='status')
+    parser.add_argument('--is_pretraining', type=int, default=1, help='status')
+    parser.add_argument('--is_fully_finetune', type=int, default=0, help='status')
+    parser.add_argument('--is_linear_probe', type=int, default=0, help='status')
+
+    parser.add_argument('--is_inference', type=int, default=0, help='status')
+
+    parser.add_argument('--run_name', type=str, default=None, help='run name, if None: setting is run name')
     parser.add_argument('--model_id', type=str, default='test', help='model id')
     parser.add_argument('--model', type=str, default='PatchTST',
                         help='model name, options: [Autoformer, Informer, Transformer, DLinear, NLinear, Linear, PatchTST, PatchCDTST, Naive_repeat, Arima]')
@@ -126,8 +133,8 @@ if __name__ == '__main__':
     print(args)
     
     Exp = Exp_Main
-
-    if args.is_training:
+    
+    if args.is_pretraining:
         for ii in range(args.itr):
             # setting record of experiments
             setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_{}'.format(
@@ -149,7 +156,7 @@ if __name__ == '__main__':
                 args.des,ii)
 
             exp = Exp(args)  # set experiments
-            print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+            print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
             exp.train(setting, args.resume)
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
@@ -160,7 +167,8 @@ if __name__ == '__main__':
                 exp.predict(setting, True)
 
             torch.cuda.empty_cache()
-    else:
+
+    elif args.is_inference:
         ii = 0
         setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_{}'.format(args.model_id,
                                                                                                     args.model,
@@ -183,4 +191,37 @@ if __name__ == '__main__':
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
         exp.test(setting, args.checkpoints, test=1)
         torch.cuda.empty_cache()
-        
+    
+    elif args.is_fully_finetune or args.is_linear_probe:
+        for ii in range(args.itr):
+            # setting record of experiments
+            setting = '{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_{}'.format(
+                'fully_finetune' if args.is_fully_finetune else 'linear_probe',
+                args.model_id,
+                args.model,
+                args.data,
+                args.features,
+                args.seq_len,
+                args.label_len,
+                args.pred_len,
+                args.d_model,
+                args.n_heads,
+                args.e_layers,
+                args.d_layers,
+                args.d_ff,
+                args.factor,
+                args.embed,
+                args.distil,
+                args.des,ii)
+
+            exp = Exp_Finetune(args)
+            
+            if args.is_fully_finetune:
+                print('>>>>>>>start fully finetuning : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+                exp.fully_finetune(setting, args.resume)
+
+            elif args.is_linear_probe:
+                print('>>>>>>>start linear probing : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+                exp.linear_probe(setting, args.resume)       
+
+            torch.cuda.empty_cache()

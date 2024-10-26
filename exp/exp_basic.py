@@ -1,7 +1,7 @@
 import os
 import torch
 import numpy as np
-
+import wandb
 
 class Exp_Basic(object):
     def __init__(self, args):
@@ -23,6 +23,19 @@ class Exp_Basic(object):
             device = torch.device('cpu')
             print('Use CPU')
         return device
+
+    def _set_wandb(self, setting):
+        if self.args.run_name != None:
+            run_name = self.args.run_name
+        elif self.args.run_name == None:
+            run_name = setting
+            
+        wandb.init(
+            project='pv-forecasting',
+            entity='pv-forecasting',
+            name=f'{run_name}',
+            config=self.args)
+        
 
     def _get_data(self):
         pass
