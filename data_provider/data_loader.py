@@ -423,6 +423,8 @@ class Dataset_DKASC(Dataset):
         self.x_list = []
         self.y_list = []
         self.ds_list = []
+        self.site_list = []
+        self.ts_list = []
 
 
         random.seed(42)
@@ -478,108 +480,126 @@ class Dataset_DKASC(Dataset):
     # 6. 입력할 칼럼들 지정하여 리스트 생성
     def load_preprocessed_data(self):
 
-        # 1. Flag에 맞게 데이터 불러오기
+        # # 1. Flag에 맞게 데이터 불러오기
+        # if self.flag == 'train':
+        #     df_raw = self.load_and_concat_data(self.train)
+        
+        # elif self.flag == 'val':
+        #     df_raw = self.load_and_concat_data(self.val)
+
+        # elif self.flag == 'test':
+        #     df_raw = self.load_and_concat_data(self.test)
+
         if self.flag == 'train':
-            df_raw = self.load_and_concat_data(self.train)
-        
+           self.file_list = self.train
         elif self.flag == 'val':
-            df_raw = self.load_and_concat_data(self.val)
-
+            self.file_list = self.val
         elif self.flag == 'test':
-            df_raw = self.load_and_concat_data(self.test)
+            self.file_list = self.test
 
-        
+        df_list = []
 
+        for file in self.file_list:
+            file_path = os.path.join(self.root_path, file)
+            df_raw = pd.read_csv(file_path)
         # 2. Time encoding (년, 월, 일, 요일, 시간)
-        if self.timeenc == 0:
-            data_stamp = pd.DataFrame()
-            data_stamp['date'] = pd.to_datetime(df_raw.timestamp)
-            data_stamp['year'] = df_raw.date.apply(lambda row: row.year, 1)
-            data_stamp['month'] = df_raw.timestamp.apply(lambda row: row.month, 1)
-            data_stamp['day'] = df_raw.date.apply(lambda row: row.day, 1)
-            data_stamp['weekday'] = df_raw.date.apply(lambda row: row.weekday(), 1)
-            data_stamp['hour'] = df_raw.date.apply(lambda row: row.hour, 1)
+            if self.timeenc == 0:
+                data_stamp = pd.DataFrame()
+                data_stamp['date'] = pd.to_datetime(df_raw.timestamp)
+                data_stamp['year'] = df_raw.date.apply(lambda row: row.year, 1)
+                data_stamp['month'] = df_raw.timestamp.apply(lambda row: row.month, 1)
+                data_stamp['day'] = df_raw.date.apply(lambda row: row.day, 1)
+                data_stamp['weekday'] = df_raw.date.apply(lambda row: row.weekday(), 1)
+                data_stamp['hour'] = df_raw.date.apply(lambda row: row.hour, 1)
+                
+                data_stamp = data_stamp[['month', 'day', 'weekday', 'hour']].values
+
+            elif self.timeenc == 1:
+                data_stamp = time_features(pd.to_datetime(df_raw['timestamp'].values), freq=self.freq)
+                data_stamp = data_stamp.transpose(1, 0)
+        
+            # # 3. Encoding 후, 'date' column 생성
+            # df_raw['date'] = data_stamp
+        
+            # 4. Columns 순서 정렬 (timestamp, date, ..... , target)
+            timestamp = df_raw['timestamp'].copy()
+
+            cols = df_raw.columns.tolist()
+            cols.remove('timestamp')
+            cols.remove('Active_Power')
+            # df_raw = df_raw[['date'] + cols + [self.target]]
+            df_raw = df_raw[cols + [self.target]]
             
-            data_stamp = data_stamp[['month', 'day', 'weekday', 'hour']].values
 
-        elif self.timeenc == 1:
-            data_stamp = time_features(pd.to_datetime(df_raw['timestamp'].values), freq=self.freq)
-            data_stamp = data_stamp.transpose(1, 0)
         
-        # # 3. Encoding 후, 'date' column 생성
-        # df_raw['date'] = data_stamp
-       
-        # 4. Columns 순서 정렬 (timestamp, date, ..... , target)
-        cols = df_raw.columns.tolist()
-        cols.remove('timestamp')
-        cols.remove('Active_Power')
-        # df_raw = df_raw[['date'] + cols + [self.target]]
-        df_raw = df_raw[cols + [self.target]]
+            # 5. Scaler 적용
+            if self.scale:
 
-
-        # 5. Scaler 적용
-        if self.scale: 
-            # Train일 때는, Scaler Fit 후에, 저장
-            if self.flag == 'train':
-                for col in df_raw.columns:
-                    if self.scaler == 'MinMaxScaler':
-                        scaler = MinMaxScaler()
-                    else: scaler = StandardScaler()
-                    df_raw[col] = scaler.fit_transform(df_raw[[col]])
-                    self.scalers[col] = scaler 
-                    # Scaler를 pickle 파일로 저장
-                    path = os.path.join(self.root_path, f'{col}_scaler.pkl')
-                    with open(path, 'wb') as f:
-                        pickle.dump(scaler, f)
-        
-            else:
-                # Val, Test일 때는, 저장된 Scaler 불러와서 적용
                 self.scalers = {}
+                os.makedirs(os.path.join(self.root_path, 'scaler', exist_ok=True))
                 transformed_df = df_raw.copy()  
-
-                for col in df_raw.columns:                   
-                    path = os.path.join(self.root_path, f'{col}_scaler.pkl')
-                 
-                    # Scaler가 존재하는지 확인
-                    if os.path.exists(path):
-                        with open(path, 'rb') as f:
-                            scaler = pickle.load(f) 
+                if self.flag == 'train':
                 
-                        # 해당 칼럼에 스케일러 적용 (transform)
+                    for col in df_raw.columns:                   
+                        max_capacity = file.split('_')[-1]
+                        max_capacity = [".".join(part.split('.')[:-1]) for part in max_capacity]
+                        min_capacity = 0
+                        print(f"Max Capacity: {max_capacity}")
+                        exit()
+                        path = os.path.join(self.root_path, 'scaler', f'{site}_{col}_scaler.pkl')
+                    
+                        if scaler == 'MinMaxScaler': scaler = MinMaxScaler()
+                        else: scaler = StandardScaler()
+                        scaler.fit(np.array([[min_capacity], [max_capacity]]))
                         df_raw[col] = scaler.transform(transformed_df[[col]])
-                        self.scalers[col] = scaler
-                
-                    else:
-                        print(f"Scaler for column {col} not found.")
-            
+                        self.scalers[f'{site}_{col}'] = scaler
+                        
+                        with open(path, 'wb') as f:
+                            pickle.dump(scaler, f)
 
+                # Val, Test일 때는, Train때, 저장된 Scaler 불러와서 적용
+                else:
+                    for col in df_raw.columns:
+                        site = file.split('-')[0]
+                        path = os.path.join(self.root_path, 'scaler', f'{site}_{col}_scaler.pkl')
+                        # Scaler가 존재하는지 확인
+                        if os.path.exists(path):
+                            with open(path, 'rb') as f:
+                                scaler = pickle.load(f)
+                            df_raw[col] = scaler.transform(transformed_df[[col]])
+                            self.scalers[f'{site}_{col}'] = scaler
+
+                        else:
+                            print(f"Scaler for column {col} not found.")
+            
+                df_raw['site'] = site
+                df_raw['timestamp'] = timestamp
+
+            assert (df_raw.isnull().sum()).sum() == 0, "허용되지 않은 열에 결측치가 존재합니다."            
+            df_list.append(df_raw)
+
+        df = pd.concat(df_list, ignore_index=True) 
         # 6. 입력할 칼럼들 지정하여 리스트 생성
         if self.features == 'M' or self.features == 'MS':
             # date 열을 제외
-            cols_data = df_raw.columns[1:]
-            df_x = df_raw[cols_data]
+            cols_data = df.columns[1:]
+            df_x = df[cols_data]
         elif self.features == 'S':
             # Active Power만 추출
-            df_x = df_raw[[self.target]]
+            df_x = df[[self.target]]
 
         self.x_list = df_x.values
         # 타겟은 마지막 열인 Active_Power
-        self.y_list = df_raw[[self.target]].values
+        self.y_list = df[[self.target]].values
+
+        self.site_list = df['site'].values
         # date columns만 선택
         self.ds_list = data_stamp
+        self.ts_list = df['timestamp'].values
+
 
 
     
-    # 파일 경로를 가져와서 DataFrame으로 합치는 함수
-    def load_and_concat_data(self, file_list):
-        df_list = []
-        for file in file_list:
-            file_path = os.path.join(self.root_path, file)
-            df = pd.read_csv(file_path)  
-            assert (df.isnull().sum()).sum() == 0, "허용되지 않은 열에 결측치가 존재합니다."            
-            df_list.append(df) 
-        return pd.concat(df_list, ignore_index=True) 
-
     def __getitem__(self, index):
         s_begin = index
         s_end = s_begin + self.seq_len
@@ -590,8 +610,10 @@ class Dataset_DKASC(Dataset):
         seq_y = self.y_list[r_begin:r_end]
         seq_x_mark = self.ds_list[s_begin:s_end]
         seq_y_mark = self.ds_list[r_begin:r_end]
+        site = self.site_list[s_begin:s_end]
+        ds = self.ts_list[s_begin:s_end]
             
-        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark
+        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, ds
 
 
     def __len__(self):    
@@ -600,14 +622,16 @@ class Dataset_DKASC(Dataset):
 
 
     # 평가 시 필요함
-    def inverse_transform(self, data):
+    def inverse_transform(self, data, site):
         data_org = data.copy()
-       
-        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+        for i, (d, s) in enumerate(zip(data, site)):
+            self.scaler[f'{s}_Active_Power'].inverse_transform(d.reshape(-1, 1))
+            data[i] = d
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
+
         return data
-
-
+             
+       
 
 class Dataset_GIST(Dataset):
     def __init__(self, root_path, flag='train', size=None,
