@@ -9,7 +9,6 @@ if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-
 seq_len=256
 label_len=0
 
@@ -37,10 +36,10 @@ do
       --label_len $label_len \
       --pred_len $pred_len \
       --enc_in 4 \
-      --e_layers 8 \
+      --e_layers 10 \
       --n_heads 8 \
-      --d_model 512 \
-      --d_ff 2048 \
+      --d_model 1024 \
+      --d_ff 4096 \
       --dropout 0.05\
       --fc_dropout 0.05\
       --head_dropout 0\

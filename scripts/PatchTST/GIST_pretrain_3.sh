@@ -37,10 +37,10 @@ do
       --label_len $label_len \
       --pred_len $pred_len \
       --enc_in 4 \
-      --e_layers 8 \
+      --e_layers 6 \
       --n_heads 8 \
       --d_model 512 \
-      --d_ff 2048 \
+      --d_ff 1024 \
       --dropout 0.05\
       --fc_dropout 0.05\
       --head_dropout 0\
