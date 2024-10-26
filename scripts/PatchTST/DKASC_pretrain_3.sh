@@ -9,6 +9,15 @@ if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
+seq_len=336
+label_len=0
+
+root_path_name=/PV/DKASC_AliceSprings/converted
+data_path_name='type=all'
+data_name=DKASC
+random_seed=2024
+
+
 seq_len=256
 label_len=0
 
@@ -17,7 +26,7 @@ data_name=DKASC
 random_seed=2024
 
 
-export CUDA_VISIBLE_DEVICES=6
+export CUDA_VISIBLE_DEVICES=4
 
 for pred_len in 24 #1 2 4 8 16
 do
@@ -36,7 +45,7 @@ do
       --label_len $label_len \
       --pred_len $pred_len \
       --enc_in 5 \
-      --e_layers 5 \
+      --e_layers 16 \
       --n_heads 16 \
       --d_model 128 \
       --d_ff 1024 \
