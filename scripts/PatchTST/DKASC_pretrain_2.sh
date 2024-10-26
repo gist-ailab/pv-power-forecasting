@@ -18,6 +18,10 @@ data_path_name='type=all'
 data_name=DKASC
 random_seed=2024
 
+e_layers=8
+n_heads=8
+d_model=512
+d_ff=2048
 
 export CUDA_VISIBLE_DEVICES=5
 
@@ -51,5 +55,5 @@ do
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --itr 1 --batch_size 256 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
+      --itr 1 --batch_size 256 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers.log
 done

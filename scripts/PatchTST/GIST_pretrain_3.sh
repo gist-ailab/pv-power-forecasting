@@ -17,6 +17,7 @@ root_path_name=/ailab_mat/dataset/PV/GIST_dataset/converted
 data_path_name='type=all'
 data_name=GIST
 random_seed=2024
+e_layers=6
 
 export CUDA_VISIBLE_DEVICES=3
 #for pred_len in 1 2 4 8 16
@@ -50,5 +51,5 @@ do
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --itr 1 --batch_size 256 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
+      --itr 1 --batch_size 256 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers.log
 done
