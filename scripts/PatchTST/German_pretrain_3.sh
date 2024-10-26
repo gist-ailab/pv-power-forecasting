@@ -9,7 +9,7 @@ if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-
+seq_len=256
 label_len=0
 export CUDA_VISIBLE_DEVICES=3
 # root_path_name=/home/intern/doyoon/innovation/PatchTST/data/Germany_Household_Data/preprocessed
@@ -18,17 +18,15 @@ data_path_name='type=all'
 data_name=German
 random_seed=2024
 
-export CUDA_VISIBLE_DEVICES=4
+export CUDA_VISIBLE_DEVICES=3
 
-for seq_len in 512 256 128 64
+for pred_len in 16 8 4 2 1  
 do
-    for pred_len in 16 8 4 2 1 
-    do
     python -u run_longExp.py \
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
-      --is_training 1 \
+      --is_pretraining 1 \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \
@@ -38,10 +36,10 @@ do
       --seq_len $seq_len \
       --label_len $label_len \
       --pred_len $pred_len \
-      --enc_in 5 \
-      --e_layers 5 \
-      --n_heads 16 \
-      --d_model 128 \
+      --enc_in 4 \
+      --e_layers 6 \
+      --n_heads 8 \
+      --d_model 512 \
       --d_ff 1024 \
       --dropout 0.05\
       --fc_dropout 0.05\
@@ -52,6 +50,5 @@ do
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --itr 1 --batch_size 512 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
-    done
+      --itr 1 --batch_size 256 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
 done

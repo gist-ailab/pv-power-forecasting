@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_GIST_$model_name"
+exp_id="${DATE}_Pretrain_UK_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -12,10 +12,13 @@ fi
 seq_len=256
 label_len=0
 
-root_path_name=/ailab_mat/dataset/PV/GIST_dataset/converted
+# root_path_name=/home/intern/doyoon/innovation/PatchTST/data/UK_data/preprocessed
+root_path_name=/ailab_mat/dataset/PV/UK_data/preprocessed
+
 data_path_name='type=all'
-data_name=GIST
+data_name=UK
 random_seed=2024
+
 
 export CUDA_VISIBLE_DEVICES=3
 #for pred_len in 1 2 4 8 16
