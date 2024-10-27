@@ -135,11 +135,14 @@ class Exp_Main(Exp_Basic):
                 iter_count += 1
                 model_optim.zero_grad()
 
-                batch_x, batch_y, batch_x_mark, batch_y_mark = data
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
+                site = site.to(self.device)
+                batch_x_ts = batch_x_ts.to(self.device)
+                batch_y_ts = batch_y_ts.to(self.device)
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
@@ -258,12 +261,15 @@ class Exp_Main(Exp_Basic):
         self.model.eval()
         with torch.no_grad():
             for i, data in enumerate(vali_loader):
-                if len(data) == 4: # Original data loader
-                    batch_x, batch_y, batch_x_mark, batch_y_mark = data
-                    batch_x = batch_x.float().to(self.device)
-                    batch_y = batch_y.float().to(self.device)
-                    batch_x_mark = batch_x_mark.float().to(self.device)
-                    batch_y_mark = batch_y_mark.float().to(self.device)
+               
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
+                batch_x = batch_x.float().to(self.device)
+                batch_y = batch_y.float().to(self.device)
+                batch_x_mark = batch_x_mark.float().to(self.device)
+                batch_y_mark = batch_y_mark.float().to(self.device)
+                site = site.to(self.device)
+                batch_x_ts = batch_x_ts.to(self.device)
+                batch_y_ts = batch_y_ts.to(self.device)
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
@@ -298,9 +304,9 @@ class Exp_Main(Exp_Basic):
                     output_np = outputs.detach().cpu().numpy() 
                     batch_y_np = batch_y.detach().cpu().numpy()
 
-
-                    active_power_np = vali_data.inverse_transform(output_np.copy())
-                    active_power_gt_np = vali_data.inverse_transform(batch_y_np.copy())
+                    # print(site)
+                    active_power_np = vali_data.inverse_transform(output_np.copy(), site)
+                    active_power_gt_np = vali_data.inverse_transform(batch_y_np.copy(), site)
 
                     # # scaler적용 후, 다시 3d로 되돌리기
                     # active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
@@ -312,8 +318,8 @@ class Exp_Main(Exp_Basic):
                 
                 else:
                     # TODO: LSTM일 때, 코드 수정 필요
-                    pred_np = vali_data.inverse_transform(outputs.detach().cpu().numpy())
-                    gt_np = vali_data.inverse_transform(batch_y.detach().cpu().numpy())
+                    pred_np = vali_data.inverse_transform(outputs.detach().cpu().numpy(), site)
+                    gt_np = vali_data.inverse_transform(batch_y.detach().cpu().numpy(), site)
 
                     # pred_np = pred_np.reshape(-1, vali_data[-2], batch_y_np.shape[-1])
                     pred = torch.from_numpy(pred_np[:, :, -1])
@@ -358,11 +364,14 @@ class Exp_Main(Exp_Basic):
         with torch.no_grad():
             # for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
             for i, data in enumerate(test_loader):
-                batch_x, batch_y, batch_x_mark, batch_y_mark = data
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
+                site = site.to(self.device)
+                batch_x_ts = batch_x_ts.to(self.device)
+                batch_y_ts = batch_y_ts.to(self.device)
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
@@ -397,8 +406,8 @@ class Exp_Main(Exp_Basic):
                     batch_y_np = batch_y.detach().cpu().numpy()
 
                     # de-normalize the data and prediction values
-                    pred = test_data.inverse_transform(outputs_np.copy())
-                    true = test_data.inverse_transform(batch_y_np.copy())
+                    pred = test_data.inverse_transform(outputs_np.copy(), site)
+                    true = test_data.inverse_transform(batch_y_np.copy(), site)
 
 
                     # normalized된 결과
@@ -410,8 +419,8 @@ class Exp_Main(Exp_Basic):
                                  
                 else:
                     # TODO: LSTM일 때, 코드 수정 필요
-                    pred_np = test_data.inverse_transform(outputs.detach().cpu().numpy())
-                    true_np = test_data.inverse_transform(batch_y.detach().cpu().numpy())
+                    pred_np = test_data.inverse_transform(outputs.detach().cpu().numpy(), site)
+                    true_np = test_data.inverse_transform(batch_y.detach().cpu().numpy(), site)
                     
                     # pred_np = pred_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
                     # true_np = true_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])

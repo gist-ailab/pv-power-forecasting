@@ -13,7 +13,7 @@ seq_len=336
 label_len=0
 
 root_path_name=/PV/DKASC_AliceSprings/converted
-data_path_name='type=all'
+data_path_name='type=debug,train=100-Site_DKA-M1_A-Phase_2.csv,val=212-Site_DKA-M15_C-Phase_II_5.8.csv,test=213-Site_DKA-M16_A-Phase_II_6.1.csv'
 data_name=DKASC
 random_seed=2024
 
@@ -34,7 +34,7 @@ do
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
-      --is_training 1 \
+      --is_pretraining 1 \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

@@ -23,12 +23,13 @@ n_heads=8
 d_model=512
 d_ff=1024
 
-export CUDA_VISIBLE_DEVICES=6
+export CUDA_VISIBLE_DEVICES=0
 
 for pred_len in 16 8 4 2 1
 do
     python -u run_longExp.py \
       --gpu 0 \
+      --run_name test \
       --use_amp \
       --random_seed $random_seed \
       --is_pretraining 1 \
