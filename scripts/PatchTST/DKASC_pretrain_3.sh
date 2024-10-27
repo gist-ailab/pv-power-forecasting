@@ -29,7 +29,6 @@ for pred_len in 16 8 4 2 1
 do
     python -u run_longExp.py \
       --gpu 0 \
-      --run_name test \
       --use_amp \
       --random_seed $random_seed \
       --is_pretraining 1 \

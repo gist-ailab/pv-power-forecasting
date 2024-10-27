@@ -571,20 +571,52 @@ class Dataset_DKASC(Dataset):
         return len(self.indices)
 
    
-    # 평가 시 필요함
+    # # 평가 시 필요함
+    # def inverse_transform(self, data, site_id):
+    #     data_org = data.copy()
+    #     # print(data.shape) (512, 24, 1)
+  
+    #     for i, (d, s) in enumerate(zip(data, site_id)):
+    #         self.scaler_dict[f'{s.reshape(-1, 1)[0].item()}_Active_Power'].inverse_transform(d.reshape(-1, 1))
+    #         data[i] = d
+    #     data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
+
+    #     return data
+
     def inverse_transform(self, data, site_id):
         data_org = data.copy()
-        # print(data.shape) (512, 24, 1)
-  
+        # data shape: (batch_size, time_steps, features)
+        # 예시: (512, 24, 1)
+        
+        # 데이터를 스케일러별로 그룹화하기 위한 딕셔너리 초기화
+        scaler_groups = {}
+        
+        # 데이터 그룹화
         for i, (d, s) in enumerate(zip(data, site_id)):
-            print(s.shape)
-            print(site_id.shape)
-            self.scaler_dict[f'{s.reshape(-1, 1)[0].item()}_Active_Power'].inverse_transform(d.reshape(-1, 1))
-            data[i] = d
-        data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
-
+            scaler_key = f'{s.reshape(-1, 1)[0].item()}_Active_Power'
+            if scaler_key not in scaler_groups:
+                scaler_groups[scaler_key] = {'indices': [], 'data': []}
+            scaler_groups[scaler_key]['indices'].append(i)
+            scaler_groups[scaler_key]['data'].append(d)
+        
+        # 각 스케일러별로 데이터를 한 번에 inverse_transform 적용
+        for scaler_key, group in scaler_groups.items():
+            scaler = self.scaler_dict[scaler_key]
+            group_data = np.array(group['data'])  # shape: (num_samples, time_steps, features)
+            # reshape to 2D array for inverse_transform
+            num_samples, time_steps, features = group_data.shape
+            group_data_2d = group_data.reshape(-1, features)
+            
+            # inverse_transform 적용
+            transformed_data = scaler.inverse_transform(group_data_2d)
+            # 원래 shape로 복원
+            transformed_data = transformed_data.reshape(num_samples, time_steps, features)
+            
+            # 결과를 원본 데이터에 반영
+            for idx, i in enumerate(group['indices']):
+                data[i] = transformed_data[idx]
+        
         return data
-
 
     
              
