@@ -16,7 +16,13 @@ service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service)
 
 # Set date range for data collection
-location_code = 15590
+location_name = "Yulara"
+
+if location_name == "Alice_Springs":
+    location_code = 15590
+elif location_name == "Yulara":
+    location_code = 15635
+
 start_date = datetime(2008, 1, 1)
 end_date = datetime(2024, 10, 27)
 current_date = start_date
@@ -25,16 +31,8 @@ total_days = (end_date - start_date).days + 1
 # List to store failed dates
 failed_dates = []
 
-# File name for storing data
-file_name = 'Alice_Springs_weather_data.csv'
-
-# Initialize CSV file if starting fresh
-with open(file_name, mode='w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(['timestamp', 'Weather_Relative_Humidity', 'Wind_Speed'])
-
-# List to accumulate monthly data
-monthly_data = []
+# Dictionary to store yearly data
+yearly_data = {}
 
 # Loop through each date to collect data
 for _ in tqdm(range(total_days), desc="Progress", unit="day"):
@@ -70,6 +68,8 @@ for _ in tqdm(range(total_days), desc="Progress", unit="day"):
                         timestamp = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
                         humidity_str = humidity_tag.get_text(strip=True)
                         wind_speed_str = wind_speed_tag.get_text(strip=True)
+                        if timestamp.date() == current_date.date():  # Exclude next day's data
+                            daily_data.append([timestamp, humidity_str, wind_speed_str])
                     except ValueError as ve:
                         print(f"Failed to parse time for {date_str}: {ve}")
                         failed_dates.append(f"{date_str} {time_str}")
@@ -77,8 +77,11 @@ for _ in tqdm(range(total_days), desc="Progress", unit="day"):
             # Sort daily data in ascending order by timestamp
             daily_data.sort(key=lambda x: x[0])
 
-            # Accumulate daily data into monthly_data list
-            monthly_data.extend(daily_data)
+            # Add daily data to yearly data dictionary
+            year = current_date.year
+            if year not in yearly_data:
+                yearly_data[year] = []
+            yearly_data[year].extend(daily_data)
         else:
             print(f"No data table found for {date_str}")
             failed_dates.append(date_str)
@@ -90,12 +93,21 @@ for _ in tqdm(range(total_days), desc="Progress", unit="day"):
     # Move to the next day
     current_date += timedelta(days=1)
 
-    # Save accumulated data at the end of each month
-    if current_date.day == 1 or current_date > end_date:
-        with open(file_name, mode='a', newline='') as file:
+    # Save accumulated data at the end of each year
+    if current_date.year != year:
+        with open(f'{location_name}_weather_data_{year}.csv', mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerows(monthly_data)
-        monthly_data = []
+            writer.writerow(['timestamp', 'Weather_Relative_Humidity', 'Wind_Speed'])
+            writer.writerows(yearly_data[year])
+        del yearly_data[year]
+
+# Save data for the last year if not already saved
+if current_date.year - 1 in yearly_data:
+    last_year = current_date.year - 1
+    with open(f'{location_name}_weather_data_{last_year}.csv', mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['timestamp', 'Weather_Relative_Humidity', 'Wind_Speed'])
+        writer.writerows(yearly_data[last_year])
 
 # Close the driver
 driver.quit()
