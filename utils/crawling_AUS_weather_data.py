@@ -20,10 +20,11 @@ location_name = "Yulara"
 
 if location_name == "Alice_Springs":
     location_code = 15590
+    start_date = datetime(2008, 1, 1)
 elif location_name == "Yulara":
     location_code = 15635
+    start_date = datetime(2016, 1, 1)
 
-start_date = datetime(2008, 1, 1)
 end_date = datetime(2024, 10, 27)
 current_date = start_date
 total_days = (end_date - start_date).days + 1
