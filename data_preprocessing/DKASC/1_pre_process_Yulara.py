@@ -21,7 +21,7 @@ def combine_humidity_data(raw_weather_list, save_path):
     combined_weather_df.sort_values('timestamp', inplace=True)
     combined_weather_df = combined_weather_df[['timestamp', 'Weather_Relative_Humidity']]
     combined_weather_df['Weather_Relative_Humidity'] = pd.to_numeric(combined_weather_df['Weather_Relative_Humidity'], errors='coerce')
-    combined_weather_df['Weather_Relative_Humidity'] = combined_weather_df['Weather_Relative_Humidity'] * (1000 / 3600) # km/h to m/s
+    combined_weather_df['Weather_Relative_Humidity'] = combined_weather_df['Weather_Relative_Humidity']
     
     # 1시간 단위로 리샘플링하여 평균을 계산합니다.
     combined_weather_df.set_index('timestamp', inplace=True)
@@ -49,7 +49,8 @@ def combine_into_each_site(file_path, index_of_site,
     necessary_columns = ['Active_Power',
                          'Global_Horizontal_Radiation',
                         #  'Diffuse_Horizontal_Radiation',
-                         'Weather_Temperature_Celsius']
+                         'Weather_Temperature_Celsius',
+                         'Wind_Speed']
                         #  'Weather_Relative_Humidity'] 1시간 단위로 변환후 추가
     df = raw_df.loc[:, ['timestamp'] + necessary_columns]
     
@@ -69,9 +70,9 @@ def combine_into_each_site(file_path, index_of_site,
     df_cleaned_3 = df_cleaned.interpolate(method='linear', limit=3)
 
     
-    '''4. AP 값이 있지만 GHR이 있는 날 제거'''
+    '''4. AP 값이 있지만 GHR이 있는 날, GHR 값이 과하게 큰 날 제거'''
     # Step 1: AP > 0 and GHR = 0
-    rows_to_exclude = (df_cleaned_3['Active_Power'] > 0) & (df_cleaned_3['Global_Horizontal_Radiation'] == 0)
+    rows_to_exclude = ((df_cleaned_3['Active_Power'] > 0) & (df_cleaned_3['Global_Horizontal_Radiation'] == 0)) | (df_cleaned_3['Global_Horizontal_Radiation'] > 2000)
 
     # Step 2: Find the days (dates) where the conditions are true
     days_to_exclude = df_cleaned_3[rows_to_exclude]['timestamp'].dt.date.unique()
