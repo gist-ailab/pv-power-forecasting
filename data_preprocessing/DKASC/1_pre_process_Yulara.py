@@ -123,6 +123,15 @@ def combine_into_each_site(file_path, index_of_site,
 
     # 2. AP 값이 0.001보다 작은 경우 0으로 설정
     df_hourly.loc[df_hourly['Active_Power'] < 0.001, 'Active_Power'] = 0
+
+    # combined_weather_hourly와 병합
+    df_hourly = pd.merge(df_hourly, combined_weather_hourly, on='timestamp', how='left')
+
+    consecutive_nan_mask = detect_consecutive_nans(df_hourly, max_consecutive=2)
+    # Remove entire days where 2 consecutive NaNs were found
+    days_with_2_nan = df_hourly[consecutive_nan_mask]['timestamp'].dt.date.unique()
+    df_hourly = df_hourly[~df_hourly['timestamp'].dt.date.isin(days_with_2_nan)]
+    df_hourly = df_hourly.interpolate(method='linear', limit=1)
     
     # 4. 날짜별로 그룹화하고 margin 조절
     df_cleaned_6 = df_hourly.groupby(df_hourly['timestamp'].dt.date).apply(adjust_daily_margin)
