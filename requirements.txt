@@ -9,3 +9,5 @@ tqdm
 xlrd
 xmltodict
 seaborn
+selenium
+webdriver-manager
