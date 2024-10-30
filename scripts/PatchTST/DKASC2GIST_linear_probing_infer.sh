@@ -9,7 +9,7 @@ if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-seq_len=336
+seq_len=256
 label_len=0
 
 root_path_name=/ailab_mat/dataset/PV/GIST_dataset/converted

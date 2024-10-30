@@ -25,7 +25,7 @@ d_ff=512
 
 export CUDA_VISIBLE_DEVICES=7
 
-for pred_len in 16 8 4 2 1
+for pred_len in 8 4 2 1
 do
     python -u run_longExp.py \
       --gpu 0 \

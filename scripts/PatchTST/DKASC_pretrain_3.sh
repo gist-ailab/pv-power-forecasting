@@ -23,7 +23,7 @@ n_heads=8
 d_model=512
 d_ff=1024
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=4
 
 for pred_len in 16 8 4 2 1
 do
