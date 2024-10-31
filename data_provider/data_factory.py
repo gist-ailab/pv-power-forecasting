@@ -1,9 +1,10 @@
 from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
-     Dataset_DKASC_single, Dataset_DKASC, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang
+     Dataset_DKASC_single, Dataset_DKASC_AliceSprings, Dataset_DKASC_Yulara, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang
 from torch.utils.data import DataLoader
 
 data_dict = {
-    'DKASC': Dataset_DKASC,
+    'DKASC_AliceSprings': Dataset_DKASC_AliceSprings,
+    'DKASC_Yulara': Dataset_DKASC_Yulara,
     'DKASC_single': Dataset_DKASC_single,
     'GIST': Dataset_GIST,
     'German': Dataset_German,
