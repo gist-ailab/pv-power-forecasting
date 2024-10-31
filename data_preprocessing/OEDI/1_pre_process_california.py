@@ -12,7 +12,7 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
     raw_df['timestamp'] = pd.to_datetime(raw_df['timestamp'])
 
     '''1. Extract only necessary columns'''
-    df = raw_df[['timestamp', invertor_name, 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius']]
+    df = raw_df[['timestamp', invertor_name, 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Wind_Speed']]
     df = df.rename(columns={invertor_name: 'Active_Power'})
 
     '''2. Convert Active Power values less than 0.001 to 0'''
@@ -24,9 +24,9 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
     print(f'{invertor_name} - Correlation with GHR: {correlation}')
 
     # **Skip saving if the correlation is below 0.9**
-    if correlation < 0.9:
-        print(f'Skipping {invertor_name} due to low correlation with GHR.')
-        return  # Skip this inverter
+    # if correlation < 0.9:
+    #     print(f'Skipping {invertor_name} due to low correlation with GHR.')
+    #     return  # Skip this inverter
 
     '''3. Drop days where any column has 2 consecutive NaN values'''
     # Replace empty strings or spaces with NaN
@@ -76,6 +76,7 @@ def merge_raw_data(active_power_path, env_path, irrad_path, meter_path):
     columns_to_keep = [
         'measured_on',
         'ambient_temperature_o_149575',   # Weather_Temperature_Fahrenheit
+        'wind_speed_o_149576',
         'poa_irradiance_o_149574',        # POA_Irradiance
     ]
     # Add inverter columns (inv1 ~ inv24)
@@ -93,6 +94,7 @@ def merge_raw_data(active_power_path, env_path, irrad_path, meter_path):
     rename_dict = {
         'measured_on': 'timestamp',
         'ambient_temperature_o_149575': 'Weather_Temperature_Fahrenheit',
+        'wind_speed_o_149576': 'Wind_Speed',
         'poa_irradiance_o_149574': 'POA_Irradiance',  # Renamed for clarity
     }
 
@@ -165,6 +167,7 @@ def merge_raw_data(active_power_path, env_path, irrad_path, meter_path):
 
     # Replace 'Global_Horizontal_Radiation' with the calculated GHI
     combined_data['Global_Horizontal_Radiation'] = ghi
+    combined_data['Wind_Speed'] *= 0.44704 # mph to m/s
 
     # Reset index
     combined_data.reset_index(inplace=True)
@@ -215,20 +218,26 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    active_power_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/2107_electrical_data.csv')
-    env_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/2107_environment_data.csv')
-    irrad_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/2107_irradiance_data.csv')
-    meter_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/2107_meter_15m_data.csv')
+    active_power_path = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/2107_electrical_data.csv') 
+    env_path = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/2107_environment_data.csv')
+    irrad_path = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/2107_irradiance_data.csv')
+    meter_path = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/2107_meter_15m_data.csv')
+    # active_power_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/2107_electrical_data.csv')
+    # env_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/2107_environment_data.csv')
+    # irrad_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/2107_irradiance_data.csv')
+    # meter_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/2107_meter_15m_data.csv')
     merged_data = merge_raw_data(active_power_path, env_path, irrad_path, meter_path)
 
     invertor_list = [f'inv{i}' for i in range(1, 25)]
 
-    log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/log.txt')
+    log_file_path = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/2107(Arbuckle_California)/log.txt')
+    # log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/log.txt')
     for i, invertor_name in enumerate(invertor_list):
         combine_into_each_invertor(
             invertor_name,
             i,
-            save_dir=os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/preprocessed'),
+            # save_dir=os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/2107(Arbuckle_California)/preprocessed'),
+            save_dir=os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/preprocessed'),
             log_file_path=log_file_path,
             raw_df=merged_data
         )

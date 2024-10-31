@@ -38,6 +38,10 @@ def combine_into_each_site(file_path, index_of_site,
     raw_df = pd.read_csv(file_path, encoding='unicode_escape')
     raw_df['timestamp'] = pd.to_datetime(raw_df['timestamp'])
     init_total_dates = raw_df['timestamp'].dt.date.nunique()
+    # capacity = max(raw_df['Active_Power'])
+    tenth_largest_value = raw_df['Active_Power'].nlargest(10).iloc[-1]
+    capacity = tenth_largest_value
+    # print(capacity)
 
     '''1. 데이터의 맨 처음과 끝을 일 단위로 끊고 불필요한 열 제거'''
     # 데이터 시작 시간을 기준으로 다음날 00:00 이후 데이터 사용
@@ -55,7 +59,8 @@ def combine_into_each_site(file_path, index_of_site,
     
     '''2. AP가 0.001보다 작으면 0으로 변환'''
     df['Active_Power'] = df['Active_Power'].abs()    
-    df.loc[df['Active_Power'] < 0.001, 'Active_Power'] = 0
+    # df.loc[df['Active_Power'] < 0.001, 'Active_Power'] = 0
+    df.loc[df['Active_Power']/capacity < 0.0001, 'Active_Power'] = 0   
 
     '''3. Drop days where any column has 4 consecutive NaN values'''
     # Step 1: Replace empty strings or spaces with NaN
@@ -71,7 +76,7 @@ def combine_into_each_site(file_path, index_of_site,
     
     '''4. AP 값이 있지만 GHR이 있는 날 제거'''
     # Step 1: AP > 0 and GHR = 0
-    rows_to_exclude = (df_cleaned_3['Active_Power'] > 0) & (df_cleaned_3['Global_Horizontal_Radiation'] == 0)
+    rows_to_exclude = ((df_cleaned_3['Active_Power'] > 0) & (df_cleaned_3['Global_Horizontal_Radiation'] == 0)) | (df_cleaned_3['Global_Horizontal_Radiation'] > 2000)| ((df_cleaned_3['Active_Power']/capacity < 0.01/2) & (df_cleaned_3['Global_Horizontal_Radiation'] > 100)) | ((df_cleaned_3['Active_Power']/capacity < 0.2/2) & (df_cleaned_3['Global_Horizontal_Radiation'] > 500))
 
     # Step 2: Find the days (dates) where the conditions are true
     days_to_exclude = df_cleaned_3[rows_to_exclude]['timestamp'].dt.date.unique()
@@ -122,7 +127,8 @@ def combine_into_each_site(file_path, index_of_site,
     df_hourly = df_hourly.dropna(how='all', subset=df.columns[1:])
 
     # 2. AP 값이 0.001보다 작은 경우 0으로 설정
-    df_hourly.loc[df_hourly['Active_Power'] < 0.001, 'Active_Power'] = 0
+    # df_hourly.loc[df_hourly['Active_Power'] < 0.001, 'Active_Power'] = 0
+    df_hourly.loc[df_hourly['Active_Power']/capacity < 0.0001, 'Active_Power'] = 0
 
     # combined_weather_hourly와 병합
     df_hourly = pd.merge(df_hourly, combined_weather_hourly, on='timestamp', how='left')
@@ -208,7 +214,7 @@ if __name__ == '__main__':
     combined_weather_hourly = pd.read_csv(combined_weather_path)
     combined_weather_hourly['timestamp'] = pd.to_datetime(combined_weather_hourly['timestamp'])
 
-    log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/DKASC_AliceSprings/log.txt') # for local
+    log_file_path = os.path.join(project_root, 'data/DKASC_AliceSprings/log.txt') # for local
     # log_file_path = '/ailab_mat/dataset/PV/DKASC_AliceSprings/log.txt'
 
     for i, file_path in enumerate(raw_file_list):

@@ -1,19 +1,14 @@
 import pandas as pd
 import os
 
-# 파일 경로와 리스트 정의 (경로를 직접 지정)
-folder_path = '../../data/Germany_Household_Data/preprocessed'  # CSV 파일들이 있는 폴더 경로
-file_names = [
-    'DE_KN_industrial1_pv_1.csv',
-    'DE_KN_industrial1_pv_2.csv',
-    # 'DE_KN_industrial2_pv.csv',
-    'DE_KN_industrial3_pv_facade.csv',
-    # 'DE_KN_industrial3_pv_roof.csv',
-    'DE_KN_residential1_pv.csv',
-    'DE_KN_residential3_pv.csv',
-    'DE_KN_residential4_pv.csv',
-    'DE_KN_residential6_pv.csv'
-]
+# 폴더 경로 지정
+# folder_path = '../../data/Germany_Household_Data/preprocessed'  # 원하는 폴더 경로로 변경 가능
+# folder_path = '../../data/OEDI/2107(Arbuckle_California)/preprocessed'
+# folder_path = '../../data/OEDI/9069(Georgia)/preprocessed'
+folder_path = '../../data/UK_data/preprocessed'
+
+# 해당 폴더 내 모든 CSV 파일 가져오기
+file_names = sorted([f for f in os.listdir(folder_path) if f.endswith('.csv')])
 
 # 파일별 날짜 개수를 저장할 딕셔너리
 date_counts = {}
@@ -36,9 +31,9 @@ for file_name in file_names:
     # 데이터프레임 리스트에 추가 (날짜만 포함하여 join에 사용)
     dfs.append(df[['timestamp']].copy())
 
-# 각 파일의 날짜 수 출력
+# 파일명을 기준으로 정렬하여 날짜 수 출력
 print("파일별 날짜 수:")
-for file_name, count in date_counts.items():
+for file_name, count in sorted(date_counts.items()):
     print(f"{file_name}: {count}일")
 
 # 여러 데이터프레임을 inner join으로 병합
