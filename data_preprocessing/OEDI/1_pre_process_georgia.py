@@ -10,23 +10,25 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
                            save_dir, log_file_path, raw_df):
     os.makedirs(save_dir, exist_ok=True)
     raw_df['timestamp'] = pd.to_datetime(raw_df['timestamp'])
+    tenth_largest_value = raw_df['Active_Power'].nlargest(10).iloc[-1]
+    capacity = tenth_largest_value
 
     '''1. Extract only necessary columns'''
-    df = raw_df[['timestamp',invertor_name, 'Global_Horizontal_Radiation','Weather_Temperature_Celsius']]
+    df = raw_df[['timestamp',invertor_name, 'Global_Horizontal_Radiation','Weather_Temperature_Celsius', 'Wind_Speed']]
     df = df.rename(columns={invertor_name: 'Active_Power'})
 
     '''2. AP가 0.001보다 작으면 0으로 변환'''
     df['Active_Power'] = df['Active_Power'].abs()    
-    df.loc[df['Active_Power'] < 0.001, 'Active_Power'] = 0
+    df.loc[df['Active_Power']/capacity < 0.0001, 'Active_Power'] = 0  
 
     '''Calculate correlation between Active_Power and GHR'''
     correlation = df[['Active_Power', 'Global_Horizontal_Radiation']].corr().iloc[0, 1]
     print(f'{invertor_name} - Correlation with GHR: {correlation}')
 
-    # **Skip saving if the correlation is below 0.9**
-    if correlation < 0.90:
-        print(f'Skipping {invertor_name} due to low correlation with GHR.')
-        return  # Skip this inverter
+    # # **Skip saving if the correlation is below 0.9**
+    # if correlation < 0.90:
+    #     print(f'Skipping {invertor_name} due to low correlation with GHR.')
+    #     return  # Skip this inverter
 
     '''3. Drop days where any column has 2 consecutive NaN values'''
     # 1시간 단위 데이터이므로 연속된 2개의 Nan 값 존재 시 drop
@@ -124,6 +126,7 @@ def merge_raw_data(active_power_path, env_path, irrad_path, meter_path):
         'measured_on',
         'weather_station_01_ambient_temperature_(sensor_1)_(c)_o_150245',   # Weather_Temperature_Celsius
         'pyranometer_(class_a)_12_ghi_irradiance_(w/m2)_o_150231',  # Global_Horizontal_Radiation
+        'wind_sensor_12b_wind_speed_(m/s)_o_150271'
     ]
     # 인버터 열 추가 (inv1 ~ inv40)
     for i in range(1, 41):
@@ -137,6 +140,7 @@ def merge_raw_data(active_power_path, env_path, irrad_path, meter_path):
         'measured_on': 'timestamp',
         'weather_station_01_ambient_temperature_(sensor_1)_(c)_o_150245': 'Weather_Temperature_Celsius',
         'pyranometer_(class_a)_12_ghi_irradiance_(w/m2)_o_150231': 'Global_Horizontal_Radiation',
+        'wind_sensor_12b_wind_speed_(m/s)_o_150271': 'Wind_Speed'
     }
 
     # 인버터 열 이름 변경 추가
@@ -203,21 +207,27 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    active_power_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_electrical_ac.csv')
-    env_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_environment_data.csv')
-    irrad_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_irradiance_data.csv')
-    meter_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_meter_data.csv')
+    # active_power_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_electrical_ac.csv')
+    # env_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_environment_data.csv')
+    # irrad_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_irradiance_data.csv')
+    # meter_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/9069_meter_data.csv')
+    active_power_path = os.path.join(project_root, 'data/OEDI/9069(Georgia)/9069_electrical_ac.csv')
+    env_path = os.path.join(project_root, 'data/OEDI/9069(Georgia)/9069_environment_data.csv')
+    irrad_path = os.path.join(project_root, 'data/OEDI/9069(Georgia)/9069_irradiance_data.csv')
+    meter_path = os.path.join(project_root, 'data/OEDI/9069(Georgia)/9069_meter_data.csv')
     merged_data = merge_raw_data(active_power_path, env_path, irrad_path, meter_path)
 
     # site_list = ['YMCA', 'Maple Drive East', 'Forest Road', 'Elm Crescent','Easthill Road']
     invertor_list = [f'inv{i}' for i in range(1,41)]
 
-    log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/log.txt')
+    # log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/log.txt')
+    log_file_path = os.path.join(project_root, 'data/OEDI/9069(Georgia)/log.txt')
     for i, invertor_name in enumerate(invertor_list):
         combine_into_each_invertor(
             invertor_name, 
             i, 
-            save_dir=os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/preprocessed'),
+            # save_dir=os.path.join(project_root, '/ailab_mat/dataset/PV/OEDI/9069(Georgia)/preprocessed'),
+            save_dir=os.path.join(project_root, 'data/OEDI/9069(Georgia)/preprocessed'),
             log_file_path=log_file_path,
             raw_df= merged_data
         )

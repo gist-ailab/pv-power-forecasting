@@ -31,12 +31,18 @@ def combine_humidity_data(raw_weather_list, save_path):
     combined_weather_hourly.to_csv(save_path, index=False)
 
 def combine_into_each_site(file_path, index_of_site,
-                           save_dir, log_file_path, combined_weather_hourly):
+                           save_dir, log_file_path, combined_weather_hourly,capacity_dict):
     os.makedirs(save_dir, exist_ok=True)
     file_name = file_path.split('/')[-1]
+    print(file_name)
     raw_df = pd.read_csv(file_path, encoding='unicode_escape')
     raw_df['timestamp'] = pd.to_datetime(raw_df['timestamp'])
     init_total_dates = raw_df['timestamp'].dt.date.nunique()
+    # capacity = capacity_dict[file_name.split(".")[0]]
+    # capacity = max(raw_df['Active_Power'])
+    tenth_largest_value = raw_df['Active_Power'].nlargest(10).iloc[-1]
+    capacity = tenth_largest_value
+    print(capacity)
 
 
     '''1. 데이터의 맨 처음과 끝을 일 단위로 끊고 불필요한 열 제거'''
@@ -54,9 +60,10 @@ def combine_into_each_site(file_path, index_of_site,
                         #  'Weather_Relative_Humidity'] 1시간 단위로 변환후 추가
     df = raw_df.loc[:, ['timestamp'] + necessary_columns]
     
-    '''2. AP가 0.001보다 작으면 0으로 변환'''
+    '''2. AP가 0.001보다 작으면 0으로 변환, GHR 음수이면 0으로 변환'''
     df['Active_Power'] = df['Active_Power'].abs()    
-    df.loc[df['Active_Power'] < 0.001, 'Active_Power'] = 0
+    df.loc[df['Active_Power']/capacity < 0.0001, 'Active_Power'] = 0   
+    # df.loc[df['Global_Horizontal_Radiation'] < 0, 'Global_Horizontal_Radiation'] = 0
 
     '''3. Drop days where any column has 4 consecutive NaN values'''
     # Step 1: Replace empty strings or spaces with NaN
@@ -72,7 +79,7 @@ def combine_into_each_site(file_path, index_of_site,
     
     '''4. AP 값이 있지만 GHR이 있는 날, GHR 값이 과하게 큰 날 제거'''
     # Step 1: AP > 0 and GHR = 0
-    rows_to_exclude = ((df_cleaned_3['Active_Power'] > 0) & (df_cleaned_3['Global_Horizontal_Radiation'] == 0)) | (df_cleaned_3['Global_Horizontal_Radiation'] > 2000)
+    rows_to_exclude = ((df_cleaned_3['Active_Power'] > 0) & (df_cleaned_3['Global_Horizontal_Radiation'] == 0)) | (df_cleaned_3['Global_Horizontal_Radiation'] > 2000)| ((df_cleaned_3['Active_Power']/capacity < 0.01) & (df_cleaned_3['Global_Horizontal_Radiation'] > 100)) | ((df_cleaned_3['Active_Power']/capacity < 0.2) & (df_cleaned_3['Global_Horizontal_Radiation'] > 500))
 
     # Step 2: Find the days (dates) where the conditions are true
     days_to_exclude = df_cleaned_3[rows_to_exclude]['timestamp'].dt.date.unique()
@@ -123,7 +130,7 @@ def combine_into_each_site(file_path, index_of_site,
     df_hourly = df_hourly.dropna(how='all', subset=df.columns[1:])
 
     # 2. AP 값이 0.001보다 작은 경우 0으로 설정
-    df_hourly.loc[df_hourly['Active_Power'] < 0.001, 'Active_Power'] = 0
+    df_hourly.loc[df_hourly['Active_Power']/capacity < 0.0001, 'Active_Power'] = 0
 
     # combined_weather_hourly와 병합
     df_hourly = pd.merge(df_hourly, combined_weather_hourly, on='timestamp', how='left')
@@ -205,6 +212,11 @@ if __name__ == '__main__':
     raw_weather_list = [os.path.join(raw_weather_data_dir, _) for _ in os.listdir(raw_weather_data_dir)]
     raw_weather_list.sort()
 
+    meta_data = pd.read_csv(os.path.join(project_root, 'data/DKASC_Yulara/dkasc_sites.csv'))
+    capacity_dict = meta_data.set_index('Site')['Active_Power'].to_dict()
+
+
+
     # combined_weather.csv를 저장할 경로 설정
     combined_weather_path = os.path.join(project_root, '/ailab_mat/dataset/PV/DKASC_Yulara/combined_weather.csv')
     # wind speed 데이터를 합치고 저장합니다.
@@ -220,5 +232,5 @@ if __name__ == '__main__':
         combine_into_each_site(file_path, i,
                                os.path.join(project_root, '/ailab_mat/dataset/PV/DKASC_Yulara/converted'),  # for local
                             #    '/ailab_mat/dataset/PV/DKASC_AliceSprings/converted',
-                               log_file_path, combined_weather_hourly)
+                               log_file_path, combined_weather_hourly,capacity_dict)
         # Weather_Relative_Humidity

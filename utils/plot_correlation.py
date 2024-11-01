@@ -12,8 +12,13 @@ project_root = os.path.dirname(os.path.dirname(current_file_path))
 
 # Each sites' data directory
 # data_dir = os.path.join(project_root, 'data/GIST_dataset/converted')
-# data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings')
-data_dir = os.path.join(project_root, 'data/Miryang/PV_merged')
+data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings/converted')
+# data_dir = os.path.join(project_root, 'data/DKASC_Yulara/converted')
+# data_dir = os.path.join(project_root, 'data/Miryang/PV_merged')
+# data_dir = os.path.join(project_root, 'data/Germany_Household_Data/preprocessed')
+# data_dir = os.path.join(project_root, 'data/UK_data/preprocessed')
+# data_dir = os.path.join(project_root, 'data/OEDI/9069(Georgia)/preprocessed')
+# data_dir = os.path.join(project_root, 'data/OEDI/9069(Georgia)/preprocessed')
 data_list = os.listdir(data_dir)
 data_list = [file for file in data_list if file.endswith('.csv')]
 
@@ -23,7 +28,7 @@ for file in tqdm(data_list, desc='Loading data'):
     data_path = os.path.join(data_dir, file)
     df = pd.read_csv(data_path)
     df.drop(columns=['timestamp'], inplace=True)
-    df = df[df['Global_Horizontal_Radiation'] > 0].dropna()
+    # df = df[df['Global_Horizontal_Radiation'] > 0].dropna()
     # Filter out rows where Active_Power is negative
     df = df[df['Active_Power'] >= 0]
     # Normalize Active_Power by dividing by the maximum value for each site
@@ -38,6 +43,9 @@ plt.figure(figsize=(18, 12))
 
 # List of features to plot
 features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed']
+# features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+# features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Wind_Speed']
+
 colors = ['blue', 'green', 'red', 'purple']
 titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
           'Active Power [kW] vs Weather Temperature [℃]',
@@ -57,3 +65,10 @@ for i, feature in enumerate(features):
 
 plt.tight_layout()
 plt.show()
+
+# Save the plot as an image file (e.g., PNG format)
+data_name = "Alice"
+plot_path = os.path.join(project_root, f'visualizations/{data_name}_feature_vs_power_plot.png')
+plt.savefig(plot_path)
+
+print(f"Plot saved at: {plot_path}")
