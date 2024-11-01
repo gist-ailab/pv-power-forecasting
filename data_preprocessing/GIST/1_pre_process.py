@@ -5,17 +5,30 @@ import pandas as pd
 from tqdm import tqdm
 from copy import deepcopy
 
+# 추가: calculate_site_capacity 함수 정의
+def calculate_site_capacity(capacity_csv_dir, kor_name):
+    # Load the CSV file corresponding to the site
+    file_path = os.path.join(capacity_csv_dir, f'{kor_name}.csv')
+    raw_df = pd.read_csv(file_path)
+    
+    # Ensure Active_Power is numeric and calculate the 10th largest value as capacity
+    raw_df['Active_Power'] = pd.to_numeric(raw_df['Active_Power'], errors='coerce')
+    tenth_largest_value = raw_df['Active_Power'].nlargest(10).iloc[-1]
+    return tenth_largest_value
 
 def combine_into_each_site(file_list, index_of_site,
                            kor_name, eng_name,
                            weather_data,
-                           save_dir, log_file_path):
-    preprocessed_df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed'])
+                           save_dir, log_file_path, capacity_csv_dir):
+    preprocessed_df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Weend_Speed'])
     
     weather_info = pd.read_csv(weather_data, encoding='unicode_escape')
     weather_info.columns = ['datetime', 'temperature', 'wind_speed', 'precipitation', 'humidity']
     weather_info['datetime'] = pd.to_datetime(weather_info['datetime'])
     # print(weather_info)
+
+    # 추가: 각 사이트별 capacity 계산
+    site_capacity = calculate_site_capacity(capacity_csv_dir, kor_name)
 
     # Define file paths for storing outliers
     env_columns = ['datetime', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Direct_Normal_Irradiance', 'Module_Temperature_Celsius', ]
@@ -40,7 +53,7 @@ def combine_into_each_site(file_list, index_of_site,
         daily_pv_data = daily_pv_data[columns_to_keep]
 
         # 결측치 처리:'-' 또는 빈 값을 NaN으로 변환
-        daily_pv_data = daily_pv_data.map(lambda x: np.nan if x in ['-', '', ' '] else x)
+        daily_pv_data = daily_pv_data.applymap(lambda x: np.nan if x in ['-', '', ' '] else x)
 
         # get date
         pv_date = file.split('_')[-2]
@@ -68,7 +81,7 @@ def combine_into_each_site(file_list, index_of_site,
 
         filtered_df = create_combined_filtered_data(preprocessed_df, daily_pv_data, daily_weather_data)
 
-        filtered_df = delete_outlier_data(filtered_df, save_dir, kor_name)
+        filtered_df = delete_outlier_data(filtered_df, save_dir, kor_name, site_capacity)
 
         # DataFrame 결합 (concat)
         if preprocessed_df.empty:
@@ -137,7 +150,7 @@ def create_combined_filtered_data(preprocessed_df, daily_pv_data, daily_weather_
     return filtered_df
 
 
-def delete_outlier_data(df, save_dir, kor_name):
+def delete_outlier_data(df, save_dir, kor_name, capacity):
     log_path = os.path.join(save_dir, 'outlire_data_log')
     os.makedirs(log_path, exist_ok=True)
     ### 1. Detect rows with the same GHI value 3 times in a row
@@ -200,6 +213,14 @@ def delete_outlier_data(df, save_dir, kor_name):
                                            mode='a', header=False, index=False)
     df_cleaned['Active_Power'] = df_cleaned['Active_Power'].abs()   # Convert negative Active Power to positive
 
+    # 추가: outlier 조건 추가 및 적용
+    rows_to_exclude = ((df_cleaned['Active_Power'] > 0) & (df_cleaned['Global_Horizontal_Radiation'] == 0)) | \
+                      (df_cleaned['Global_Horizontal_Radiation'] > 2000) | \
+                      ((df_cleaned['Active_Power']/capacity < 0.01/2) & (df_cleaned['Global_Horizontal_Radiation'] > 100)) | \
+                      ((df_cleaned['Active_Power']/capacity < 0.2/2) & (df_cleaned['Global_Horizontal_Radiation'] > 500))
+
+    # Exclude rows based on the condition
+    df_cleaned = df_cleaned[~rows_to_exclude]
     return df_cleaned
 
 
@@ -317,7 +338,9 @@ if __name__ == '__main__':
     # pv_file_list.sort()
 
     # Define the path to save the combined CSV file
-    weather_data = os.path.join(project_root, 'data/GIST_dataset/GIST_weather_data.csv')
+    # weather_data = os.path.join(project_root, 'data/GIST_dataset/GIST_weather_data.csv')
+    weather_data = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/GIST_weather_data.csv')
+    
     if not os.path.exists(weather_data):
         create_combined_weather_csv(weather_data, project_root)
 
@@ -326,7 +349,9 @@ if __name__ == '__main__':
 
     # convert_excel_to_hourly_csv(pv_file_list)
 
-    raw_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')
+    # raw_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')
+    raw_csv_data_dir = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/daily_PV_csv')
+
     raw_file_list = [os.path.join(raw_csv_data_dir, _) for _ in os.listdir(raw_csv_data_dir)]
     raw_file_list.sort()
 
@@ -349,11 +374,18 @@ if __name__ == '__main__':
         '자연과학동': 'E8_Natural-Science-Bldg'
     }
 
-    log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
+    # log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
+    log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/log.txt')
+    # capacity_csv_dir = os.path.join(project_root, 'data/GIST_dataset/csv')  # 추가: capacity CSV 디렉토리 지정
+    capacity_csv_dir = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/csv')  # 추가: capacity CSV 디렉토리 지정
+
     for i, (kor_name, eng_name) in enumerate(site_dict.items()):
         combine_into_each_site(file_list=raw_file_list,
                                index_of_site=i,
                                kor_name=kor_name, eng_name=eng_name,
                                weather_data=weather_data,
-                               save_dir=os.path.join(project_root, 'data/GIST_dataset/converted'),
-                               log_file_path=log_file_path)
+                            #    save_dir=os.path.join(project_root, 'data/GIST_dataset/converted'),
+                               save_dir=os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/converted'),
+
+                               log_file_path=log_file_path,
+                               capacity_csv_dir=capacity_csv_dir)

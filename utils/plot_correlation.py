@@ -11,8 +11,8 @@ current_file_path = os.path.abspath(__file__)
 project_root = os.path.dirname(os.path.dirname(current_file_path))
 
 # Each sites' data directory
-# data_dir = os.path.join(project_root, 'data/GIST_dataset/converted')
-data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings/converted')
+data_dir = os.path.join(project_root, 'data/GIST_dataset/converted')
+#data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings/converted')
 # data_dir = os.path.join(project_root, 'data/DKASC_Yulara/converted')
 # data_dir = os.path.join(project_root, 'data/Miryang/PV_merged')
 # data_dir = os.path.join(project_root, 'data/Germany_Household_Data/preprocessed')
@@ -67,7 +67,7 @@ plt.tight_layout()
 plt.show()
 
 # Save the plot as an image file (e.g., PNG format)
-data_name = "Alice"
+data_name = "GIST"
 plot_path = os.path.join(project_root, f'visualizations/{data_name}_feature_vs_power_plot.png')
 plt.savefig(plot_path)
 
