@@ -9,10 +9,10 @@ if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-seq_len=336
+seq_len=512
 label_len=0
 
-root_path_name=/PV/GIST_dataset/converted
+root_path_name=/ailab_mat/dataset/PV/GIST_dataset/converted
 data_path_name=type=all
 data_name=GIST
 random_seed=2024
@@ -20,14 +20,14 @@ random_seed=2024
 
 
 
-for pred_len in 24 #1 2 4 8 16
+for pred_len in 16 #1 2 4 8 16
 do
     python -u run_longExp.py \
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
-      --is_training 0 \
-      --checkpoints  /home/pv/code/PatchTST/checkpoints/24101614_PatchTST_DKASC_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth \
+      --is_inference 1 \
+      --checkpoints  "/ailab_mat/dataset/PV/checkpoints/24102211_PatchTST_DKASC_ftMS_sl512_ll0_pl16_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth" \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

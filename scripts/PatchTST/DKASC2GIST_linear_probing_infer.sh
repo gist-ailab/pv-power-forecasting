@@ -3,13 +3,13 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Linear_Probing_DKASC2GIST_$model_name"
+exp_id="${DATE}_Linear_Probing_infer_DKASC2GIST_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-seq_len=256
+seq_len=512
 label_len=0
 
 root_path_name=/ailab_mat/dataset/PV/GIST_dataset/converted
@@ -20,14 +20,14 @@ random_seed=2024
 
 
 
-for pred_len in 24 #1 2 4 8 16
+for pred_len in 16 #1 2 4 8 16
 do
     python -u run_longExp.py \
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
-      --is_training 0 \
-      --checkpoints /SSDe/sowon_choi/PatchTST/checkpoints/linear_probe/debug/24102115_PatchTST_GIST_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth \
+      --is_inference 1 \
+      --checkpoints /home/seongho_bak/Projects/PatchTST/checkpoints/linear_probe/linear_probe_24110114_PatchTST_GIST_ftMS_sl512_ll0_pl16_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

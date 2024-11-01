@@ -51,7 +51,7 @@ class Exp_Finetune(Exp_Main):
             model = nn.DataParallel(model, device_ids=self.args.device_ids)
         return model
 
-    def fully_finetune(self, setting, exp_id, resume):
+    def fully_finetune(self, setting, resume):
         
         def count_parameters(model):
             return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -91,7 +91,7 @@ class Exp_Finetune(Exp_Main):
         
        
         # path = os.path.join('./checkpoints', exp_id, setting)
-        path = os.path.join('./checkpoints/fully_finetune', exp_id, setting)
+        path = os.path.join('./checkpoints/fully_finetune', setting)
 
 
         if not os.path.exists(path):
@@ -232,7 +232,7 @@ class Exp_Finetune(Exp_Main):
 
         return self.model
     
-    def linear_probe(self, setting, exp_id, resume):
+    def linear_probe(self, setting, resume):
         def count_parameters(model):
             return sum(p.numel() for p in model.parameters() if p.requires_grad)
         count = count_parameters(self.model)
@@ -270,7 +270,7 @@ class Exp_Finetune(Exp_Main):
         test_data, test_loader = self._get_data(flag='test')
 
         # path = os.path.join('./checkpoints', exp_id, setting)
-        path = os.path.join('./checkpoints/linear_probe',  exp_id, setting)
+        path = os.path.join('./checkpoints/linear_probe', setting)
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -512,7 +512,7 @@ class Exp_Finetune(Exp_Main):
         test_data, test_loader = self._get_data(flag='test')
         
         if test:
-            print('loading model')
+            print( f'loading model: {src_checkpoints}')
             if src_checkpoints != None:
                 self.model.load_state_dict(torch.load(src_checkpoints))#os.path.join('./checkpoints/', exp_id, setting, 'checkpoint.pth')))
             else:
@@ -653,18 +653,18 @@ class Exp_Finetune(Exp_Main):
         os.makedirs(folder_path, exist_ok=True)
         
         # calculate metrics with only generated power
-        mae, mse, rmse = metric(pred_np, trues_np)
-        mae_normalized, mse_normalized, rmse_normalized = metric(pred_normalized_np, true_normalized_np)
-        print('MSE:{}, MAE:{}, RMSE:{}'.format(mse, mae, rmse))
-        print('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}'.format(mse_normalized, mae_normalized, rmse_normalized))
+        mae, mse, rmse, mape = metric(pred_np, trues_np)
+        mae_normalized, mse_normalized, rmse_normalized, mape_normalized = metric(pred_normalized_np, true_normalized_np)
+        print('MSE:{}, MAE:{}, RMSE:{}, MAPE: {}'.format(mse, mae, rmse, mape))
+        print('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}, MAPE_normalized: {}'.format(mse_normalized, mae_normalized, rmse_normalized, mape_normalized))
         
         txt_save_path = os.path.join(folder_path,
                                      f"{self.args.seq_len}_{self.args.pred_len}_result.txt")
         f = open(txt_save_path, 'a')
         f.write(setting + "  \n")
-        f.write('MSE:{}, MAE:{}, RMSE:{}'.format(mse, mae, rmse))
+        f.write('MSE:{}, MAE:{}, RMSE:{}, MAPE: {}'.format(mse, mae, rmse, mape))
         f.write('\n')
-        f.write('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}'.format(mse_normalized, mae_normalized, rmse_normalized))
+        f.write('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}, MAPE_normalized: {}'.format(mse_normalized, mae_normalized, rmse_normalized, mape_normalized))
         f.write('\n')
         f.write('\n')
         f.close()

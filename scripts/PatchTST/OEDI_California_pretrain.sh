@@ -11,7 +11,7 @@ fi
 
 label_len=0
 # root_path_name=/home/intern/doyoon/innovation/PatchTST/data/OEDI/2107\(Arbuckle_California\)/preprocessed
-root_path_name=/ailab_mat/dataset/PV/OEDI/2107\(Arbuckle_California\)/preprocessed
+root_path_name=/ailab_mat/dataset/PV/OEDI/2107\(Arbuckle_California\)/converted
 data_path_name='type=all'
 data_name=OEDI_California
 random_seed=2024

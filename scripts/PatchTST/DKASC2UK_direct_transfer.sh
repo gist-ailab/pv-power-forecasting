@@ -3,33 +3,31 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Linear_Probing_GIST2DKASC_$model_name"
+exp_id="${DATE}_Direct_Transfer_DKASC2UK_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-seq_len=336
+seq_len=512
 label_len=0
 
-root_path_name=/SSDa/sowon_choi/DKASC_AliceSprings_1h
-data_path_name=ALL
-data_name=DKASC
+root_path_name=/ailab_mat/dataset/PV/UK_data/converted
+data_path_name=type=all
+data_name=UK
 random_seed=2024
 
 
-# remove_cols="Wind_Speed Performance_Ratio" 
 
-export CUDA_VISIBLE_DEVICES=3
-for pred_len in 24 #1 2 4 8 16
+
+for pred_len in 16 #1 2 4 8 16
 do
-    python -u run_finetune.py \
+    python -u run_longExp.py \
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
-      --is_training 1 \
-      --is_linear_probe 1 \
-      --checkpoints /SSDa/sowon_choi/PatchTST/checkpoints/24101104_PatchTST_GIST_ftMS_sl336_ll0_pl24_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth\
+      --is_inference 1 \
+      --checkpoints "/ailab_mat/dataset/PV/checkpoints/24102211_PatchTST_DKASC_ftMS_sl512_ll0_pl16_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"\
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

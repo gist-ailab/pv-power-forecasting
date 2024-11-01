@@ -15,7 +15,7 @@ if __name__ == '__main__':
     parser.add_argument('--random_seed', type=int, default=2021, help='random seed')
 
     # basic config
-    parser.add_argument('--is_pretraining', type=int, default=1, help='status')
+    parser.add_argument('--is_pretraining', type=int, default=0, help='status')
     parser.add_argument('--is_fully_finetune', type=int, default=0, help='status')
     parser.add_argument('--is_linear_probe', type=int, default=0, help='status')
 

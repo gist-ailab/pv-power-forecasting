@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Linear_probing_DKASC2GIST_$model_name"
+exp_id="${DATE}_Linear_probing_DKASC2German_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -12,9 +12,9 @@ fi
 seq_len=512
 label_len=0
 
-root_path_name=/ailab_mat/dataset/PV/GIST_dataset/converted
+root_path_name=/ailab_mat/dataset/PV/Germany_Household_Data/converted
 data_path_name='type=all'
-data_name=GIST
+data_name=German
 random_seed=2024
 
 pred_len=(16) #  8 4 2 1)

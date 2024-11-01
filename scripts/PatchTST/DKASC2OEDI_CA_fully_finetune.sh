@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Linear_probing_DKASC2GIST_$model_name"
+exp_id="${DATE}_Fully_finetune_DKASC2OEDI_CA_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -12,21 +12,21 @@ fi
 seq_len=512
 label_len=0
 
-root_path_name=/ailab_mat/dataset/PV/GIST_dataset/converted
+root_path_name=/ailab_mat/dataset/PV/OEDI/2107\(Arbuckle_California\)/converted
 data_path_name='type=all'
-data_name=GIST
+data_name=OEDI_California
 random_seed=2024
 
-pred_len=(16) #  8 4 2 1)
+pred_len=(16)
 checkponits=(
-    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl16_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth")
-    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl8_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
-    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl4_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
-    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl2_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
-    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl1_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl16_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl8_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl4_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl2_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl1_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+)
 
-
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=4
 for i in "${!pred_len[@]}"; do
     pl=${pred_len[$i]}
     ckpt=${checkpoints[$i]}
@@ -35,7 +35,7 @@ for i in "${!pred_len[@]}"; do
       --gpu 0 \
       --use_amp \
       --random_seed $random_seed \
-      --is_linear_probe 1 \
+      --is_fully_finetune 1 \
       --checkpoints "/ailab_mat/dataset/PV/checkpoints/24102211_PatchTST_DKASC_ftMS_sl512_ll0_pl16_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth" \
       --root_path $root_path_name \
       --data_path $data_path_name \
@@ -60,5 +60,5 @@ for i in "${!pred_len[@]}"; do
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --itr 1 --batch_size 512 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
+      --itr 1 --batch_size 512 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pl.log
 done

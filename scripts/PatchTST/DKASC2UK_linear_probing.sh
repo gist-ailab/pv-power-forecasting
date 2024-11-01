@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Linear_probing_DKASC2GIST_$model_name"
+exp_id="${DATE}_Linear_Probing_DKASC2UK_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -12,21 +12,21 @@ fi
 seq_len=512
 label_len=0
 
-root_path_name=/ailab_mat/dataset/PV/GIST_dataset/converted
+root_path_name=/ailab_mat/dataset/PV/UK_data/converted
 data_path_name='type=all'
-data_name=GIST
+data_name=UK
 random_seed=2024
 
-pred_len=(16) #  8 4 2 1)
+pred_len=(16)
 checkponits=(
-    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl16_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth")
-    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl8_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
-    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl4_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
-    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl2_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
-    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl1_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_UK_ftMS_sl256_ll0_pl16_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_UK_ftMS_sl256_ll0_pl8_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_UK_ftMS_sl256_ll0_pl4_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_UK_ftMS_sl256_ll0_pl2_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_UK_ftMS_sl256_ll0_pl1_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+)
 
-
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 for i in "${!pred_len[@]}"; do
     pl=${pred_len[$i]}
     ckpt=${checkpoints[$i]}

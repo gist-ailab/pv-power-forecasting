@@ -10,7 +10,7 @@ def combine_into_each_site(file_list, index_of_site,
                            kor_name, eng_name,
                            weather_data,
                            save_dir, log_file_path):
-    preprocessed_df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Weend_Speed'])
+    preprocessed_df = pd.DataFrame(columns=['date', 'time', 'Active_Power', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed'])
     
     weather_info = pd.read_csv(weather_data, encoding='unicode_escape')
     weather_info.columns = ['datetime', 'temperature', 'wind_speed', 'precipitation', 'humidity']
