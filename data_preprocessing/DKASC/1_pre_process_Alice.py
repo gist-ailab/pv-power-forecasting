@@ -130,18 +130,29 @@ def combine_into_each_site(file_path, index_of_site,
     # df_hourly.loc[df_hourly['Active_Power'] < 0.001, 'Active_Power'] = 0
     df_hourly.loc[df_hourly['Active_Power']/capacity < 0.0001, 'Active_Power'] = 0
 
+    # # combined_weather_hourly와 병합
+    # df_hourly = pd.merge(df_hourly, combined_weather_hourly, on='timestamp', how='left')
     # combined_weather_hourly와 병합
-    df_hourly = pd.merge(df_hourly, combined_weather_hourly, on='timestamp', how='left')
 
+    df_hourly = pd.merge(df_hourly, combined_weather_hourly, on='timestamp', how='left')
+<<<<<<< Updated upstream
+
+=======
+>>>>>>> Stashed changes
     consecutive_nan_mask = detect_consecutive_nans(df_hourly, max_consecutive=2)
     # Remove entire days where 2 consecutive NaNs were found
     days_with_2_nan = df_hourly[consecutive_nan_mask]['timestamp'].dt.date.unique()
     df_hourly = df_hourly[~df_hourly['timestamp'].dt.date.isin(days_with_2_nan)]
     df_hourly = df_hourly.interpolate(method='linear', limit=1)
+<<<<<<< Updated upstream
 
     remaining_nan_days = df_hourly[df_hourly.isnull().any(axis=1)]['timestamp'].dt.date.unique()
     df_hourly = df_hourly[~df_hourly['timestamp'].dt.date.isin(remaining_nan_days)]
     
+=======
+    remaining_nan_days = df_hourly[df_hourly.isnull().any(axis=1)]['timestamp'].dt.date.unique()
+    df_hourly = df_hourly[~df_hourly['timestamp'].dt.date.isin(remaining_nan_days)]
+>>>>>>> Stashed changes
     # 4. 날짜별로 그룹화하고 margin 조절
     df_cleaned_6 = df_hourly.groupby(df_hourly['timestamp'].dt.date).apply(adjust_daily_margin)
     df_cleaned_6 = df_cleaned_6.reset_index(drop=True)
@@ -204,18 +215,30 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
+<<<<<<< Updated upstream
     raw_csv_data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings/raw')  # for local
+=======
+    raw_csv_data_dir = os.path.join(project_root, '/PV/DKASC_AliceSprings/raw')  # for local
+>>>>>>> Stashed changes
     # raw_csv_data_dir = '/ailab_mat/dataset/PV/DKASC_AliceSprings/raw'
     raw_file_list = [os.path.join(raw_csv_data_dir, _) for _ in os.listdir(raw_csv_data_dir)]
     raw_file_list.sort()
 
+<<<<<<< Updated upstream
     raw_weather_data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings/weather_data')  # for local
+=======
+    raw_weather_data_dir = os.path.join(project_root, '/PV/DKASC_AliceSprings/weather_data')  # for local
+>>>>>>> Stashed changes
     # raw_csv_data_dir = '/ailab_mat/dataset/PV/DKASC_AliceSprings/raw'
     raw_weather_list = [os.path.join(raw_weather_data_dir, _) for _ in os.listdir(raw_weather_data_dir)]
     raw_weather_list.sort()
 
     # combined_weather.csv를 저장할 경로 설정
+<<<<<<< Updated upstream
     combined_weather_path = os.path.join(project_root, 'data/DKASC_AliceSprings/combined_weather.csv')
+=======
+    combined_weather_path = os.path.join(project_root, '/PV/DKASC_AliceSprings/combined_weather.csv')
+>>>>>>> Stashed changes
     # wind speed 데이터를 합치고 저장합니다.
     combine_wind_speed_data(raw_weather_list, combined_weather_path)
 
@@ -223,11 +246,15 @@ if __name__ == '__main__':
     combined_weather_hourly = pd.read_csv(combined_weather_path)
     combined_weather_hourly['timestamp'] = pd.to_datetime(combined_weather_hourly['timestamp'])
 
-    log_file_path = os.path.join(project_root, 'data/DKASC_AliceSprings/log.txt') # for local
+    log_file_path = os.path.join(project_root, '/PV/DKASC_AliceSprings/log.txt') # for local
     # log_file_path = '/ailab_mat/dataset/PV/DKASC_AliceSprings/log.txt'
 
     for i, file_path in enumerate(raw_file_list):
         combine_into_each_site(file_path, i,
+<<<<<<< Updated upstream
                                os.path.join(project_root, 'data/DKASC_AliceSprings/converted'),  # for local
+=======
+                               os.path.join(project_root, '/PV/DKASC_AliceSprings/converted'),  # for local
+>>>>>>> Stashed changes
                             #    '/ailab_mat/dataset/PV/DKASC_AliceSprings/converted',
                                log_file_path, combined_weather_hourly)

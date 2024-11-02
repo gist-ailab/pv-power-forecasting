@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import wandb
 import matplotlib.pyplot as plt
 import numpy as np
@@ -5,18 +9,18 @@ import pandas as pd
 import random
 import argparse
 import torch
-import os
 
-from models import PatchTST
+from models.PatchTST import Model
+from utils.tools import StoreDictKeyPair
 from data_provider.data_factory import data_provider
 
 
-def _acquire_device(self):
-    if self.args.use_gpu:
+def _acquire_device(args):
+    if args.use_gpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(
-            self.args.gpu) if not self.args.use_multi_gpu else self.args.devices
-        device = torch.device('cuda:{}'.format(self.args.gpu))
-        print('Use GPU: cuda:{}'.format(self.args.gpu))
+            args.gpu) if not args.use_multi_gpu else args.devices
+        device = torch.device('cuda:{}'.format(args.gpu))
+        print('Use GPU: cuda:{}'.format(args.gpu))
     else:
         device = torch.device('cpu')
         print('Use CPU')
@@ -36,13 +40,13 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default='PatchTST',
                         help='model name, options: [Autoformer, Informer, Transformer, DLinear, NLinear, Linear, PatchTST, PatchCDTST, Naive_repeat, Arima]')
     # data loader
-    parser.add_argument('--data', type=str, default='DKASC', help='dataset type. ex: DKASC, GIST')
-    parser.add_argument('--root_path', type=str, default='./data/DKASC_AliceSprings/converted', help='root path of the source domain data file')
-    parser.add_argument('--data_path', type=str, action=StoreDictKeyPair, metavar="KEY1=VAL1,KEY2=VAL2...", default={"type":"all"},
+    parser.add_argument('--data', type=str, default='DKASC_AliceSprings', help='dataset type. ex: DKASC, GIST')
+    parser.add_argument('--root_path', type=str, default='/PV/DKASC_AliceSprings/converted', help='root path of the source domain data file')
+    parser.add_argument('--data_path', type=str, action=StoreDictKeyPair, metavar="KEY1=VAL1,KEY2=VAL2...", default={"type":"debug","train":"79-Site_DKA-M6_A-Phase.csv","val":"100-Site_DKA-M1_A-Phase.csv","test":"85-Site_DKA-M7_A-Phase.csv"},
                         help='In Debuggig, "type=debug,train=79-Site_DKA-M6_A-Phase.csv,val=100-Site_DKA-M1_A-Phase.csv,test=85-Site_DKA-M7_A-Phase.csv"')
     # parser.add_argument('--root_path', type=str, default='./data/GIST_dataset/', help='root path of the source domain data file')
     # parser.add_argument('--data_path', type=str, default='GIST_sisuldong.csv', help='source domain data file')
-    parser.add_argument('--scaler', type=str, default='MinMiaxScaler', help='StandardScaler, MinMaxScaler')
+    parser.add_argument('--scaler', type=str, default='StandardScaler', help='StandardScaler, MinMaxScaler')
     parser.add_argument('--features', type=str, default='MS',
                         help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
     parser.add_argument('--target', type=str, default='Active_Power', help='target feature in S or MS task')
@@ -51,8 +55,8 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
 
     # forecasting task
-    parser.add_argument('--seq_len', type=int, default=336, help='input sequence length')
-    parser.add_argument('--label_len', type=int, default=48, help='start token length') # decoder 있는 모델에서 사용
+    parser.add_argument('--seq_len', type=int, default=256, help='input sequence length')
+    parser.add_argument('--label_len', type=int, default=0, help='start token length') # decoder 있는 모델에서 사용
     parser.add_argument('--pred_len', type=int, default=16, help='prediction sequence length')
 
 
@@ -70,18 +74,18 @@ if __name__ == '__main__':
     parser.add_argument('--subtract_last', type=int, default=0, help='0: subtract mean; 1: subtract last')
     parser.add_argument('--decomposition', type=int, default=0, help='decomposition; True 1 False 0')
     parser.add_argument('--kernel_size', type=int, default=25, help='decomposition-kernel')
-    parser.add_argument('--individual', type=int, default=0, help='individual head; True 1 False 0')
+    parser.add_argument('--individual', type=int, default=1, help='individual head; True 1 False 0')
 
     # Formers 
     parser.add_argument('--embed_type', type=int, default=0, help='0: default 1: value embedding + temporal embedding + positional embedding 2: value embedding + temporal embedding 3: value embedding + positional embedding 4: value embedding')
     parser.add_argument('--enc_in', type=int, default=5, help='encoder input size') # DLinear with --individual, use this hyperparameter as the number of channels
     parser.add_argument('--dec_in', type=int, default=5, help='decoder input size')
     parser.add_argument('--c_out', type=int, default=1, help='output size')
-    parser.add_argument('--d_model', type=int, default=512, help='dimension of model')
+    parser.add_argument('--d_model', type=int, default=256, help='dimension of model')
     parser.add_argument('--n_heads', type=int, default=8, help='num of heads')
-    parser.add_argument('--e_layers', type=int, default=2, help='num of encoder layers')
+    parser.add_argument('--e_layers', type=int, default=4, help='num of encoder layers')
     parser.add_argument('--d_layers', type=int, default=1, help='num of decoder layers')
-    parser.add_argument('--d_ff', type=int, default=2048, help='dimension of fcn')
+    parser.add_argument('--d_ff', type=int, default=512, help='dimension of fcn')
     parser.add_argument('--moving_avg', type=int, default=25, help='window size of moving average')
     parser.add_argument('--factor', type=int, default=1, help='attn factor')
     parser.add_argument('--distil', action='store_false',
@@ -145,33 +149,74 @@ if __name__ == '__main__':
 
 # WandB 설정
 wandb.init(project="inference-visualization", name="inference_plot-average")
-device = _acquire_device()
-model = PatchTST(args, device)
-dataset, dataloder = data_provider(args, 'pred')
+device = _acquire_device(args)
+model = Model(args).to(device)
+model.load_state_dict(torch.load('/home/pv/code/PatchTST/checkpoints/24110202_PatchTST_DKASC_AliceSprings_ftMS_sl256_ll0_pl16_dm256_nh8_el4_dl1_df512_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth'))
+
+dataset, dataloader = data_provider(args, 'pred')
+import torch
 
 
-# 예시 데이터 (실제값과 예측값)
-true_values = np.random.rand(100) * 100  # 실제 태양광 발전량 데이터
-predicted_values = true_values + np.random.normal(0, 5, size=100)  # 모델 예측값
 
-# Pandas DataFrame으로 정리
-data = pd.DataFrame({
-    'Time': len(train_loader),  # 시간 또는 샘플 번호
-    'True Values': true_values,
-    'Predicted Values': predicted_values
-})
 
-# WandB Line Plot 생성
-line_plot = wandb.plot.line(
-    data, 'Time', ['True Values', 'Predicted Values'],  # X축: Time, Y축: 실제값과 예측값
-    title="Solar Power Forecast vs True Values"
-)
 
-# WandB에 그래프 로깅
-wandb.log({"Solar Power Prediction": line_plot})
+# 각 위치별 평균 계산
+# Initialize arrays
+pred_sum = torch.zeros(50).to(device)
+pred_cnt = torch.zeros(50).to(device)  # 0으로 초기화
+y_list = torch.zeros(50).to(device)
+y_ts_list = [None] * 50
 
-# 종료
+for i, data in enumerate(dataloader):
+    x, y, x_mark, y_mark, site_idx, x_ts, y_ts = data
+    x = x.float().to(device)
+    y = y.float().to(device)
+    x_mark = x_mark.to(device)
+    y_mark = y_mark.to(device)
+    site_idx = site_idx.to(device)
+    x_ts = x_ts.to(device)
+    y_ts = y_ts.to(device)
+
+    with torch.no_grad():
+        model.eval()
+        outputs = model(x)
+        outputs = outputs.squeeze()
+
+    
+        # Get lengths
+        output_length = outputs.shape[0]
+        y_squeezed = y.squeeze()
+        y_length = y_squeezed.shape[0]
+        
+
+        max_length = min(len(pred_sum) - i, output_length, y_length)
+
+        # Update sums and counts
+        pred_sum[i: i + max_length] += outputs[:max_length][:, -1]
+        y_list[i: i + max_length] = y_squeezed[:max_length]
+        pred_cnt[i: i + max_length] += 1  # pred_cnt 업데이트
+
+        # Process timestamps
+        y_ts_processed = [int(''.join(map(str, row.tolist()))) for row in y_ts.squeeze().cpu().numpy()]
+        y_ts_list[i: i + max_length] = y_ts_processed[:max_length]
+
+        if i + max_length >= 50:
+            break
+
+# Calculate mean prediction
+mean_pred = pred_sum / pred_cnt
+mean_pred = mean_pred.cpu().numpy()
+y_list = y_list.cpu().numpy()
+
+# Print and log results
+for idx in range(len(mean_pred)):
+    print(mean_pred[idx], y_list[idx], y_ts_list[idx])
+
+    # Log to WandB
+    wandb.log({
+        "Predicted Values": mean_pred[idx],
+        "True Values": y_list[idx],
+        "Y Timestamp": y_ts_list[idx]
+    })
+
 wandb.finish()
-
-
-

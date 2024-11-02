@@ -225,7 +225,8 @@ def delete_outlier_data(df, save_dir, kor_name, capacity):
 
 
 def create_combined_weather_csv(create_path, project_root):
-    weather_data_dir = os.path.join(project_root, 'data/GIST_dataset/weather')
+    # weather_data_dir = os.path.join(project_root, 'data/GIST_dataset/weather')
+    weather_data_dir = os.path.join('/PV/GIST_dataset/weather')
     weather_csv_files = [f for f in os.listdir(weather_data_dir) if f.endswith('.csv')]
     weather_csv_files.sort()
 
@@ -330,17 +331,21 @@ if __name__ == '__main__':
     current_file_path = os.path.abspath(__file__)
 
     # Get the root directory (assuming the root is two levels up from the current file)
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
-
+    # project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
+    project_root = '/PV'
     # # Get the path to the daily PV xls data
-    # pv_xls_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_xls')
+    pv_xls_data_dir = os.path.join(project_root, 'GIST_dataset/daily_PV_xls')
     # pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
     # pv_file_list.sort()
 
     # Define the path to save the combined CSV file
+<<<<<<< Updated upstream
     # weather_data = os.path.join(project_root, 'data/GIST_dataset/GIST_weather_data.csv')
     weather_data = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/GIST_weather_data.csv')
     
+=======
+    weather_data = os.path.join(project_root, 'GIST_dataset/GIST_weather_data.csv')
+>>>>>>> Stashed changes
     if not os.path.exists(weather_data):
         create_combined_weather_csv(weather_data, project_root)
 
@@ -349,9 +354,13 @@ if __name__ == '__main__':
 
     # convert_excel_to_hourly_csv(pv_file_list)
 
+<<<<<<< Updated upstream
     # raw_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')
     raw_csv_data_dir = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/daily_PV_csv')
 
+=======
+    raw_csv_data_dir = os.path.join(project_root, 'GIST_dataset/daily_PV_csv')
+>>>>>>> Stashed changes
     raw_file_list = [os.path.join(raw_csv_data_dir, _) for _ in os.listdir(raw_csv_data_dir)]
     raw_file_list.sort()
 
@@ -374,18 +383,27 @@ if __name__ == '__main__':
         '자연과학동': 'E8_Natural-Science-Bldg'
     }
 
+<<<<<<< Updated upstream
     # log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
     log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/log.txt')
     # capacity_csv_dir = os.path.join(project_root, 'data/GIST_dataset/csv')  # 추가: capacity CSV 디렉토리 지정
     capacity_csv_dir = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/csv')  # 추가: capacity CSV 디렉토리 지정
 
+=======
+    log_file_path = os.path.join(project_root, 'GIST_dataset/log.txt')
+>>>>>>> Stashed changes
     for i, (kor_name, eng_name) in enumerate(site_dict.items()):
         combine_into_each_site(file_list=raw_file_list,
                                index_of_site=i,
                                kor_name=kor_name, eng_name=eng_name,
                                weather_data=weather_data,
+<<<<<<< Updated upstream
                             #    save_dir=os.path.join(project_root, 'data/GIST_dataset/converted'),
                                save_dir=os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/converted'),
 
                                log_file_path=log_file_path,
                                capacity_csv_dir=capacity_csv_dir)
+=======
+                               save_dir=os.path.join(project_root, 'GIST_dataset/converted'),
+                               log_file_path=log_file_path)
+>>>>>>> Stashed changes

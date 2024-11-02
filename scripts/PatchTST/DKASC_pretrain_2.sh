@@ -11,11 +11,12 @@ fi
 
 
 seq_len=256
+pred_len=16
 label_len=0
 
-root_path_name=/ailab_mat/dataset/PV/DKASC_AliceSprings/converted
+root_path_name=/PV/DKASC_AliceSprings/converted
 data_path_name='type=all'
-data_name=DKASC
+data_name=DKASC_AliceSprings
 random_seed=2024
 
 e_layers=8
@@ -23,37 +24,35 @@ n_heads=8
 d_model=512
 d_ff=2048
 
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=0
 
-for pred_len in 16 8 4 2 1
-do
-    python -u run_longExp.py \
-      --gpu 0 \
-      --use_amp \
-      --random_seed $random_seed \
-      --is_pretraining 1 \
-      --root_path $root_path_name \
-      --data_path $data_path_name \
-      --model_id $model_id \
-      --model $model_name \
-      --data $data_name \
-      --features MS \
-      --seq_len $seq_len \
-      --label_len $label_len \
-      --pred_len $pred_len \
-      --enc_in 7 \
-      --e_layers 8 \
-      --n_heads 8 \
-      --d_model 512 \
-      --d_ff 2048 \
-      --dropout 0.05\
-      --fc_dropout 0.05\
-      --head_dropout 0\
-      --patch_len 16\
-      --stride 8\
-      --des 'Exp' \
-      --train_epochs 100\
-      --patience 20\
-      --embed 'timeF' \
-      --itr 1 --batch_size 256 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers.log
-done
+
+python -u run_longExp.py \
+    --gpu 0 \
+    --use_amp \
+    --random_seed $random_seed \
+    --is_pretraining 1 \
+    --root_path $root_path_name \
+    --data_path $data_path_name \
+    --model_id $model_id \
+    --model $model_name \
+    --data $data_name \
+    --features MS \
+    --seq_len $seq_len \
+    --label_len $label_len \
+    --pred_len $pred_len \
+    --enc_in 7 \
+    --e_layers $e_layers \
+    --n_heads $n_heads \
+    --d_model $d_model \
+    --d_ff $d_ff \
+    --dropout 0.05\
+    --fc_dropout 0.05\
+    --head_dropout 0\
+    --patch_len 16\
+    --stride 8\
+    --des 'Exp' \
+    --train_epochs 100\
+    --patience 20\
+    --embed 'timeF' \
+    --itr 1 --batch_size 256 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers.log

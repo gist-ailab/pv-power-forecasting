@@ -135,14 +135,14 @@ class Exp_Main(Exp_Basic):
                 iter_count += 1
                 model_optim.zero_grad()
 
-                batch_x, batch_y, batch_x_mark, batch_y_mark = data #site, batch_x_ts, batch_y_ts = data
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
-                # site = site.to(self.device)
-                # batch_x_ts = batch_x_ts.to(self.device)
-                # batch_y_ts = batch_y_ts.to(self.device)
+                site = site.to(self.device)
+                batch_x_ts = batch_x_ts.to(self.device)
+                batch_y_ts = batch_y_ts.to(self.device)
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
@@ -262,14 +262,15 @@ class Exp_Main(Exp_Basic):
         with torch.no_grad():
             for i, data in enumerate(vali_loader):
                
-                batch_x, batch_y, batch_x_mark, batch_y_mark = data#, site, batch_x_ts, batch_y_ts = data
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
+               
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
-                # site = site.to(self.device)
-                # batch_x_ts = batch_x_ts.to(self.device)
-                # batch_y_ts = batch_y_ts.to(self.device)
+                site = site.to(self.device)
+                batch_x_ts = batch_x_ts.to(self.device)
+                batch_y_ts = batch_y_ts.to(self.device)
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
@@ -364,14 +365,14 @@ class Exp_Main(Exp_Basic):
         with torch.no_grad():
             # for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
             for i, data in enumerate(test_loader):
-                batch_x, batch_y, batch_x_mark, batch_y_mark = data #, site, batch_x_ts, batch_y_ts = data
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
-                # site = site.to(self.device)
-                # batch_x_ts = batch_x_ts.to(self.device)
-                # batch_y_ts = batch_y_ts.to(self.device)
+                site = site.to(self.device)
+                batch_x_ts = batch_x_ts.to(self.device)
+                batch_y_ts = batch_y_ts.to(self.device)
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()

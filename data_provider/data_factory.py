@@ -35,7 +35,7 @@ def data_provider(args, flag):
         drop_last = False
         batch_size = 1
         freq = args.freq
-        Data = Dataset_Pred
+        Data = Dataset_DKASC_AliceSprings
     else: # train, val
         shuffle_flag = True
         drop_last = True
