@@ -201,10 +201,10 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    active_power_path = os.path.join(project_root, '/ailab_mat/dataset/PV/Germany_Household_Data/household_data_60min_singleindex(selected_column).csv')
-    temp_path = os.path.join(project_root, '/ailab_mat/dataset/PV/Germany_Household_Data/Konstanz_weather_data/air_temperature/stundenwerte_TU_02712_19710101_20231231_hist/produkt_tu_stunde_19710101_20231231_02712.txt')
-    ghi_path = os.path.join(project_root, '/ailab_mat/dataset/PV/Germany_Household_Data/Konstanz_weather_data/GHI_DHI/stundenwerte_ST_02712_row/produkt_st_stunde_19770101_20240731_02712.txt')
-    moisture_path = os.path.join(project_root, '/ailab_mat/dataset/PV/Germany_Household_Data/Konstanz_weather_data/moisture/stundenwerte_TF_02712_19520502_20231231_hist/produkt_tf_stunde_19520502_20231231_02712.txt')
+    active_power_path = os.path.join(project_root, 'data/Germany_Household_Data/household_data_60min_singleindex(selected_column).csv')
+    temp_path = os.path.join(project_root, 'data/Germany_Household_Data/Konstanz_weather_data/air_temperature/stundenwerte_TU_02712_19710101_20231231_hist/produkt_tu_stunde_19710101_20231231_02712.txt')
+    ghi_path = os.path.join(project_root, 'data/Germany_Household_Data/Konstanz_weather_data/GHI_DHI/stundenwerte_ST_02712_row/produkt_st_stunde_19770101_20240731_02712.txt')
+    moisture_path = os.path.join(project_root, 'data/Germany_Household_Data/Konstanz_weather_data/moisture/stundenwerte_TF_02712_19520502_20231231_hist/produkt_tf_stunde_19520502_20231231_02712.txt')
     merged_data = merge_raw_data(active_power_path, temp_path, ghi_path, moisture_path)
 
     invertor_list = [
@@ -219,12 +219,12 @@ if __name__ == '__main__':
     'DE_KN_residential6_pv'
     ]
 
-    log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/Germany_Household_Data/log.txt')
+    log_file_path = os.path.join(project_root, 'data/Germany_Household_Data/log.txt')
     for i, invertor_name in enumerate(invertor_list):
         combine_into_each_invertor(
             invertor_name, 
             i, 
-            save_dir=os.path.join(project_root, '/ailab_mat/dataset/PV/Germany_Household_Data/preprocessed'),
+            save_dir=os.path.join(project_root, 'data/Germany_Household_Data/preprocessed'),
             log_file_path=log_file_path,
             raw_df= merged_data
         )

@@ -41,16 +41,16 @@ def convert_excel_to_csv(file_list):
     for i, file in tqdm(enumerate(file_list), total=len(file_list), desc='Converting Excel to CSV'):
         df = pd.read_excel(file,
                            header=None,
-                           engine='calamine') # calaminefor reading xlsx files
-        
+                           engine='openpyxl') # calaminefor reading xlsx files
+       
         # 첫 번째 열은 'timestamp'로, 두 번째 열은 'Active_Power'로 지정하고 나머지 컬럼 이름 생성
         df.columns = ['timestamp', 'Active_Power'] + [f'Inverter_{i}' for i in range(1, df.shape[1] - 1)]
         df['timestamp'] = pd.to_datetime(df['timestamp'])   # 'timestamp' 컬럼을 datetime 타입으로 변환
 
         # 결측치 처리:'-' 또는 빈 값을 NaN으로 변환
         # df = df.map(lambda x: np.nan if x in ['-', '', ' '] else x)
-        df = df.replace(['-', '', ' '], np.nan, inplace=True)
-
+        df = df.replace(['-', '', ' '], np.nan)#, inplace=True)
+   
         # 첫 번째 열을 제외한 나머지 열에 대해 결측치 처리 적용
         for column in df.columns[1:]:
             # 처리 단계
@@ -140,8 +140,8 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
     # Combine the CSV files
     for file in csv_file_list:
         power_df = pd.read_csv(file, parse_dates=['timestamp'])
-
-        maximum_ap = int(file.split('_')[-1].split('kW')[0])
+        file = os.path.basename(file)
+        maximum_ap = int(file.split('_')[1].split('kW')[0])
         
         # 기존의 'Active_Power' 열을 그대로 사용
         # 불필요한 인버터별 합산 부분 제거
@@ -203,12 +203,12 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    pv_xls_data_dir = '/ailab_mat/dataset/PV/Miryang/PV_xls'
+    pv_xls_data_dir = '/home/seongho_bak/Projects/PatchTST/data/Miryang/PV_xls'
     pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
     pv_file_list.sort()
 
-    # csv_file_dir = convert_excel_to_csv(pv_file_list)   # Convert Excel files to CSV files
+    csv_file_dir = convert_excel_to_csv(pv_file_list)   # Convert Excel files to CSV files
     csv_file_dir = os.path.join(project_root, 'data/Miryang/PV_csv')
-    weather_file_dir = '/ailab_mat/dataset/PV/Miryang/weather'
+    weather_file_dir = '/home/seongho_bak/Projects/PatchTST/data/Miryang/weather'
 
     combine_csv_files(csv_file_dir, weather_file_dir)

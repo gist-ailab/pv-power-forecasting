@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_German_$model_name"
+exp_id="${DATE}_Pretrain_German_$model_name"_individual
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -11,9 +11,9 @@ fi
 
 seq_len=256
 label_len=0
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=5
 # root_path_name=/home/intern/doyoon/innovation/PatchTST/data/Germany_Household_Data/preprocessed
-root_path_name=/ailab_mat/dataset/PV/Germany_Household_Data/preprocessed
+root_path_name=data/Germany_Household_Data/preprocessed
 data_path_name='type=all'
 data_name=German
 random_seed=2024
@@ -22,11 +22,12 @@ e_layers=4
 
 export CUDA_VISIBLE_DEVICES=3
 
-for pred_len in 16 8 4 2 1  
+for pred_len in 16 # 8 4 2 1  
 do
     python -u run_longExp.py \
       --gpu 0 \
       --use_amp \
+      --individual 1 \
       --random_seed $random_seed \
       --is_pretraining 1 \
       --root_path $root_path_name \
