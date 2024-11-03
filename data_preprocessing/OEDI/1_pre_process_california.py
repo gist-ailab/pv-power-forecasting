@@ -45,7 +45,7 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
     '''4. AP 값이 있지만 GHR이 없는 날 제거'''
     # Step 1: AP > 0 and GHR = 0
     # rows_to_exclude = (df_cleaned_3['Active_Power'] > 0) & (df_cleaned_3['Global_Horizontal_Radiation'] == 0)
-    rows_to_exclude = ((df_cleaned_3['Active_Power'] > 0) & (df_cleaned_3['Global_Horizontal_Radiation'] == 0)) | (df_cleaned_3['Global_Horizontal_Radiation'] > 2000)| ((df_cleaned_3['Active_Power']/capacity < 0.01/2) & (df_cleaned_3['Global_Horizontal_Radiation'] > 100)) | ((df_cleaned_3['Active_Power']/capacity < 0.2/2) & (df_cleaned_3['Global_Horizontal_Radiation'] > 500)) | (df_cleaned_3['Wind_Speed']>15)
+    rows_to_exclude = ((df_cleaned_3['Active_Power'] > 0) & (df_cleaned_3['Global_Horizontal_Radiation'] == 0)) | (df_cleaned_3['Global_Horizontal_Radiation'] > 2000)| ((df_cleaned_3['Active_Power']/capacity < 0.01/2) & (df_cleaned_3['Global_Horizontal_Radiation'] > 100)) | ((df_cleaned_3['Active_Power']/capacity < 0.2/2) & (df_cleaned_3['Global_Horizontal_Radiation'] > 500)) | (df_cleaned_3['Wind_Speed']>15) | (df_cleaned_3['Global_Horizontal_Radiation'] < 0)
 
     # Step 2: Find the days (dates) where the conditions are true
     days_to_exclude = df_cleaned_3[rows_to_exclude]['timestamp'].dt.date.unique()
