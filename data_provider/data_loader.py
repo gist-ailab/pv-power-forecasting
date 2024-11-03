@@ -2416,7 +2416,7 @@ class Dataset_OEDI_California(Dataset):
 
         # 필요한 칼럼만 추출
         cols = df_raw.columns.tolist()
-        print(cols)
+     
         cols.remove('timestamp')
         cols.remove('Active_Power')
         

@@ -9,10 +9,10 @@ if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-seq_len=512
+seq_len=256
 label_len=0
 
-root_path_name=/ailab_mat/dataset/PV/OEDI/2107\(Arbuckle_California\)/converted
+root_path_name=/home/seongho_bak/Projects/PatchTST/data/OEDI/2107\(Arbuckle_California\)/preprocessed
 data_path_name='type=all'
 data_name=OEDI_California
 random_seed=2024
@@ -25,6 +25,10 @@ checkponits=(
     "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl2_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
     "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl1_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
 )
+e_layers=4
+n_heads=8
+d_model=256
+d_ff=512
 
 export CUDA_VISIBLE_DEVICES=4
 for i in "${!pred_len[@]}"; do
@@ -34,9 +38,10 @@ for i in "${!pred_len[@]}"; do
     python -u run_longExp.py \
       --gpu 0 \
       --use_amp \
+      --individual 1 \
       --random_seed $random_seed \
       --is_fully_finetune 1 \
-      --checkpoints "/ailab_mat/dataset/PV/checkpoints/24102211_PatchTST_DKASC_ftMS_sl512_ll0_pl16_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth" \
+      --checkpoints "/home/seongho_bak/Projects/PatchTST/dkasc_ckpt/24110208_PatchTST_DKASC_AliceSprings_ftMS_sl256_ll0_pl16_dm256_nh8_el4_dl1_df512_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth" \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \
@@ -47,10 +52,10 @@ for i in "${!pred_len[@]}"; do
       --label_len $label_len \
       --pred_len $pl \
       --enc_in 5 \
-      --e_layers 5 \
-      --n_heads 16 \
-      --d_model 128 \
-      --d_ff 1024 \
+      --e_layers $e_layers \
+      --n_heads $n_heads \
+      --d_model $d_model \
+      --d_ff $d_ff \
       --dropout 0.05\
       --fc_dropout 0.05\
       --head_dropout 0\
@@ -60,5 +65,5 @@ for i in "${!pred_len[@]}"; do
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --itr 1 --batch_size 512 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pl.log
+      --itr 1 --batch_size 1024 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers.log
 done

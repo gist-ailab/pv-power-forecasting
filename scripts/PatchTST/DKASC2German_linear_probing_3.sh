@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Fully_finetune_DKASC2OEDI_CA_$model_name"
+exp_id="${DATE}_Linear_probing_lr0.01_DKASC2German_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -12,25 +12,26 @@ fi
 seq_len=256
 label_len=0
 
-root_path_name=/home/seongho_bak/Projects/PatchTST/data/OEDI/2107\(Arbuckle_California\)/preprocessed
+root_path_name=data/Germany_Household_Data/preprocessed
 data_path_name='type=all'
-data_name=OEDI_California
+data_name=German
 random_seed=2024
 
-pred_len=(16)
+pred_len=(16) #  8 4 2 1)
 checkponits=(
-    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl16_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
-    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl8_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
-    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl4_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
-    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl2_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
-    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl1_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
-)
+    "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl16_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth")
+    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl8_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl4_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl2_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+    # "/ailab_mat/dataset/PV/checkpoints/24102218_PatchTST_DKASC_ftMS_sl256_ll0_pl1_dm128_nh16_el5_dl1_df1024_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth"
+
+
 e_layers=4
 n_heads=8
 d_model=256
 d_ff=512
 
-export CUDA_VISIBLE_DEVICES=4
+export CUDA_VISIBLE_DEVICES=2
 for i in "${!pred_len[@]}"; do
     pl=${pred_len[$i]}
     ckpt=${checkpoints[$i]}
@@ -40,7 +41,7 @@ for i in "${!pred_len[@]}"; do
       --use_amp \
       --individual 1 \
       --random_seed $random_seed \
-      --is_fully_finetune 1 \
+      --is_linear_probe 1 \
       --checkpoints "/home/seongho_bak/Projects/PatchTST/dkasc_ckpt/24110208_PatchTST_DKASC_AliceSprings_ftMS_sl256_ll0_pl16_dm256_nh8_el4_dl1_df512_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth" \
       --root_path $root_path_name \
       --data_path $data_path_name \
@@ -61,9 +62,9 @@ for i in "${!pred_len[@]}"; do
       --head_dropout 0\
       --patch_len 16\
       --stride 8\
-      --des 'Exp' \
+      --des 'lr_0.01' \
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --itr 1 --batch_size 1024 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers.log
+      --itr 1 --batch_size 1024 --learning_rate 0.01 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers'_lr0.01.log'
 done

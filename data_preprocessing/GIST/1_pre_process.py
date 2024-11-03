@@ -6,10 +6,10 @@ from tqdm import tqdm
 from copy import deepcopy
 
 # 추가: calculate_site_capacity 함수 정의
-def calculate_site_capacity(capacity_csv_dir, kor_name):
+def calculate_site_capacity(raw_df):
     # Load the CSV file corresponding to the site
-    file_path = os.path.join(capacity_csv_dir, f'{kor_name}.csv')
-    raw_df = pd.read_csv(file_path)
+    # file_path = os.path.join(capacity_csv_dir, f'{kor_name}.csv')
+    # raw_df = pd.read_csv(file_path)
     
     # Ensure Active_Power is numeric and calculate the 10th largest value as capacity
     raw_df['Active_Power'] = pd.to_numeric(raw_df['Active_Power'], errors='coerce')
@@ -27,8 +27,7 @@ def combine_into_each_site(file_list, index_of_site,
     weather_info['datetime'] = pd.to_datetime(weather_info['datetime'])
     # print(weather_info)
 
-    # 추가: 각 사이트별 capacity 계산
-    site_capacity = calculate_site_capacity(capacity_csv_dir, kor_name)
+    
 
     # Define file paths for storing outliers
     env_columns = ['datetime', 'Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Direct_Normal_Irradiance', 'Module_Temperature_Celsius', ]
@@ -80,7 +79,8 @@ def combine_into_each_site(file_list, index_of_site,
             continue
 
         filtered_df = create_combined_filtered_data(preprocessed_df, daily_pv_data, daily_weather_data)
-
+            # 추가: 각 사이트별 capacity 계산
+        site_capacity = calculate_site_capacity(filtered_df)
         filtered_df = delete_outlier_data(filtered_df, save_dir, kor_name, site_capacity)
 
         # DataFrame 결합 (concat)
@@ -92,7 +92,10 @@ def combine_into_each_site(file_list, index_of_site,
     save_path = os.path.join(save_dir, f'{eng_name}.csv')
     with open(save_path, 'w') as f:
         preprocessed_df.to_csv(f, index=False)
+    
+    
 
+        
 
 def handling_missing_values(daily_pv_data, pv_date, flag):
     # daily_pv_data에 있는 결측치 처리
@@ -231,12 +234,14 @@ def create_combined_weather_csv(create_path, project_root):
 
     data_frames = []
     for file in weather_csv_files:
+        if 'GIST_AWS' not in file:
+            continue
         file_path = os.path.join(weather_data_dir, file)
         try:
             df = pd.read_csv(file_path, encoding='utf-8', skiprows=1, header=None)
         except UnicodeDecodeError:
             df = pd.read_csv(file_path, encoding='latin1', skiprows=1, header=None)
-
+        
         # df = df.reindex(columns=expected_columns)   # Reindex the DataFrame to ensure consistent columns
         data_frames.append(df)
     # Concatenate all DataFrames into a single DataFrame
@@ -247,7 +252,7 @@ def create_combined_weather_csv(create_path, project_root):
     column_names = ['datetime', 'temperature', 'wind_speed', 'precipitation', 'humidity']
     combined_df.columns = column_names
     combined_df['datetime'] = pd.to_datetime(combined_df.iloc[:, 0])    # 3번째 컬럼을 datetime 형식으로 변환 (시간 관련 처리를 위해)
-
+   
     # Step 1: datetime을 인덱스로 설정하고 1시간 단위로 리샘플링
     combined_df.set_index('datetime', inplace=True)
     # Step 2: 1시간 단위로 리샘플링하여 결측값을 확인
@@ -339,7 +344,7 @@ if __name__ == '__main__':
 
     # Define the path to save the combined CSV file
     # weather_data = os.path.join(project_root, 'data/GIST_dataset/GIST_weather_data.csv')
-    weather_data = os.path.join(project_root, '/PV/GIST_dataset/GIST_weather_data.csv')
+    weather_data = os.path.join(project_root, 'data/GIST_dataset/GIST_weather_data.csv')
     
     if not os.path.exists(weather_data):
         create_combined_weather_csv(weather_data, project_root)
@@ -350,7 +355,7 @@ if __name__ == '__main__':
     # convert_excel_to_hourly_csv(pv_file_list)
 
     # raw_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')
-    raw_csv_data_dir = os.path.join(project_root, '/PV/GIST_dataset/daily_PV_csv')
+    raw_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')
 
     raw_file_list = [os.path.join(raw_csv_data_dir, _) for _ in os.listdir(raw_csv_data_dir)]
     raw_file_list.sort()
@@ -375,9 +380,9 @@ if __name__ == '__main__':
     }
 
     # log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
-    log_file_path = os.path.join(project_root, '/PV/GIST_dataset/log.txt')
+    log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
     # capacity_csv_dir = os.path.join(project_root, 'data/GIST_dataset/csv')  # 추가: capacity CSV 디렉토리 지정
-    capacity_csv_dir = os.path.join(project_root, '/PV/GIST_dataset/csv')  # 추가: capacity CSV 디렉토리 지정
+    capacity_csv_dir = os.path.join(project_root, 'data/GIST_dataset/csv')  # 추가: capacity CSV 디렉토리 지정
 
     for i, (kor_name, eng_name) in enumerate(site_dict.items()):
         combine_into_each_site(file_list=raw_file_list,
@@ -385,7 +390,7 @@ if __name__ == '__main__':
                                kor_name=kor_name, eng_name=eng_name,
                                weather_data=weather_data,
                             #    save_dir=os.path.join(project_root, 'data/GIST_dataset/converted'),
-                               save_dir=os.path.join(project_root, '/PV/GIST_dataset/converted'),
+                               save_dir=os.path.join(project_root,  'data/GIST_dataset/converted'),
 
                                log_file_path=log_file_path,
                                capacity_csv_dir=capacity_csv_dir)
