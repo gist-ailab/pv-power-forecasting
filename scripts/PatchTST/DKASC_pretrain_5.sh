@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_DKASC_$model_name"
+exp_id="${DATE}_Pretrain_DKASC_0.001_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -14,7 +14,7 @@ seq_len=256
 label_len=0
 pred_len=16
 
-root_path_name=/PV/DKASC_AliceSprings/converted
+root_path_name=data/DKASC_AliceSprings/converted
 data_path_name='type=all'
 data_name=DKASC_AliceSprings
 random_seed=2024
@@ -24,6 +24,7 @@ n_heads=8
 d_model=256
 d_ff=512
 
+export CUDA_VISIBLE_DEVICES=5
 
 python -u run_longExp.py \
     --gpu 0 \
@@ -54,5 +55,5 @@ python -u run_longExp.py \
     --train_epochs 100\
     --patience 20\
     --embed 'timeF' \
-    --itr 1 --batch_size 1024 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers.log
+    --itr 1 --batch_size 1024 --learning_rate 0.001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers'_1024_0.001_.log'
 done

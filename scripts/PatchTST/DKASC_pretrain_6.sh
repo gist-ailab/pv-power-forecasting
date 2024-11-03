@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_DKASC_$model_name"
+exp_id="${DATE}_Pretrain_DKASC_0.0001_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -24,6 +24,7 @@ n_heads=8
 d_model=256
 d_ff=512
 
+export CUDA_VISIBLE_DEVICES=1
 
 python -u run_longExp.py \
     --gpu 0 \
@@ -54,5 +55,5 @@ python -u run_longExp.py \
     --train_epochs 100\
     --patience 20\
     --embed 'timeF' \
-    --itr 1 --batch_size 1024 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers'_1024.log'
+    --itr 1 --batch_size 2048 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers'_2048_.log'
 done

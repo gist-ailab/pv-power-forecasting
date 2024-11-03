@@ -29,6 +29,7 @@ e_layers=4
 n_heads=8
 d_model=256
 d_ff=512
+
 export CUDA_VISIBLE_DEVICES=3
 for i in "${!pred_len[@]}"; do
     pl=${pred_len[$i]}

@@ -148,6 +148,7 @@ class Exp_Main(Exp_Basic):
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
                 # encoder - decoder
+                mark = True if self.args.is_pretraining else False
                 if self.args.use_amp:
                    
                     with torch.cuda.amp.autocast():
@@ -155,7 +156,7 @@ class Exp_Main(Exp_Basic):
                             if  'LSTM' in self.args.model:
                                 outputs = self.model(batch_x, dec_inp)
                             else:
-                                outputs = self.model(batch_x)
+                                outputs = self.model(batch_x, mark)
             
                         else:
                             if self.args.output_attention:
@@ -168,7 +169,7 @@ class Exp_Main(Exp_Basic):
                         if 'LSTM' in self.args.model:
                             outputs = self.model(batch_x, dec_inp)
                         else:
-                            outputs = self.model(batch_x)
+                            outputs = self.model(batch_x, mark)
             
                     else:
                         if self.args.output_attention:
@@ -276,10 +277,11 @@ class Exp_Main(Exp_Basic):
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
                 # encoder - decoder
+                mark = True if self.args.is_pretraining else False
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
-                            outputs = self.model(batch_x)
+                            outputs = self.model(batch_x, mark)
                         else:
                             if self.args.output_attention:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -287,7 +289,7 @@ class Exp_Main(Exp_Basic):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
-                        outputs = self.model(batch_x)
+                        outputs = self.model(batch_x, mark)
                     else:
                         if self.args.output_attention:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -377,11 +379,13 @@ class Exp_Main(Exp_Basic):
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
+                
+                mark = True if self.args.is_pretraining else False
                 # encoder - decoder
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
-                            outputs = self.model(batch_x)
+                            outputs = self.model(batch_x, mark)
                         else:
                             if self.args.output_attention:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -389,7 +393,7 @@ class Exp_Main(Exp_Basic):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
-                        outputs = self.model(batch_x)
+                        outputs = self.model(batch_x, mark)
                     else:
                         if self.args.output_attention:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -478,10 +482,10 @@ class Exp_Main(Exp_Basic):
         os.makedirs(folder_path, exist_ok=True)
         
         # calculate metrics with only generated power
-        mae, mse, rmse, mape = metric(pred_np, trues_np)
-        mae_normalized, mse_normalized, rmse_normalized, mape_normalized = metric(pred_normalized_np, true_normalized_np)
-        print('MSE:{}, MAE:{}, RMSE:{}, MAPE: {}'.format(mse, mae, rmse, mape))
-        print('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}, MAPE_normalized: {}'.format(mse_normalized, mae_normalized, rmse_normalized, mape_normalized))
+        mae, mse, rmse, nrmse, mape, mspe, rse = metric(pred_np, trues_np, test_data.ap_max, test_data.ap_min)
+        mae_normalized, mse_normalized, rmse_normalized, nrmse_normalized, mape_normalized, mspe_normalized, rse_normalized = metric(pred_normalized_np, true_normalized_np, test_data.ap_max_normalized, test_data.ap_min_normalized)
+        print('MSE:{}, MAE:{}, RMSE:{}, nRMSE: {}, MAPE: {}, MSPE: {}, RSE: {}'.format(mse, mae, rmse, nrmse, mape, mspe, rse))
+        print('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}, nRMSE_normalized:{}, MAPE_normalized: {}, MSPE_normalized: {}, RSE_normalized: {}'.format(mse_normalized, mae_normalized, rmse_normalized, nrmse_normalized, mape_normalized, mspe_normalized, rse_normalized))
         
         txt_save_path = os.path.join(folder_path,
                                      f"{self.args.seq_len}_{self.args.pred_len}_result.txt")

@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_DKASC_$model_name"
+exp_id="${DATE}_Pretrain_DKASC_infer_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -28,9 +28,9 @@ d_ff=512
 python -u run_longExp.py \
     --gpu 0 \
     --use_amp \
-    --individual 1 \
     --random_seed $random_seed \
-    --is_pretraining 1 \
+    --is_inference 1 \
+    --checkpoints 
     --root_path $root_path_name \
     --data_path $data_path_name \
     --model_id $model_id \

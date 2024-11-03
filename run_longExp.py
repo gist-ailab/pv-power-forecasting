@@ -134,7 +134,7 @@ if __name__ == '__main__':
     
     Exp = Exp_Main
     
-    if args.is_pretraining:
+    if (args.is_pretraining) and (not args.is_inference):
         for ii in range(args.itr):
             # setting record of experiments
             setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_{}'.format(
