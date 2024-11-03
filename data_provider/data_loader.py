@@ -562,24 +562,30 @@ class Dataset_DKASC_AliceSprings(Dataset):
         if self.data_path['type'] == 'all':
             site_ids = list(self.site_files.keys())
             
-            # TODO: 재현 가능하게 고정하기
-            # [INFO] Train sites: [92, 214, 52, 61, 99, 60, 72, 68, 55, 67, 64, 212, 59, 71, 69, 66, 90, 73, 70, 79, 213, 74, 85]
-            # train 1310017
-            # [INFO] Val sites: [54, 58, 63, 98, 77, 84]
-            # val 348608
-            # [INFO] Test sites: [57, 93, 56, 218, 100]
-            # test 250599
 
-            random.seed(42)
-            random.shuffle(site_ids)
-            total_sites = len(site_ids)
-            train_end = int(total_sites * 0.7)
-            val_end = train_end + int(total_sites * 0.2)
+            # [INFO] Train sites: [57, 61, 70, 92, 59, 212, 213, 218, 56, 66, 52, 90, 72, 77, 60, 74, 67, 73, 214, 58, 68, 54, 79, 84]
+            # Active_Power min: 0.0
+            # Active_Power max: 8.4429276784261
+            # train 1047045
+            # [INFO] Val sites: [64, 99, 71, 98, 93, 100, 97]
+            # val 406128
+            # [INFO] Test sites: [63, 85, 55, 69]
+            # test 228731
+
+            train_keys=[57, 61, 70, 92, 59, 212, 213, 218, 56, 66, 52, 90, 72, 77, 60, 74, 67, 73, 214, 58, 68, 54, 79, 84]
+            val_keys=[64, 99, 71, 98, 93, 100, 97]
+            test_keys=[63, 85, 55, 69]
+
+            # random.seed(42)
+            # random.shuffle(site_ids)
+            # total_sites = len(site_ids)
+            # train_end = int(total_sites * 0.7)
+            # val_end = train_end + int(total_sites * 0.2)
 
             site_split = {
-                'train': site_ids[:train_end],
-                'val': site_ids[train_end:val_end],
-                'test': site_ids[val_end:]  
+                'train': train_keys,
+                'val': val_keys,
+                'test': test_keys  
             }
         elif self.data_path['type'] == 'debug':
             site_split = {
