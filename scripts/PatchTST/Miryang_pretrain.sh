@@ -40,7 +40,7 @@ do
       --seq_len $seq_len \
       --label_len $label_len \
       --pred_len $pred_len \
-      --enc_in 4 \
+      --enc_in 5 \
       --e_layers 4 \
       --n_heads 8 \
       --d_model 256 \
