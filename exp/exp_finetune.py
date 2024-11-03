@@ -133,11 +133,14 @@ class Exp_Finetune(Exp_Main):
                 iter_count += 1
                 model_optim.zero_grad()
 
-                batch_x, batch_y, batch_x_mark, batch_y_mark = data
-                batch_x = batch_x.to(self.device).float()
-                batch_y = batch_y.to(self.device).float()
-                batch_x_mark = batch_x_mark.to(self.device).float()
-                batch_y_mark = batch_y_mark.to(self.device).float()
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
+                batch_x = batch_x.float().to(self.device)
+                batch_y = batch_y.float().to(self.device)
+                batch_x_mark = batch_x_mark.float().to(self.device)
+                batch_y_mark = batch_y_mark.float().to(self.device)
+                site = site.to(self.device)
+                batch_x_ts = batch_x_ts.to(self.device)
+                batch_y_ts = batch_y_ts.to(self.device)
             
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
@@ -319,12 +322,15 @@ class Exp_Finetune(Exp_Main):
                 iter_count += 1
                 model_optim.zero_grad()
 
-                batch_x, batch_y, batch_x_mark, batch_y_mark = data
-                batch_x = batch_x.to(self.device).float()
-                batch_y = batch_y.to(self.device).float()
-                batch_x_mark = batch_x_mark.to(self.device).float()
-                batch_y_mark = batch_y_mark.to(self.device).float()
-            
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
+                batch_x = batch_x.float().to(self.device)
+                batch_y = batch_y.float().to(self.device)
+                batch_x_mark = batch_x_mark.float().to(self.device)
+                batch_y_mark = batch_y_mark.float().to(self.device)
+                site = site.to(self.device)
+                batch_x_ts = batch_x_ts.to(self.device)
+                batch_y_ts = batch_y_ts.to(self.device)
+
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
@@ -431,12 +437,15 @@ class Exp_Finetune(Exp_Main):
         self.model.eval()
         with torch.no_grad():
             
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(vali_loader):
+            for i, (data) in enumerate(vali_loader):
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
-
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
+                site = site.to(self.device)
+                batch_x_ts = batch_x_ts.to(self.device)
+                batch_y_ts = batch_y_ts.to(self.device)
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
@@ -538,12 +547,15 @@ class Exp_Finetune(Exp_Main):
 
         self.model.eval()
         with torch.no_grad():
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
+            for i, (data) in enumerate(test_loader):
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
-
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
+                site = site.to(self.device)
+                batch_x_ts = batch_x_ts.to(self.device)
+                batch_y_ts = batch_y_ts.to(self.device)
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()

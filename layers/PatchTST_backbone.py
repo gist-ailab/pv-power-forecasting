@@ -56,9 +56,10 @@ class PatchTST_backbone(nn.Module):
         elif head_type == 'flatten': 
             self.head = Flatten_Head(self.individual, self.n_vars, self.head_nf, target_window, head_dropout=head_dropout)
         
-    
+        self.padding = False
     def forward(self, z):                                                                   # z: [bs x nvars x seq_len]
         # norm
+  
         if self.revin: 
             z = z.permute(0,2,1)
             z = self.revin_layer(z, 'norm')
@@ -71,9 +72,18 @@ class PatchTST_backbone(nn.Module):
         z = z.permute(0,1,3,2)                                                              # z: [bs x nvars x patch_len x patch_num]
         
         # model
-        z = self.backbone(z)                                                                # z: [bs x nvars x d_model x patch_num]
+        z = self.backbone(z)
+        if z.shape[1] < 5:
+            self.padding = True
+            original_channel = z.shape[1]
+            padding = torch.zeros((z.shape[0], 5 - original_channel, z.shape[2], z.shape[3])).to(z.device)
+            z = torch.cat((padding, z), dim=1)                                               # z: [bs x nvars x d_model x patch_num]
         z = self.head(z)                                                                    # z: [bs x nvars x target_window] 
-        
+      
+        if self.padding:
+            z = z[:, 5 - original_channel:, :]
+            
+
         # denorm
         if self.revin: 
             z = z.permute(0,2,1)
