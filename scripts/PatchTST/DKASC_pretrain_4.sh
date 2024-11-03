@@ -28,7 +28,6 @@ d_ff=512
 python -u run_longExp.py \
     --gpu 0 \
     --use_amp \
-    --individual 1 \
     --random_seed $random_seed \
     --is_pretraining 1 \
     --root_path $root_path_name \
@@ -54,5 +53,5 @@ python -u run_longExp.py \
     --train_epochs 100\
     --patience 20\
     --embed 'timeF' \
-    --itr 1 --batch_size 256 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers.log
+    --itr 1 --batch_size 1024 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers'_1024.log'
 done

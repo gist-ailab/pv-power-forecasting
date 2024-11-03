@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_DKASC_$model_name"
+exp_id="${DATE}_Pretrain_DKASC_$model_name"_individual
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -41,7 +41,7 @@ python -u run_longExp.py \
     --seq_len 256\
     --label_len $label_len \
     --pred_len $pred_len\
-    --enc_in 7 \
+    --enc_in 5 \
     --e_layers $e_layers \
     --n_heads $n_heads \
     --d_model $d_model \

@@ -339,7 +339,7 @@ if __name__ == '__main__':
 
     # Define the path to save the combined CSV file
     # weather_data = os.path.join(project_root, 'data/GIST_dataset/GIST_weather_data.csv')
-    weather_data = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/GIST_weather_data.csv')
+    weather_data = os.path.join(project_root, '/PV/GIST_dataset/GIST_weather_data.csv')
     
     if not os.path.exists(weather_data):
         create_combined_weather_csv(weather_data, project_root)
@@ -350,7 +350,7 @@ if __name__ == '__main__':
     # convert_excel_to_hourly_csv(pv_file_list)
 
     # raw_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')
-    raw_csv_data_dir = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/daily_PV_csv')
+    raw_csv_data_dir = os.path.join(project_root, '/PV/GIST_dataset/daily_PV_csv')
 
     raw_file_list = [os.path.join(raw_csv_data_dir, _) for _ in os.listdir(raw_csv_data_dir)]
     raw_file_list.sort()
@@ -375,9 +375,9 @@ if __name__ == '__main__':
     }
 
     # log_file_path = os.path.join(project_root, 'data/GIST_dataset/log.txt')
-    log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/log.txt')
+    log_file_path = os.path.join(project_root, '/PV/GIST_dataset/log.txt')
     # capacity_csv_dir = os.path.join(project_root, 'data/GIST_dataset/csv')  # 추가: capacity CSV 디렉토리 지정
-    capacity_csv_dir = os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/csv')  # 추가: capacity CSV 디렉토리 지정
+    capacity_csv_dir = os.path.join(project_root, '/PV/GIST_dataset/csv')  # 추가: capacity CSV 디렉토리 지정
 
     for i, (kor_name, eng_name) in enumerate(site_dict.items()):
         combine_into_each_site(file_list=raw_file_list,
@@ -385,7 +385,7 @@ if __name__ == '__main__':
                                kor_name=kor_name, eng_name=eng_name,
                                weather_data=weather_data,
                             #    save_dir=os.path.join(project_root, 'data/GIST_dataset/converted'),
-                               save_dir=os.path.join(project_root, '/ailab_mat/dataset/PV/GIST_dataset/converted'),
+                               save_dir=os.path.join(project_root, '/PV/GIST_dataset/converted'),
 
                                log_file_path=log_file_path,
                                capacity_csv_dir=capacity_csv_dir)
