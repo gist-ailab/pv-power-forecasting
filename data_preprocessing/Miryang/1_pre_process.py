@@ -176,8 +176,11 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
         
         filtered_df = merged_df.loc[expanded_indices]
 
-        # GHR이 0보다 큰데 Active_Power가 0과 같거나 0보다 작은 경우 필터링
-        filtered_df = filtered_df[~((filtered_df['Global_Horizontal_Radiation'] > 0) & (filtered_df['Active_Power'] <= 0))]
+        # GHR이 0보다 큰데 Active_Power가 0과 같거나 0보다 작은 경우, 그리고 GHR이 2000 이상인 경우 필터링
+        filtered_df = filtered_df[
+            ~((filtered_df['Global_Horizontal_Radiation'] > 0) & (filtered_df['Active_Power'] <= 0)) &
+            (filtered_df['Global_Horizontal_Radiation'] < 2000)
+        ]
 
         # Active_Power가 maximum_ap보다 큰 경우 maximum_ap로 변환
         filtered_df['Active_Power'] = filtered_df['Active_Power'].clip(upper=maximum_ap)
@@ -203,12 +206,12 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    pv_xls_data_dir = '/home/seongho_bak/Projects/PatchTST/data/Miryang/PV_xls'
+    pv_xls_data_dir = os.path.join(project_root, 'data/Miryang/PV_xls')
     pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
     pv_file_list.sort()
 
     csv_file_dir = convert_excel_to_csv(pv_file_list)   # Convert Excel files to CSV files
     csv_file_dir = os.path.join(project_root, 'data/Miryang/PV_csv')
-    weather_file_dir = '/home/seongho_bak/Projects/PatchTST/data/Miryang/weather'
+    weather_file_dir = os.path.join(project_root, 'data/Miryang/weather')
 
     combine_csv_files(csv_file_dir, weather_file_dir)
