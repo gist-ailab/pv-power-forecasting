@@ -19,6 +19,7 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
 
     '''2. Convert Active Power values less than 0.001 to 0'''
     df['Active_Power'] = df['Active_Power'].abs()
+    
     df.loc[df['Active_Power'] < 0.001, 'Active_Power'] = 0
 
     '''Calculate correlation between Active_Power and GHR'''
@@ -41,6 +42,7 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
     df_cleaned_3 = df_cleaned.copy()
     numeric_cols = df_cleaned_3.select_dtypes(include=[float, int]).columns
     df_cleaned_3[numeric_cols] = df_cleaned_3[numeric_cols].interpolate(method='polynomial', limit=1, order=2)
+    df_cleaned_3['Active_Power'] = df_cleaned_3['Active_Power'].where(df_cleaned_3['Active_Power'] >= 0, 0) # interpolate 이후 음수 발생시 0으로 대체
 
     '''4. AP 값이 있지만 GHR이 없는 날 제거'''
     # Step 1: AP > 0 and GHR = 0
