@@ -205,7 +205,6 @@ class Dataset_DKASC_AliceSprings(Dataset):
         # TODO: MS, S, M 구분해서 처리하는 코드 추가
 
         df_x = df_raw[cols + [self.target]]
-        # df_x['Wind_Speed'] = np.log
         df_y = df_raw[[self.target]]
         site_id = np.array([site_id]) * len(df_x)
        
@@ -230,15 +229,6 @@ class Dataset_DKASC_AliceSprings(Dataset):
         if self.data_path['type'] == 'all':
             site_ids = list(self.site_files.keys())
             
-
-            # [INFO] Train sites: [57, 61, 70, 92, 59, 212, 213, 218, 56, 66, 52, 90, 72, 77, 60, 74, 67, 73, 214, 58, 68, 54, 79, 84]
-            # Active_Power min: 0.0
-            # Active_Power max: 8.4429276784261
-            # train 1047045
-            # [INFO] Val sites: [64, 99, 71, 98, 93, 100, 97]
-            # val 406128
-            # [INFO] Test sites: [63, 85, 55, 69]
-            # test 228731
 
             train_keys=[57, 61, 70, 92, 59, 212, 213, 218, 56, 66, 52, 90, 72, 77, 60, 74, 67, 73, 214, 58, 68, 54, 79, 84]
             val_keys=[64, 99, 71, 98, 93, 100, 97]
@@ -837,18 +827,31 @@ class Dataset_German(Dataset):
         
 
         
-        self.LOCATIONS = [
-            '01_DE_KN_industrial1_pv_1.csv',
-            '02_DE_KN_industrial1_pv_2.csv',
-            '03_DE_KN_industrial2_pv.csv',
-            '04_DE_KN_industrial3_pv_facade.csv',
-            '05_DE_KN_industrial3_pv_roof.csv',
-            '06_DE_KN_residential1_pv.csv',
-            '07_DE_KN_residential3_pv.csv',
-            '08_DE_KN_residential4_pv.csv',
-            '09_DE_KN_residential6_pv.csv'
-        ]
+        self.LOCATIONS = {
+            'DE_KN_industrial1_pv_1.csv'     : '01_DE_KN_industrial1_pv_1.csv',
+            'DE_KN_industrial1_pv_2.csv'     : '02_DE_KN_industrial1_pv_2.csv',
+            'DE_KN_industrial2_pv.csv'       : '03_DE_KN_industrial2_pv.csv',
+            'DE_KN_industrial3_pv_facade.csv': '04_DE_KN_industrial3_pv_facade.csv',
+            'DE_KN_industrial3_pv_roof.csv'  : '05_DE_KN_industrial3_pv_roof.csv',
+            'DE_KN_residential1_pv.csv'      : '06_DE_KN_residential1_pv.csv',
+            'DE_KN_residential3_pv.csv'      : '07_DE_KN_residential3_pv.csv',
+            'DE_KN_residential4_pv.csv'      : '08_DE_KN_residential4_pv.csv',
+            'DE_KN_residential6_pv.csv'      : '09_DE_KN_residential6_pv.csv'
+        }
         
+        # 파일명 변경 수행
+        for original_name, new_name in self.LOCATIONS.items():
+            original_path = os.path.join(self.root_path, original_name)
+            new_path = os.path.join(self.root_path, new_name)
+            
+            # 파일이 존재하는 경우에만 이름을 변경
+            if os.path.exists(original_path):
+                os.rename(original_path, new_path)
+                print(f"{original_name} -> {new_name} (파일명 변경 완료)")
+            else:
+                print(f"{original_name} (파일을 찾을 수 없습니다)")
+
+
         self.scalers = {}
         self.site_data = {}
 
@@ -962,7 +965,6 @@ class Dataset_German(Dataset):
         # TODO: MS, S, M 구분해서 처리하는 코드 추가
 
         df_x = df_raw[cols + [self.target]]
-        # df_x['Wind_Speed'] = np.log
         df_y = df_raw[[self.target]]
         site_id = np.array([site_id]) * len(df_x)
        
@@ -985,27 +987,18 @@ class Dataset_German(Dataset):
     
     def _split_sites(self):
         if self.data_path['type'] == 'all':
-            site_ids = list(self.site_files.keys())
+            # site_ids = list(self.site_files.keys())
             
-            # TODO: 재현 가능하게 고정하기
-            # [INFO] Train sites: [92, 214, 52, 61, 99, 60, 72, 68, 55, 67, 64, 212, 59, 71, 69, 66, 90, 73, 70, 79, 213, 74, 85]
-            # train 1310017
-            # [INFO] Val sites: [54, 58, 63, 98, 77, 84]
-            # val 348608
-            # [INFO] Test sites: [57, 93, 56, 218, 100]
-            # test 250599
-
-            random.seed(42)
-            random.shuffle(site_ids)
-            total_sites = len(site_ids)
-            train_end = int(total_sites * 0.7)
-            val_end = train_end + int(total_sites * 0.2)
+            train_sites = [8, 1, 7, 3, 4, 6]
+            val_sites = [9]
+            test_sites = [2, 5]
 
             site_split = {
-                'train': site_ids[:train_end],
-                'val': site_ids[train_end:val_end],
-                'test': site_ids[val_end:]  
+                'train': train_sites,
+                'val': val_sites,
+                'test': test_sites  
             }
+
         elif self.data_path['type'] == 'debug':
             site_split = {
                 'train': [int(self.data_path['train'].split('-')[0])],
@@ -1046,8 +1039,6 @@ class Dataset_German(Dataset):
     
     def __len__(self):    
         return len(self.indices)
-
-
 
     # 평가 시 필요함
     def inverse_transform(self, data):
