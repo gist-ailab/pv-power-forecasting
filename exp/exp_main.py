@@ -513,8 +513,8 @@ class Exp_Main(Exp_Basic):
         avg_mae, avg_mse, avg_rmse, avg_nrmse, avg_mape, avg_mspe, avg_rse, avg_r2 = metric(pred_np, trues_np, site_max_capacities=test_data.site_max_capacities, file_path=txt_save_path)
         avg_mae_n, avg_mse_n, avg_rmse_n, avg_nrmse_n, avg_mape_n, avg_mspe_n, avg_rse_n, avg_r2_n = metric(pred_normalized_np, true_normalized_np, site_max_capacities=test_data.site_max_capacities, file_path=txt_save_path_normalized)
 
-        print('\navg_mae: {}, avg_mse: {}, avg_rmse: {}, avg_nrmse: {}, avg_mape: {}, avg_mspe: {}, avg_rse: {}, avg_r2: {}'.format(avg_mae, avg_mse, avg_rmse, avg_nrmse, avg_mape, avg_mspe, avg_rse, avg_r2))
-        print('\navg_mae_normalized: {}, avg_mse_normalized: {}, avg_rmse_normalized: {}, avg_nrmse_normalized: {}, avg_mape_normalized: {}, avg_mspe_normalized: {}, avg_rse_normalized: {}, avg_r2_normalized: {}'.format(avg_mae_n, avg_mse_n, avg_rmse_n, avg_nrmse_n, avg_mape_n, avg_mspe_n, avg_rse_n, avg_r2_n))
+        print('\nAVG_MAE: {}, AVG_MSE: {}, AVG_RMSE: {}, AVG_NRMSE: {}, AVG_MAPE: {}, AVG_MSPE: {}, AVG_RSE: {}, AVG_R2: {}'.format(avg_mae, avg_mse, avg_rmse, avg_nrmse, avg_mape, avg_mspe, avg_rse, avg_r2))
+        print('\nAVG_MAE_NORMALIZED: {}, AVG_MSE_NORMALIZED: {}, AVG_RMSE_NORMALIZED: {}, AVG_NRMSE_NORMALIZED: {}, AVG_MAPE_NORMALIZED: {}, AVG_MSPE_NORMALIZED: {}, AVG_RSE_NORMALIZED: {}, AVG_R2_NORMALIZED: {}'.format(avg_mae_n, avg_mse_n, avg_rmse_n, avg_nrmse_n, avg_mape_n, avg_mspe_n, avg_rse_n, avg_r2_n))
         
 
         
