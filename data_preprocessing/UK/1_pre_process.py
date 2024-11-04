@@ -13,7 +13,7 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
 
     '''1. Extract only necessary columns'''
     raw_df = raw_df[raw_df['Site'] == invertor_name]
-    df = raw_df[['timestamp', 'Active_Power', 'Global_Horizontal_Radiation','Weather_Temperature_Celsius', 'Wind_Speed']]
+    df = raw_df[['timestamp', 'Active_Power', 'Global_Horizontal_Radiation','Weather_Temperature_Celsius', 'Wind_Speed','Weather_Relative_Humidity']]
     df = df.rename(columns={invertor_name: 'Active_Power'})
 
     '''2. AP가 0.001보다 작으면 0으로 변환'''
@@ -209,7 +209,8 @@ if __name__ == '__main__':
     
 
     # site_list = ['YMCA', 'Maple Drive East', 'Forest Road', 'Elm Crescent','Easthill Road']
-    site_list = ['YMCA', 'Maple Drive East', 'Forest Road']
+    # site_list = ['YMCA', 'Maple Drive East', 'Forest Road']
+    site_list = ['Maple Drive East', 'Forest Road']
 
     log_file_path = os.path.join(project_root, '/ailab_mat/dataset/PV/UK_data/log.txt')
     for i, invertor_name in enumerate(site_list):

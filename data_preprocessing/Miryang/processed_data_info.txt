@@ -1,0 +1,66 @@
+파일별 row 수 및 열별 결측치, 최소, 최대값:
+
+A_999kW_태양광발전량_데이터_merged.csv: 9798개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=826.165
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-14.8, 최대값=35.22
+ - Weather_Relative_Humidity: 결측치=0개, 최소값=9.37, 최대값=99.85
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=1113.8889
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=7.38
+
+B_658kW_태양광발전량_데이터_merged.csv: 9376개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=533.6
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-12.5, 최대값=37.52
+ - Weather_Relative_Humidity: 결측치=0개, 최소값=14.22, 최대값=100.0
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=916.6667
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=7.77
+
+C_99kW_태양광발전량_데이터_merged.csv: 10251개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=99.0
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-13.05, 최대값=37.52
+ - Weather_Relative_Humidity: 결측치=0개, 최소값=14.22, 최대값=100.0
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=916.6667
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=7.77
+
+D_89kW_태양광발전량_데이터_merged.csv: 10868개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=75.57
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-12.5, 최대값=37.52
+ - Weather_Relative_Humidity: 결측치=0개, 최소값=14.22, 최대값=100.0
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=916.6667
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=8.83
+
+E_69kW_태양광발전량_데이터_merged.csv: 10549개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=62.415
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-12.5, 최대값=37.52
+ - Weather_Relative_Humidity: 결측치=0개, 최소값=14.22, 최대값=100.0
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=916.6667
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=8.83
+
+F_64kW_태양광발전량_데이터_merged.csv: 10551개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=58.964
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-12.5, 최대값=37.52
+ - Weather_Relative_Humidity: 결측치=0개, 최소값=14.22, 최대값=100.0
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=916.6667
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=8.83
+
+G_50kW_태양광발전량_데이터_merged.csv: 4853개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=50.0
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-8.6, 최대값=37.52
+ - Weather_Relative_Humidity: 결측치=0개, 최소값=19.83, 최대값=100.0
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=888.8889
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=6.72
+
+총 데이터 수: 66246개

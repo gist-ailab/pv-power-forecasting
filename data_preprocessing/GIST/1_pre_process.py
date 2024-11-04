@@ -345,6 +345,7 @@ if __name__ == '__main__':
     # Define the path to save the combined CSV file
     # weather_data = os.path.join(project_root, 'data/GIST_dataset/GIST_weather_data.csv')
     weather_data = os.path.join(project_root, 'data/GIST_dataset/GIST_weather_data.csv')
+
     
     if not os.path.exists(weather_data):
         create_combined_weather_csv(weather_data, project_root)

@@ -1,0 +1,323 @@
+파일별 row 수 및 열별 결측치, 최소, 최대값:
+
+inv1.csv: 14112개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.7916666666666
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv10.csv: 15300개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8083333333333
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv11.csv: 15306개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8416666666667
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv12.csv: 15338개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=825.0083333333333
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv13.csv: 14095개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8583333333332
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv14.csv: 14217개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8083333333333
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv15.csv: 15101개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8666666666667
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv16.csv: 15271개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8083333333334
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv17.csv: 15302개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8916666666665
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv18.csv: 15400개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8166666666666
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv19.csv: 14635개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8083333333333
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv2.csv: 14301개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.7583333333332
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-5.125, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv20.csv: 14188개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8166666666666
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv21.csv: 13918개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.7916666666666
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv22.csv: 14655개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.9
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv23.csv: 15239개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8083333333333
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv24.csv: 15159개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8249999999999
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv25.csv: 14754개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.9416666666666
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv26.csv: 14787개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.875
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv27.csv: 15212개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.9333333333333
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv28.csv: 15118개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8083333333333
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv29.csv: 15220개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8916666666665
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv3.csv: 15063개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.775
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv30.csv: 15147개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.775
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=5.984999999999999
+
+inv31.csv: 14827개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8416666666667
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv32.csv: 14972개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.7916666666666
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv33.csv: 15089개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.875
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv34.csv: 15224개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.775
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv35.csv: 15317개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8416666666666
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv36.csv: 14970개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8416666666666
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv37.csv: 14324개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.7833333333333
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv38.csv: 14520개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.7666666666668
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv39.csv: 14549개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8166666666666
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv4.csv: 15022개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=825.3666666666667
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv40.csv: 14510개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8000000000001
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv5.csv: 14713개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.7999999999998
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv6.csv: 15266개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.875
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv7.csv: 15298개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8499999999999
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv8.csv: 15205개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.9
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+inv9.csv: 15144개
+열별 결측치, 최소, 최대값:
+ - timestamp: 결측치=0개, 최소값=N/A, 최대값=N/A
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=824.8583333333332
+ - Global_Horizontal_Radiation: 결측치=0개, 최소값=-15.065529313004165, 최대값=1048.8575
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.425, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
+
+총 데이터 수: 595788개
