@@ -41,7 +41,7 @@ for i in "${!pred_len[@]}"; do
       --random_seed $random_seed \
       --individual 1 \
       --is_inference 1 \
-      --checkpoints /home/seongho_bak/Projects/PatchTST/checkpoints/fully_finetune/fully_finetune_24110317_PatchTST_Miryang_ftMS_sl256_ll0_pl16_dm256_nh8_el4_dl1_df512_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth \
+      --checkpoints /home/seongho_bak/Projects/PatchTST/checkpoints/fully_finetune/fully_finetune_24110408_PatchTST_Miryang_ftMS_sl256_ll0_pl16_dm256_nh8_el4_dl1_df512_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth\
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \
@@ -65,5 +65,5 @@ for i in "${!pred_len[@]}"; do
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --itr 1 --batch_size 512 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pl.log
+      --itr 1 --batch_size 1024 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pl.log
 done

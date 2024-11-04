@@ -29,7 +29,7 @@ n_heads=8
 d_model=256
 d_ff=512
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=2
 for i in "${!pred_len[@]}"; do
     pl=${pred_len[$i]}
     ckpt=${checkpoints[$i]}
@@ -40,7 +40,7 @@ for i in "${!pred_len[@]}"; do
       --individual 1 \
       --random_seed $random_seed \
       --is_linear_probe 1 \
-      --checkpoints "/home/seongho_bak/Projects/PatchTST/dkasc_ckpt/24110208_PatchTST_DKASC_AliceSprings_ftMS_sl256_ll0_pl16_dm256_nh8_el4_dl1_df512_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth" \
+      --checkpoints /home/seongho_bak/Projects/PatchTST/dkasc_ckpt/24110405_PatchTST_DKASC_AliceSprings_ftMS_sl256_ll0_pl16_dm256_nh8_el4_dl1_df512_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth \
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

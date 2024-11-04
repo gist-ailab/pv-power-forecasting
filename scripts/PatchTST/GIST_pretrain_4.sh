@@ -20,7 +20,7 @@ random_seed=2024
 e_layers=4
 
 
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=4
 
 for pred_len in 16 # 8 4 2 1  
 do

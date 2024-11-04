@@ -183,6 +183,15 @@ class Exp_Main(Exp_Basic):
                 # loss for source domain
                 outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+
+                # outputs_inv = train_data.inverse_transform_tensor(site[:, 0], outputs)
+                # batch_y_inv = train_data.inverse_transform_tensor(site[:, 0], batch_y)
+
+                # outputs_np = torch.from_numpy(outputs_np).to(self.device)
+                # batch_y_np = torch.from_numpy(batch_y_np).to(self.device)
+
+                # outputs_np.requires_grad = True
+                # batch_y_np.requires_grad = True
                 loss = criterion(outputs, batch_y)
                 train_losses.append(loss.item())
 
@@ -306,10 +315,16 @@ class Exp_Main(Exp_Basic):
                     ### calculate metrics with only active power
                     output_np = outputs.detach().cpu().numpy() 
                     batch_y_np = batch_y.detach().cpu().numpy()
-
-                    # print(site)
-                    active_power_np = vali_data.inverse_transform(output_np.copy())
+                    # print('output_np', output_np)
+                    # print('batch_y', batch_y_np)
+                    
+                    # print(output_np.shape) (1024, 16, 1)
+                    
+                    # active_power_np = vali_data.inverse_transform(site[:, 0], output_np.copy())
+                    # active_power_gt_np = vali_data.inverse_transform(site[:, 0], batch_y_np.copy())
+                    active_power_np = vali_data.inverse_transform( output_np.copy())
                     active_power_gt_np = vali_data.inverse_transform(batch_y_np.copy())
+                   
 
                     # # scaler적용 후, 다시 3d로 되돌리기
                     # active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
@@ -318,7 +333,8 @@ class Exp_Main(Exp_Basic):
 
                     pred = torch.from_numpy(active_power_np).to(self.device)
                     gt = torch.from_numpy(active_power_gt_np).to(self.device)
-                
+                    # print('pred', pred)
+                    # print('gt', gt)                
                 else:
                     # TODO: LSTM일 때, 코드 수정 필요
                     pred_np = vali_data.inverse_transform(outputs.detach().cpu().numpy())
@@ -328,7 +344,7 @@ class Exp_Main(Exp_Basic):
                     pred = torch.from_numpy(pred_np[:, :, -1])
                     gt = torch.from_numpy(gt_np[:, :, -1])
 
-                loss = criterion(pred, gt)
+                loss = criterion(pred, gt) 
                 total_loss.append(loss.item())
         
         self.model.train()
@@ -410,7 +426,12 @@ class Exp_Main(Exp_Basic):
                     outputs_np = outputs.detach().cpu().numpy()
                     batch_y_np = batch_y.detach().cpu().numpy()
 
-                    # de-normalize the data and prediction values
+                    # de-normalize the data and prediction 
+                    batch_x_np = batch_x.detach().cpu().numpy()
+                    # batch_x_ap = test_data.inverse_transform(site[:, 0], batch_x_np.copy()[:, :, -1])   
+                    # pred = test_data.inverse_transform(site[:, 0], outputs_np.copy())
+                    # true = test_data.inverse_transform(site[:, 0], batch_y_np.copy())
+                    batch_x_ap = test_data.inverse_transform(batch_x_np.copy()[:, :, -1])   
                     pred = test_data.inverse_transform(outputs_np.copy())
                     true = test_data.inverse_transform(batch_y_np.copy())
 
@@ -441,6 +462,9 @@ class Exp_Main(Exp_Basic):
                 input_list.append(batch_x.detach().cpu().numpy())
                 
                 # TODO: visualize code 수정 필요
+                # Visualize periodically
+                if i % 3 == 0:
+                    self.plot_predictions(i, batch_x_ap[0], true[0], pred[0], folder_path)
                 # if i % 10 == 0:
                 #     if self.args.model != 'LSTM':
                 #     # visualize_input_length = outputs.shape[1]*3 # visualize three times of the prediction length
@@ -482,18 +506,18 @@ class Exp_Main(Exp_Basic):
         os.makedirs(folder_path, exist_ok=True)
         
         # calculate metrics with only generated power
-        mae, mse, rmse, nrmse, mape, mspe, rse = metric(pred_np, trues_np, test_data.ap_max, test_data.ap_min)
-        mae_normalized, mse_normalized, rmse_normalized, nrmse_normalized, mape_normalized, mspe_normalized, rse_normalized = metric(pred_normalized_np, true_normalized_np, test_data.ap_max_normalized, test_data.ap_min_normalized)
-        print('MSE:{}, MAE:{}, RMSE:{}, nRMSE: {}, MAPE: {}, MSPE: {}, RSE: {}'.format(mse, mae, rmse, nrmse, mape, mspe, rse))
-        print('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}, nRMSE_normalized:{}, MAPE_normalized: {}, MSPE_normalized: {}, RSE_normalized: {}'.format(mse_normalized, mae_normalized, rmse_normalized, nrmse_normalized, mape_normalized, mspe_normalized, rse_normalized))
+        mae, mse, rmse,  mape, mspe, rse = metric(pred_np, trues_np)#, test_data.ap_max, test_data.ap_min)
+        mae_normalized, mse_normalized, rmse_normalized, mape_normalized, mspe_normalized, rse_normalized = metric(pred_normalized_np, true_normalized_np)#, test_data.ap_max_normalized, test_data.ap_min_normalized)
+        print('MSE:{}, MAE:{}, RMSE:{}, MAPE: {}, MSPE: {}, RSE: {}'.format(mse, mae, rmse, mape, mspe, rse))
+        print('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}, MAPE_normalized: {}, MSPE_normalized: {}, RSE_normalized: {}'.format(mse_normalized, mae_normalized, rmse_normalized, mape_normalized, mspe_normalized, rse_normalized))
         
         txt_save_path = os.path.join(folder_path,
                                      f"{self.args.seq_len}_{self.args.pred_len}_result.txt")
         f = open(txt_save_path, 'a')
         f.write(setting + "  \n")
-        f.write('MSE:{}, MAE:{}, RMSE:{}, MAPE: {}'.format(mse, mae, rmse, mape))
+        f.write('MSE:{}, MAE:{}, RMSE:{}, MAPE: {}, MSPE:{}, RSE:{}'.format(mse, mae, rmse, mape, mspe, rse))
         f.write('\n')
-        f.write('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}, MAPE_normalized:{}'.format(mse_normalized, mae_normalized, rmse_normalized, mape_normalized))
+        # f.write('MSE_normalized:{}, MAE_normalized:{}, RMSE_normalized:{}, MAPE_normalized:{}'.format(mse_normalized, mae_normalized, rmse_normalized, mape_normalized))
         f.write('\n')
         f.write('\n')
         f.close()
@@ -503,6 +527,42 @@ class Exp_Main(Exp_Basic):
         # np.save(folder_path + 'true.npy', trues_np)
         # np.save(folder_path + 'x.npy', inputx_np)
         return
+    import matplotlib.pyplot as plt
+    import os
+
+    def plot_predictions(self, i, input_sequence, ground_truth, predictions, save_path):
+        """
+        예측 시각화 함수
+        Args:
+            input_sequence (numpy array): 입력 시퀀스 데이터
+            ground_truth (numpy array): 실제값
+            predictions (numpy array): 예측값
+            save_path (str): 플롯을 저장할 경로
+        """
+        plt.figure(figsize=(12, 6))
+        
+        # 입력 시퀀스 플롯
+        plt.plot(range(len(input_sequence)), input_sequence, label='Input Sequence', color='blue', linestyle='--')
+        
+        # 실제값 플롯
+        prediction_start = len(input_sequence)
+        plt.plot(range(prediction_start, prediction_start + len(ground_truth)), ground_truth, label='Ground Truth', color='green')
+        
+        # 예측값 플롯
+        plt.plot(range(prediction_start, prediction_start + len(predictions)), predictions, label='Predictions', color='red')
+        
+        # 레이블, 제목 설정
+        plt.xlabel('Time Steps')
+        plt.ylabel('Value')
+        plt.title('Prediction vs Ground Truth')
+        plt.legend()
+        
+        # 플롯 저장
+        os.makedirs(save_path, exist_ok=True)
+        plt.savefig(os.path.join(save_path, f'pred_{i}.png'))
+        plt.close()        
+
+
 
     def predict(self, setting, load=False):
         pred_data, pred_loader = self._get_data(flag='pred')

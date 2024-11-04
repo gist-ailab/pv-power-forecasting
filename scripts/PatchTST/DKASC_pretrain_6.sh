@@ -14,7 +14,7 @@ seq_len=256
 label_len=0
 pred_len=16
 
-root_path_name=/PV/DKASC_AliceSprings/converted
+root_path_name=data/DKASC_AliceSprings/converted
 data_path_name='type=all'
 data_name=DKASC_AliceSprings
 random_seed=2024
@@ -24,7 +24,7 @@ n_heads=8
 d_model=256
 d_ff=512
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 
 python -u run_longExp.py \
     --gpu 0 \
@@ -51,7 +51,7 @@ python -u run_longExp.py \
     --head_dropout 0\
     --patch_len 16\
     --stride 8\
-    --des 'Exp' \
+    --des '2048' \
     --train_epochs 100\
     --patience 20\
     --embed 'timeF' \

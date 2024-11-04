@@ -17,338 +17,6 @@ warnings.filterwarnings('ignore')
 
 __all__ = ['Dataset_DKASC_single', 'Dataset_DKASC', 'Dataset_GIST', 'Dataset_German']
 
-
-class Dataset_DKASC_single(Dataset):
-    def __init__(self, root_path, flag='train', size=None,
-                 features='MS', data_path='79-Site_DKA-M6_A-Phase.csv', scaler_path=None,
-                 target='Active_Power', scale=True, timeenc=0, freq='h', domain='source'):
-        # size [seq_len, label_len, pred_len]
-        # info
-        if size == None:
-            self.seq_len = 24 * 4 * 4
-            self.label_len = 24 * 4
-            self.pred_len = 24 * 4
-        else:
-            self.seq_len = size[0]
-            self.label_len = size[1]
-            self.pred_len = size[2]
-        # init
-        assert flag in ['train', 'test', 'val']
-        type_map = {'train': 0, 'val': 1, 'test': 2}
-        self.set_type = type_map[flag]
-
-        self.features = features
-        self.target = target
-        self.scale = scale
-        self.timeenc = timeenc
-        self.freq = freq
-        self.domain = domain
-
-        self.root_path = root_path
-        self.data_path = data_path
-
-        self.DATASET_SPLIT_YEAR = {
-            '79-Site_DKA-M6_A-Phase.csv'    : [2009, 2020,  2021, 2022,  2023, 2023],   # 7.0kW, CdTe, Fixed, First-Solar
-            '91-Site_DKA-M9_B-Phase.csv'    : [2014, 2020,  2021, 2021,  2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A
-            '87-Site_DKA-M9_A+C-Phases.csv' : [2010, 2020,  2021, 2021,  2022, 2022],   # 23.4kW, mono-Si, Tracker: Dual              # 1B
-            '78-Site_DKA-M11_3-Phase.csv'   : [2010, 2020,  2021, 2021,  2022, 2022],   # 26.5kW, mono-Si, Tracker: Dual              # 2
-            # '91-Site_DKA-M9_B-Phase.csv'    : [2020, 2021,  2020, 2021,  2022, 2022],   # 10.5kW, mono-Si, Tracker: Dual              # 1A, other papers
-            # '87-Site_DKA-M9_A+C-Phases.csv' : [2014, 2017,  2018, 2018,  2018, 2018],   # 23.4kW, mono-Si, Tracker: Dual              # 1B
-            # '78-Site_DKA-M11_3-Phase.csv'   : [2020, 2021,  2020, 2021,  2022, 2022],   # 26.5kW, mono-Si, Tracker: Dual              # 2
-            '70-Site_3-BP-Solar.csv'        : [2009, 2020,  2021, 2021,  2022, 2022],   # 5.0kW, poly-Si, Fixed, Roof Mounted         # 3
-            '79-Site_7-First-Solar.csv'     : [2009, 2020,  2021, 2021,  2022, 2022],   # 7.0kW, CdTe, Fixed
-            '93-Site_8-Kaneka.csv'          : [2009, 2020,  2021, 2021,  2022, 2022],   # 6.0kW, Amorphous Silicon, Fixed
-            '85-Site_10-SunPower.csv'       : [2010, 2020,  2021, 2021,  2022, 2022],   # 5.8kW, mono-Si, Fixed
-            '55-Site_29-CSUN.csv'           : [2014, 2020,  2021, 2021,  2022, 2022],   # 6.0kW, poly-Si, Fixed
-            '73-Site_35-Elkem.csv'          : [2014, 2020,  2021, 2021,  2022, 2022],   # 5.5kW, poly-Si, Fixed
-            '72-Site_26-Q-CELLS.csv'        : [2014, 2020,  2021, 2021,  2022, 2022],   # 5.5kW, poly-Si, Fixed
-            '56-Site_30-Q-CELLS.csv'        : [2014, 2020,  2021, 2021,  2022, 2022],   # 5.6kW, poly-Si, Fixed
-            '213-Site_24-Q-CELLS.csv'       : [2017, 2020,  2021, 2021,  2022, 2022],   # 6.1kW, poly-Si, Fixed
-            '59-Site_38-Q-CELLS.csv'        : [2017, 2020,  2021, 2021,  2022, 2022],   # 5.9kW, mono-Si, Fixed
-            '212-Site_25-Hanwha-Solar.csv'  : [2017, 2020,  2021, 2021,  2022, 2022],   # 5.8kW, poly-Si, Fixed
-        }
-        
-        # Create scaler for each input_channels
-        self.input_channels = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-        self.input_channels = self.input_channels + [self.target]
-        for i in self.input_channels:
-            setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
-        
-        self.seq_len = size[0]
-        self.label_len = size[1]
-        self.pred_len = size[2]
-        
-        self.__read_data__()
-        
-        # ###TODO: 저장해서 쓸 수 있어야 하는데 StandardScaler에서 문제 발생한다.
-        # # save preprocessed data
-        # processed_data = data_path.split('.')[0] + f'_{flag}.pkl'
-        # save_path = os.path.join(root_path,
-        #                          'preprocessed',
-        #                          f'{self.seq_len}_{self.label_len}_{self.pred_len}')
-        # os.makedirs(save_path, exist_ok=True)
-        # self.pkl_file = os.path.join(save_path, processed_data)
-        # if os.path.exists(self.pkl_file):
-        #     print(f'Load saved file {self.pkl_file}.')
-            
-        #     with open(self.pkl_file, 'rb') as f:
-        #         save_data = pickle.load(f)
-                
-        #         self.data_x = save_data['data_x']
-        #         self.data_y = save_data['data_y']
-        #         self.data_stamp = save_data['data_stamp']
-                
-        # else:
-        #     print(f'Preprocessing {data_path} for {flag}...')
-        
-        #     self.__read_data__()
-            
-        #     # load preprocessed data
-        #     save_data = {
-        #         'data_x': self.data_x,
-        #         'data_y': self.data_y,
-        #         'data_stamp': self.data_stamp
-        #     }
-            
-        #     with open(self.pkl_file, 'wb') as f:
-        #         pickle.dump(save_data, f, pickle.HIGHEST_PROTOCOL)
-
-    def __read_data__(self):            
-        df_raw = pd.read_csv(os.path.join(self.root_path,
-                                          self.data_path))
-        
-        ## apply resolution
-        df_raw['minute'] = df_raw['timestamp'].apply(lambda x: int(x.split(' ')[1].split(':')[1]))
-        df_raw = df_raw.drop(df_raw[df_raw['minute'] % 60 != 0].index)
-        df_raw = df_raw.reset_index()
-        
-        # Using specific columns
-        df_raw['date'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
-        '''
-        df_raw.columns: ['date', ...(other features)]
-        '''
-        df_raw = df_raw[['date'] + self.input_channels]
-
-        ## pre-processing
-        df_date = pd.DataFrame()
-        df_date['date'] = pd.to_datetime(df_raw.date)
-        df_date['year'] = df_date.date.apply(lambda row: row.year, 1)
-        df_date['month'] = df_date.date.apply(lambda row: row.month, 1)
-        df_date['day'] = df_date.date.apply(lambda row: row.day, 1)
-        df_date['weekday'] = df_date.date.apply(lambda row: row.weekday(), 1)
-        df_date['hour'] = df_date.date.apply(lambda row: row.hour, 1)        
-        print(f"Preprocess for {self.data_path} about missing and wrong values.")
-        print(f"Missing values: ")
-
-        for i in df_raw.columns[1:]:    # except 'date' which is the first column
-            print(i, end='\t')
-            print(df_raw[i].isnull().sum(), end='  ')
-            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
-            df_raw, df_date = self.remove_null_value(df_raw, df_date, i)
-            print('-> ', df_raw[i].isnull().sum())
-        print('')
-        
-        ## check if there is missing value
-        assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
-        assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
-        assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
-        assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
-        assert df_raw['Active_Power'].isnull().sum() == 0
-        
-        ### get maximum and minimum value of 'Active_Power'
-        setattr(self, f'pv_{self.domain}_max', np.max(df_raw['Active_Power'].values))   # save the maximum value of 'Active_Power' as a source/target domain
-        setattr(self, f'pv_{self.domain}_min', np.min(df_raw['Active_Power'].values))   # save the minimum value of 'Active_Power' as a source/target domain
-
-        # remove minus temperature
-        print('Remove minus temperature.')
-        print('Weather_Temperature_Celsius', end='\t')
-        print(len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()), end='  ')
-        df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
-        df_raw, df_date = self.remove_minus_temperature(df_raw, df_date)
-        print('-> ', len(df_raw[df_raw['Weather_Temperature_Celsius'] < 0].index.tolist()))
-        print('')
-
-        # remove minus radiation
-        print('Remove minus radiation.')
-        for i in ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation']:
-            print(i, end='\t')
-            print(len(df_raw[df_raw[i] < 0].index.tolist()), end='  ')
-            df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
-            df_raw, df_date = self.remove_minus_radiation(df_raw, df_date)
-            print('-> ', len(df_raw[df_raw[i] < 0].index.tolist()))
-        print('')
-
-        ### clip over 100 humidity
-        print('Clip over 100 humidity.')
-        print(f'Weather_Relative_Humidity', end='\t')
-        print(len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()), end='  ')
-        df_raw, df_date = df_raw.reset_index(drop=True), df_date.reset_index(drop=True)
-        df_raw, df_date = self.clip_over_hundred_humidity(df_raw, df_date)
-        print('-> ', len(df_raw[df_raw['Weather_Relative_Humidity'] > 100].index.tolist()))
-        print('')
-
-        # crop data for the year to be used train/val/test
-        border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][2*(self.set_type)]}-01-01 00:00:00'].index[0]
-        border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[self.data_path][2*(self.set_type)+1]}-12-31 23:00:00'].index[-1]+1
-        df_stamp = df_raw[['date']][border1:border2]
-
-        if self.timeenc == 0:
-            data_stamp = pd.DataFrame()
-            data_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
-            data_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
-            data_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
-            data_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
-        elif self.timeenc == 1:
-            data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
-            data_stamp = data_stamp.transpose(1, 0)
-
-        if self.features == 'M' or self.features == 'MS':
-            cols_data = df_raw.columns[1:] 
-            df_data = df_raw[cols_data]
-        elif self.features == 'S':
-            df_data = df_raw[[self.target]]
-
-        if self.scale:
-            train_border1 = df_raw[df_raw['date'] >= f'{self.DATASET_SPLIT_YEAR[self.data_path][0]}-01-01 00:00:00'].index.tolist()[0]
-            train_border2 = df_raw[df_raw['date'] <= f'{self.DATASET_SPLIT_YEAR[self.data_path][1]}-12-31 23:00:00'].index.tolist()[-1]+1
-            train_data = df_data[train_border1:train_border2]
-            
-            train_data_values = train_data.values
-            df_data_values = df_data.values
-            transformed_data = []  # List to store each transformed feature
-            
-            # Transform data
-            for idx, val in enumerate(df_raw.columns[1:]):  # except 'date' which is the first column
-                train_features = train_data_values[:, idx].reshape(-1, 1)
-                getattr(self, f'scaler_{self.domain}_{val}').fit(train_features)
-                
-                df_data_features = df_data_values[:, idx].reshape(-1, 1)
-                transformed_feature = getattr(self, f'scaler_{self.domain}_{val}').transform(df_data_features)
-                transformed_data.append(transformed_feature)
-            data = np.concatenate(transformed_data, axis=1)
-            
-        else:
-            data = df_data.values
-        
-        self.data_x = data[border1:border2]
-        self.data_y = data[border1:border2]
-        if self.timeenc == 0:
-            # setattr(self, f'data_stamp_{self.domain}', data_stamp[['month', 'day', 'weekday', 'hour']].values)
-            self.data_stamp = data_stamp[['month', 'day', 'weekday', 'hour']].values
-        elif self.timeenc == 1:
-            # setattr(self, f'data_stamp_{self.domain}', data_stamp)
-            self.data_stamp = data_stamp
-        
-    def remove_successive_missing_value(self, pv, df_stamp):
-        df_stamp_org = copy.deepcopy(df_stamp)
-        missing_idx = pv[pv['Active_Power'].isnull()]['Active_Power'].index.tolist()
-        successive, count = True, 1
-        front, rear = 0, 0
-
-        for i in range(len(missing_idx)-1, 0, -1):
-            front, rear = missing_idx[i-1], missing_idx[i]
-            # print(successive, count)
-            if successive:
-                if front == rear-1:
-                    count += 1
-                else:
-                    if count >= 4:
-                        year, month, day = df_stamp_org.iloc[rear]['year'], df_stamp_org.iloc[rear]['month'], df_stamp_org.iloc[rear]['day']
-                        # print('[', rear, ']', year, month, day)
-                        has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-                        if has_index:
-                            pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-                            df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-                    successive = False
-                    count = 1
-            else:
-                if front == rear-1:
-                    successive = True
-                    count += 1
-                else:
-                    pass
-        
-        if successive and count >= 4:
-            year, month, day = df_stamp_org.iloc[rear]['year'], df_stamp_org.iloc[rear]['month'], df_stamp_org.iloc[rear]['day']
-            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-            if has_index:
-                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-
-        return pv, df_stamp
-        
-    def remove_null_value(self, pv, df_stamp, column):   # pv = df_raw
-        df_stamp_org = copy.deepcopy(df_stamp)
-        missing_idx = pv[pv[column].isnull()][column].index.tolist()
-        for i in range(len(missing_idx)-1, -1, -1):
-            idx = missing_idx[i]
-            year, month, day = df_stamp_org.iloc[idx]['year'], df_stamp_org.iloc[idx]['month'], df_stamp_org.iloc[idx]['day']
-            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-            if has_index:
-                # print('year, month, day: ', year, month, day)
-                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-
-        return pv, df_stamp
-    
-    def remove_minus_temperature(self, pv, df_stamp):   # pv = df_raw
-        df_stamp_org = copy.deepcopy(df_stamp)
-        minus_idx = pv[pv['Weather_Temperature_Celsius'] < 0].index.tolist()
-        for i in range(len(minus_idx)-1, 1, -1):
-            idx = minus_idx[i]
-            year, month, day = df_stamp_org.iloc[idx]['year'], df_stamp_org.iloc[idx]['month'], df_stamp_org.iloc[idx]['day']
-            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-            if has_index:
-                # print('year, month, day: ', year, month, day)
-                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-
-        return pv, df_stamp
-
-    def remove_minus_radiation(self, pv, df_stamp):
-        df_stamp_org = copy.deepcopy(df_stamp)
-        minus_idx = pv[pv['Global_Horizontal_Radiation'] < 0].index.tolist()
-        minus_idx.extend(pv[pv['Diffuse_Horizontal_Radiation'] < 0].index.tolist())
-        for i in range(len(minus_idx)-1, -1, -1):
-            idx = minus_idx[i]
-            year, month, day = df_stamp_org.iloc[idx]['year'], df_stamp_org.iloc[idx]['month'], df_stamp_org.iloc[idx]['day']
-            has_index = len(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-            if has_index:
-                # print('year, month, day: ', year, month, day)
-                pv = pv.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-                df_stamp = df_stamp.drop(df_stamp[(df_stamp['year'] == year) & (df_stamp['month'] == month) & (df_stamp['day'] == day)].index)
-            
-        return pv, df_stamp
-
-    def clip_over_hundred_humidity(self, pv, df_stamp):
-        over_idx = pv[pv['Weather_Relative_Humidity'] > 100].index.tolist()
-        pv.loc[over_idx, 'Weather_Relative_Humidity'] = 100
-        
-        return pv, df_stamp
-
-
-    def __getitem__(self, index):
-        s_begin = index
-        s_end = s_begin + self.seq_len
-        r_begin = s_end - self.label_len
-        r_end = r_begin + self.label_len + self.pred_len
-
-        seq_x = self.data_x[s_begin:s_end]
-        seq_y = self.data_y[r_begin:r_end]
-        seq_x_mark = self.data_stamp[s_begin:s_end]
-        seq_y_mark = self.data_stamp[r_begin:r_end]
-        
-        return (seq_x, seq_y, seq_x_mark, seq_y_mark)
-
-    def __len__(self):
-        return len(self.data_x) - self.seq_len - self.pred_len + 1
-
-    def inverse_transform(self, data):
-        ''' active power만 예측하고 검증할 때는 이거만 씀 '''
-        return getattr(self, f'scaler_{self.domain}_Active_Power').inverse_transform(data)
-
-
-
 class Dataset_DKASC_AliceSprings(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                  features='S', data_path='', scaler='MinMaxScaler',
@@ -634,7 +302,7 @@ class Dataset_DKASC_AliceSprings(Dataset):
     def inverse_transform(self, data):
         data_org = data.copy()
        
-        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+        data= self.scalers['Active_Power'].inverse_transform(data.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
     
@@ -868,7 +536,7 @@ class Dataset_DKASC_Yulara(Dataset):
     def inverse_transform(self, data):
         data_org = data.copy()
        
-        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+        data = self.scalers['Active_Power'].inverse_transform(data.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
 
@@ -1128,191 +796,9 @@ class Dataset_GIST(Dataset):
     def inverse_transform(self, data):
         data_org = data.copy()
        
-        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+        data = self.scalers['Active_Power'].inverse_transform(data.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data    
-
-
-###################################################3
-# German by Doyoon
-
-# class Dataset_DKASC_single(Dataset):
-#     def __init__(self, root_path, flag='train', size=None,
-#                  features='MS', data_path='79-Site_DKA-M6_A-Phase.csv', scaler_path=None,
-#                  target='Active_Power', scale=True, timeenc=0, freq='h', domain='source'):
-        
-class Dataset_German_single(Dataset):
-    def __init__(self, root_path, flag='train', size=None,
-                 features='MS', data_path='preprocessed_data_DE_KN_industrial1_pv_1.csv', target='Active_Power',
-                 scale=True, timeenc=0, freq='h', domain='source'):#, domain='target'):
-        # size [seq_len, label_len, pred_len]
-        # info
-        if size == None:
-            self.seq_len = 24 * 4 * 4
-            self.label_len = 24 * 4
-            self.pred_len = 24 * 4
-        else:
-            self.seq_len = size[0]
-            self.label_len = size[1]
-            self.pred_len = size[2]
-        # init
-        assert flag in ['train', 'test', 'val']
-        type_map = {'train': 0, 'val': 1, 'test': 2}
-        self.set_type = type_map[flag]
-
-        self.features = features
-        self.target = target
-        self.scale = scale
-        self.timeenc = timeenc
-        self.freq = freq
-        # self.domain = domain
-
-        self.root_path = root_path
-        self.data_path = data_path
-        
-        # Create scaler for each input_channels
-        # self.input_channels = ['Global_Horizontal_Radiation', 'Diffuse_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-        # self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-        self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius']
-        self.input_channels = self.input_channels + [self.target]
-        for i in self.input_channels:
-            setattr(self, f'scaler_{self.domain}_{i}', StandardScaler())
-            
-        self.__read_data__()
-
-        # ###TODO: 저장해서 쓸 수 있어야 하는데 StandardScaler에서 문제 발생한다.
-        # # save preprocessed data
-        # processed_data = data_path.split('.')[0] + f'_{flag}.pkl'
-        # save_path = os.path.join(root_path,
-        #                          'preprocessed',
-        #                          f'{self.seq_len}_{self.label_len}_{self.pred_len}')
-        # os.makedirs(save_path, exist_ok=True)
-        # self.pkl_file = os.path.join(save_path, processed_data)
-        # if os.path.exists(self.pkl_file):
-        #     print(f'Load saved file {self.pkl_file}.')
-            
-        #     with open(self.pkl_file, 'rb') as f:
-        #         save_data = pickle.load(f)
-                
-        #         self.data_x = save_data['data_x']
-        #         self.data_y = save_data['data_y']
-        #         self.data_stamp = save_data['data_stamp']                  
-        # else:
-        #     print(f'Preprocessing {data_path} for {flag}...')
-
-        #     self.__read_data__()
-            
-        #     # load preprocessed data
-        #     save_data = {
-        #         'data_x': self.data_x,
-        #         'data_y': self.data_y,
-        #         'data_stamp': self.data_stamp
-        #     }
-            
-        #     with open(self.pkl_file, 'wb') as f:
-        #         pickle.dump(save_data, f, pickle.HIGHEST_PROTOCOL)
-        
-
-    def __read_data__(self):            
-        df_raw = pd.read_csv(os.path.join(self.root_path,
-                                          self.data_path))
-        
-        df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
-
-        '''
-        df_raw.columns: ['timestep', ...(other features), target feature]
-        '''
-
-        # columns = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-        columns = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius']
-        df_raw = df_raw[['timestamp'] + self.input_channels]
-        df_raw[columns] = df_raw[columns].apply(pd.to_numeric, errors='coerce')
-
-        # preprocessing
-        df_stamp = pd.DataFrame()
-        df_stamp['timestamp'] = pd.to_datetime(df_raw['timestamp'])
-
-        if self.timeenc == 0:
-            df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
-            df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
-            df_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
-            df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
-            data_stamp = df_stamp.drop(['timestamp'], axis=1).values
-        elif self.timeenc == 1:
-            data_stamp = time_features(pd.to_datetime(df_stamp['timestamp'].values), freq=self.freq)
-            data_stamp = data_stamp.transpose(1, 0)
-
-        ## check if there is missing value
-        assert df_raw['Global_Horizontal_Radiation'].isnull().sum() == 0
-        # assert df_raw['Diffuse_Horizontal_Radiation'].isnull().sum() == 0
-        assert df_raw['Weather_Temperature_Celsius'].isnull().sum() == 0
-        # assert df_raw['Weather_Relative_Humidity'].isnull().sum() == 0
-        assert df_raw['Active_Power'].isnull().sum() == 0
-        
-        ### get maximum and minimum value of 'Active_Power'
-        setattr(self, f'pv_{self.domain}_max', np.max(df_raw['Active_Power'].values))   # save the maximum value of 'Active_Power' as a source/target domain
-        setattr(self, f'pv_{self.domain}_min', np.min(df_raw['Active_Power'].values))   # save the minimum value of 'Active_Power' as a source/target domain
-        
-        num_train = int(len(df_raw) * 0.7)
-        num_test = int(len(df_raw) * 0.1)
-        num_vali = len(df_raw) - num_train - num_test
-        border1s = [0, num_train - self.seq_len, len(df_raw) - num_test - self.seq_len]
-        border2s = [num_train, num_train + num_vali, len(df_raw)]
-        border1 = border1s[self.set_type]
-        border2 = border2s[self.set_type]
-
-        if self.features == 'M' or self.features == 'MS':
-            cols_data = df_raw.columns[1:] 
-            df_data = df_raw[cols_data]
-        elif self.features == 'S':
-            df_data = df_raw[[self.target]]
-
-        if self.scale:
-            train_border1 = border1s[0]
-            train_border2 = border2s[0]
-            train_data = df_data[train_border1:train_border2]
-            
-            train_data_values = train_data.values
-            df_data_values = df_data.values
-            transformed_data = []  # List to store each transformed feature
-            # for i in range(df_data_values.shape[1]):
-            for idx, val in enumerate(df_raw.columns[1:]):  # except 'date' which is the first column
-                train_features = train_data_values[:, idx].reshape(-1, 1)
-                getattr(self, f'scaler_{self.domain}_{val}').fit(train_features)
-
-                df_data_features = df_data_values[:, idx].reshape(-1, 1)
-                transformed_feature = getattr(self, f'scaler_{self.domain}_{val}').transform(df_data_features)
-                transformed_data.append(transformed_feature)
-            data = np.concatenate(transformed_data, axis=1)
-        else:
-            data = df_data.values
-
-        self.data_x = data[border1:border2]
-        self.data_y = data[border1:border2]
-        if self.timeenc == 0:
-            self.data_stamp = df_stamp[border1:border2][['month', 'day', 'weekday', 'hour']].values
-        elif self.timeenc == 1:
-            self.data_stamp = data_stamp[border1:border2]
-
-    def __getitem__(self, index):
-        s_begin = index
-        s_end = s_begin + self.seq_len
-        r_begin = s_end - self.label_len
-        r_end = r_begin + self.label_len + self.pred_len
-        
-        seq_x = self.data_x[s_begin:s_end]
-        seq_y = self.data_y[r_begin:r_end]
-        seq_x_mark = self.data_stamp[s_begin:s_end]
-        seq_y_mark = self.data_stamp[r_begin:r_end]
-
-        return seq_x, seq_y, seq_x_mark, seq_y_mark
-
-    def __len__(self):
-        return len(self.data_x) - self.seq_len - self.pred_len + 1
-
-    def inverse_transform(self, data):
-        ''' active power만 예측하고 검증할 때는 이거만 씀 '''
-        return getattr(self, f'scaler_{self.domain}_Active_Power').inverse_transform(data)
 
 
 class Dataset_German(Dataset):
@@ -1567,7 +1053,7 @@ class Dataset_German(Dataset):
     def inverse_transform(self, data):
         data_org = data.copy()
        
-        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+        data = self.scalers['Active_Power'].inverse_transform(data.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
 
@@ -1827,7 +1313,7 @@ class Dataset_UK(Dataset):
     def inverse_transform(self, data):
         data_org = data.copy()
        
-        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+        data = self.scalers['Active_Power'].inverse_transform(data.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
     
@@ -2082,7 +1568,7 @@ class Dataset_OEDI_Georgia(Dataset):
     def inverse_transform(self, data):
         data_org = data.copy()
        
-        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+        data = self.scalers['Active_Power'].inverse_transform(data.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
     
@@ -2337,7 +1823,7 @@ class Dataset_OEDI_California(Dataset):
     def inverse_transform(self, data):
         data_org = data.copy()
        
-        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+        data = self.scalers['Active_Power'].inverse_transform(data.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
     
@@ -2400,47 +1886,27 @@ class Dataset_Miryang(Dataset):
         # 파일 로드 및 사이트별 데이터 수집
         self._load_files()
         # train, val, test split, 해당하는 flag에 맞게 데이터 가져옴
-        # selected_sites = self._split_sites()[self.flag]
+        selected_sites = self._split_sites()[self.flag]
         site_data = {}
         all_data = [] # 전체 데이터셋
 
-        # for site_id in selected_sites:
-        for site_id, file_name in self.site_files.items():
-           
-            file_path = os.path.join(self.root_path, file_name)
-            df_raw = pd.read_csv(file_path)
-            
-            # 날짜별로 분리
-            df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
-            df_raw.sort_values('timestamp', inplace=True)
-            df_raw.reset_index(drop=True, inplace=True)
-
-            start_date = df_raw['timestamp'].min()
-            end_date = df_raw['timestamp'].max()
-            total_days = (end_date - start_date).days
-            
-            train_end = start_date + pd.Timedelta(days=int(total_days * 0.5))
-            val_end = train_end + pd.Timedelta(days=int(total_days * 0.3))
-
-            if self.flag == 'train':
-                df_raw = df_raw[df_raw['timestamp'] <= train_end]
-            elif self.flag == 'val':
-                df_raw = df_raw[(df_raw['timestamp'] > train_end) & (df_raw['timestamp'] <= val_end)]
-            else: df_raw = df_raw[df_raw['timestamp'] > val_end]
-            ###################
-
-            df_x, df_y, time_feature, timestamp, site = self._process_file(df_raw, site_id)
+        for site_id in selected_sites:
+            site_files = self.site_files.get(site_id, [])
+            for file_name in site_files:
+                file_path = os.path.join(self.root_path, file_name)
+                df_raw = pd.read_csv(file_path)
+                df_x, df_y, time_feature, timestamp, site = self._process_file(df_raw, site_id)
 
                 # 데이터 저장
-            site_data.setdefault(site_id, []).append({
-                'x': df_x,
-                'y': df_y,
-                'data_stamp': time_feature,
-                'timestamp': timestamp
-            })
+                site_data.setdefault(site_id, []).append({
+                    'x': df_x,
+                    'y': df_y,
+                    'data_stamp': time_feature,
+                    'timestamp': timestamp
+                })
 
                 # for scaling
-            all_data.append(df_x)
+                all_data.append(df_x)
 
         
         combined_data = pd.concat(all_data, axis=0)
@@ -2465,6 +1931,7 @@ class Dataset_Miryang(Dataset):
                     print(f"Active_Power max: {combined_data['Active_Power'].max()}")
                     pickle.dump([combined_data['Active_Power'].min(), combined_data['Active_Power'].max()], f)
 
+
             else:
                 for col in combined_data.columns:
                     if col == 'timestamp': continue
@@ -2477,8 +1944,6 @@ class Dataset_Miryang(Dataset):
                     self.ap_max = min_max[1]
                     self.ap_min_normalized = self.scalers['Active_Power'].transform(np.array([self.ap_min]).reshape(1, -1)).squeeze()
                     self.ap_max_normalized = self.scalers['Active_Power'].transform(np.array([self.ap_max]).reshape(1, -1)).squeeze()
-
-
 
             # scaler 적용 및 site data update
             for site_id in site_data.keys():
@@ -2511,6 +1976,7 @@ class Dataset_Miryang(Dataset):
 
         # 필요한 칼럼만 추출
         cols = df_raw.columns.tolist()
+     
         cols.remove('timestamp')
         cols.remove('Active_Power')
         
@@ -2534,35 +2000,44 @@ class Dataset_Miryang(Dataset):
             self.site_files = {}
             for file_name in all_files:
                 site_id = int(file_name.split('_')[0])
-                self.site_files[site_id] = file_name
+                self.site_files.setdefault(site_id, []).append(file_name)
         if self.data_path['type'] == 'debug':
             self.site_files = {}
             for key in ['train', 'val', 'test']:
                 site_id = int(self.data_path[key].split('-')[0])
-                self.site_files[site_id] = self.data_path[key]
+                self.site_files.setdefault(site_id, []).append(self.data_path[key])
     
     
     def _split_sites(self):
         if self.data_path['type'] == 'all':
             site_ids = list(self.site_files.keys())
-            print(self.site_files)
-
-            random.seed(42)
-            random.shuffle(site_ids)
-            total_sites = len(site_ids)
-            train_end = int(total_sites * 0.7)
-            val_end = train_end + int(total_sites * 0.2)
+            
+            # TODO: 재현 가능하게 고정하기
+            # [INFO] Train sites: [92, 214, 52, 61, 99, 60, 72, 68, 55, 67, 64, 212, 59, 71, 69, 66, 90, 73, 70, 79, 213, 74, 85]
+            # train 1310017
+            # [INFO] Val sites: [54, 58, 63, 98, 77, 84]
+            # val 348608
+            # [INFO] Test sites: [57, 93, 56, 218, 100]
+            # test 250599
+            train_sites = [1, 4, 7]
+            val_sites = [2, 6]
+            test_sites = [3, 5]
+            # random.seed(42)
+            # random.shuffle(site_ids)
+            # total_sites = len(site_ids)
+            # train_end = int(total_sites * 0.7)
+            # val_end = train_end + int(total_sites * 0.2)
 
             site_split = {
-                'train': site_ids[:train_end],
-                'val': site_ids[train_end:val_end],
-                'test': site_ids[val_end:]  
+                'train': train_sites,
+                'val': val_sites,
+                'test': test_sites 
             }
         elif self.data_path['type'] == 'debug':
             site_split = {
-                'train': [int(self.data_path['train'].split('-')[0])],
-                'val': [int(self.data_path['val'].split('-')[0])],
-                'test': [int(self.data_path['test'].split('-')[0])]
+                'train': [int(self.data_path['train'].split('_')[0])],
+                'val': [int(self.data_path['val'].split('_')[0])],
+                'test': [int(self.data_path['test'].split('_')[0])]
             }
 
         print(f'[INFO] {self.flag.capitalize()} sites: {site_split[self.flag]}')
@@ -2604,11 +2079,585 @@ class Dataset_Miryang(Dataset):
     # 평가 시 필요함
     def inverse_transform(self, data):
         data_org = data.copy()
-       
-        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+        # print(data.shape)
+        # print(data[-1].shape) #16,1
+        data = self.scalers['Active_Power'].inverse_transform(data.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
     
+
+    # def inverse_transform_tensor(self, data):
+    #     data_org = data.clone()
+    #     inverse_data = torch.zeros_like(data_org)
+        
+        
+    #     scaler = self.scalers['Active_Power']
+            
+    #     # 스케일러의 종류에 따라 역변환 방식 결정
+    #     if isinstance(scaler, MinMaxScaler):
+    #         data_min = torch.tensor(scaler.data_min_, device=data.device)
+    #         data_max = torch.tensor(scaler.data_max_, device=data.device)
+    #         data_range = data_max - data_min
+    #         inverse_sample = data[i] * data_range + data_min
+    #     elif isinstance(scaler, StandardScaler):
+    #         mean = torch.tensor(scaler.mean_, device=data.device)
+    #         scale = torch.tensor(scaler.scale_, device=data.device)
+    #         inverse_sample = data[i] * scale + mean
+    #     else:
+    #         raise ValueError(f"Unsupported scaler type: {type(scaler)}")
+        
+    #     inverse_data[i] = inverse_sample.reshape(data[i].shape)
+    
+    # return inverse_data
+
+####################################################
+
+class Dataset_Miryang_MinMax(Dataset):
+    def __init__(self, root_path, flag='train', size=None,
+                features='MS', data_path='', target='Active_Power',
+                scale=True, timeenc=0, freq='h', scaler='MinMaxScaler'):
+    # size [seq_len, label_len, pred_len]
+    # info
+        print("start")
+        if size == None:
+            self.seq_len = 24 * 4 * 4
+            self.label_len = 24 * 4
+            self.pred_len = 24 * 4
+        else:
+            self.seq_len = size[0]
+            self.label_len = size[1]
+            self.pred_len = size[2]
+        # init
+        assert flag in ['train', 'test', 'val']
+        type_map = {'train': 0, 'val': 1, 'test': 2}
+        self.set_type = type_map[flag]
+
+        self.features = features
+        self.target = target
+        self.scale = scale
+        self.timeenc = timeenc
+        self.freq = freq
+        self.flag = flag
+
+
+        self.scaler = scaler
+        
+
+        self.root_path = root_path
+        self.data_path = data_path
+        
+
+        
+        import os
+
+        # # 현재 파일의 경로 기준으로 preprocessed 디렉토리 경로 생성
+        # current_file_path = os.path.abspath(__file__)
+        # preprocessed_dir = os.path.join(os.path.dirname(current_file_path), '../data/OEDI/2107(Arbuckle_California)/preprocessed')
+
+        # preprocessed 폴더 내의 CSV 파일명들을 LOCATIONS에 저장
+        self.LOCATIONS = [
+            file_name for file_name in os.listdir(self.root_path) if file_name.endswith('.csv')
+        ]
+        
+        self.scalers = {}
+        self.site_data = {}
+
+        self.load_preprocessed_data()
+        self.indices = self.create_sequences_indices()
+
+        
+    # site 별로 scaler 적용
+    def load_preprocessed_data(self):
+        # 파일 로드 및 사이트별 데이터 수집
+        self._load_files()
+        # train, val, test split, 해당하는 flag에 맞게 데이터 가져옴
+        selected_sites = self._split_sites()[self.flag]
+        site_data = {}
+        # all_data = [] # 전체 데이터셋
+        self.scalers = {}
+        for site_id in selected_sites:
+            site_files = self.site_files.get(site_id, [])
+            self.scalers[site_id] = {}
+            for file_name in site_files:
+                file_path = os.path.join(self.root_path, file_name)
+                df_raw = pd.read_csv(file_path)
+                
+                
+                df_x, df_y, time_feature, timestamp, site = self._process_file(df_raw, site_id)
+                
+                # if self.flag == 'train':
+                for col in df_x.columns:
+                    scaler = MinMaxScaler()
+                    if col == 'timestamp': continue
+                    elif col == 'Active_Power':
+                        capacity_ap_max = int(os.path.basename(file_path).split('_')[1].split('kW')[0])
+                        capacity_ap_min = 0
+                        # # `data_min_`과 `data_max_` 속성에 수동으로 설정할 값을 지정
+                        # scaler.data_min_ = capacity_ap_min
+                        # scaler.data_max_ = capacity_ap_max
+                        # scaler.data_range_ = scaler.data_max_ - scaler.data_min_
+
+                        # # scale_ 속성은 feature_range에 맞춘 스케일을 정의 (data_range로 자동 계산됨)
+                        # scaler.scale_ = (scaler.feature_range[1] - scaler.feature_range[0]) / scaler.data_range_
+                        # scaler.min_ = scaler.feature_range[0] - scaler.data_min_ * scaler.scale_
+                        scaler.fit([[capacity_ap_min], [capacity_ap_max]])
+                        
+                        df_y[col] = scaler.transform(df_y[[col]])
+                        df_x[col] = scaler.transform(df_x[[col]])
+                    else:
+                        df_x[col] = scaler.fit_transform(df_x[[col]])
+
+                    self.scalers[site_id][col] = scaler
+
+                os.makedirs(os.path.join(self.root_path, 'scaler'), exist_ok=True)
+                with open(os.path.join(self.root_path, 'scaler', f'{site_id}_scalers.pkl'), 'wb') as f:
+                    pickle.dump(self.scalers[site_id], f)
+                # else:
+                #     with open(os.path.join(self.root_path, 'scaler', f'{site_id}_scalers.pkl'), 'rb') as f:
+                #         self.scalers[site_id] = pickle.load(f)
+
+                #     for col in df_x.columns:
+                #         if col == 'timestamp': continue
+                #         scaler = self.scalers[site_id][col]
+                #         df_x[col] = scaler.transform(df_x[[col]])
+                #         if col == 'Active_Power':
+                #             df_y[col] = scaler.transform(df_y[[col]])
+                        
+
+            # 데이터 저장
+            site_data.setdefault(site_id, []).append({
+                'x': df_x,
+                'y': df_y,
+                'data_stamp': time_feature,
+                'timestamp': timestamp
+            })
+
+                # for scaling
+        #     all_data.append(df_x)
+
+        
+        # combined_data = pd.concat(all_data, axis=0)
+    
+        self.site_data = site_data
+
+    def _process_file(self, df_raw, site_id):
+        # Time encoding ((년,) 월, 일, 요일, 시간)
+
+        data_stamp = pd.DataFrame()
+        data_stamp['date'] = pd.to_datetime(df_raw.timestamp)
+        data_stamp['year'] = data_stamp.date.apply(lambda row: row.year, 1)
+        data_stamp['month'] = data_stamp.date.apply(lambda row: row.month, 1)
+        data_stamp['day'] = data_stamp.date.apply(lambda row: row.day, 1)
+        data_stamp['weekday'] = data_stamp.date.apply(lambda row: row.weekday(), 1)
+        data_stamp['hour'] = data_stamp.date.apply(lambda row: row.hour, 1)
+        if self.timeenc == 0:
+            time_feature = data_stamp[['month', 'day', 'weekday', 'hour']].values
+        else: 
+            time_feature = time_features(pd.to_datetime(df_raw['timestamp'].values), freq=self.freq).T
+        timestamp = data_stamp[['year', 'month', 'day', 'weekday', 'hour']].values
+
+
+        # 필요한 칼럼만 추출
+        cols = df_raw.columns.tolist()
+     
+        cols.remove('timestamp')
+        cols.remove('Active_Power')
+        
+        # df_raw = df_raw[['date'] + cols + [self.target]]
+    
+        df_raw = df_raw[cols + [self.target]]
+
+        # TODO: MS, S, M 구분해서 처리하는 코드 추가
+
+        df_x = df_raw[cols + [self.target]]
+        # df_x['Wind_Speed'] = np.log
+        df_y = df_raw[[self.target]]
+        site_id = np.array([site_id]) * len(df_x)
+       
+        return df_x, df_y, time_feature, timestamp, site_id
+
+
+    def _load_files(self):
+        if self.data_path['type'] == 'all':
+            all_files = [f for f in os.listdir(self.root_path) if f.endswith('.csv')]
+            self.site_files = {}
+            for file_name in all_files:
+                site_id = int(file_name.split('_')[0])
+                self.site_files.setdefault(site_id, []).append(file_name)
+        if self.data_path['type'] == 'debug':
+            self.site_files = {}
+            for key in ['train', 'val', 'test']:
+                site_id = int(self.data_path[key].split('-')[0])
+                self.site_files.setdefault(site_id, []).append(self.data_path[key])
+    
+    
+    def _split_sites(self):
+        if self.data_path['type'] == 'all':
+            # site_ids = list(self.site_files.keys())
+            
+            train_sites = [1, 4, 7]
+            val_sites = [2, 6]
+            test_sites = [3, 5]
+
+            site_split = {
+                'train': train_sites,
+                'val': val_sites,
+                'test': test_sites 
+            }
+        elif self.data_path['type'] == 'debug':
+            site_split = {
+                'train': [int(self.data_path['train'].split('_')[0])],
+                'val': [int(self.data_path['val'].split('_')[0])],
+                'test': [int(self.data_path['test'].split('_')[0])]
+            }
+
+        print(f'[INFO] {self.flag.capitalize()} sites: {site_split[self.flag]}')
+        return site_split
+    
+    def create_sequences_indices(self):
+        indices = []
+        for site_id, data_list in self.site_data.items():
+            for data in data_list:
+                x_len = len(data['x'])
+                max_start = x_len - self.seq_len - self.pred_len + 1
+                indices.extend([(site_id, data, i) for i in range(max_start)])
+        return indices
+
+    
+    def __getitem__(self, index):
+        site_id, data, start_idx = self.indices[index]
+        s_begin = start_idx
+        s_end = s_begin + self.seq_len
+        r_begin = s_end - self.label_len
+        r_end = r_begin + self.label_len + self.pred_len
+
+        seq_x = data['x'].iloc[s_begin:s_end].values
+        seq_y = data['y'].iloc[r_begin:r_end].values
+        seq_x_mark = data['data_stamp'][s_begin:s_end]
+        seq_y_mark = data['data_stamp'][r_begin:r_end]
+        site = np.array([site_id]).repeat(s_end - s_begin).reshape(-1, 1)
+        seq_x_ds = data['timestamp'][s_begin:s_end]
+        seq_y_ds = data['timestamp'][r_begin:r_end]
+
+        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, seq_x_ds, seq_y_ds
+    
+    
+    def __len__(self):    
+        return len(self.indices)
+
+
+
+    # 평가 시 필요함
+    # def inverse_transform(self, site, data):
+    #     data_org = data.copy()
+       
+    #     data[-1] = self.scalers[site]['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+    #     data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
+    #     return data
+
+    def inverse_transform(self, sites, data):
+        # 결과를 저장할 배열 초기화
+        # print(data.shape) (1024, 16, 1)
+        # print(sites.shape) torch.Size([1024, 1])
+        data_org = data.copy()
+        inverse_data = np.zeros_like(data.squeeze())
+        # print(sites.shape) torch.Size([1024, 256, 1])
+        # print(data.shape) (1024, 16, 1)
+        # 각 사이트별로 데이터의 역변환 수행
+        for i, site_id in enumerate(sites.squeeze()):
+            # print('site_id', site_id)
+            # print(site_id)
+            # print(site_id.shape) torch.Size([256])
+            inverse_data[i] = self.scalers[site_id.item()]['Active_Power'].inverse_transform(data[i].reshape(-1, 1)).flatten()
+        inverse_data.reshape(data_org.shape[0], data_org.shape[1], 1)
+        # print(f'{site_id}inverse, {inverse_data}')
+        return inverse_data
+
+
+class Dataset_Miryang_Standard(Dataset):
+    def __init__(self, root_path, flag='train', size=None,
+                features='MS', data_path='', target='Active_Power',
+                scale=True, timeenc=0, freq='h', scaler='MinMaxScaler'):
+    # size [seq_len, label_len, pred_len]
+    # info
+        print("start")
+        if size == None:
+            self.seq_len = 24 * 4 * 4
+            self.label_len = 24 * 4
+            self.pred_len = 24 * 4
+        else:
+            self.seq_len = size[0]
+            self.label_len = size[1]
+            self.pred_len = size[2]
+        # init
+        assert flag in ['train', 'test', 'val']
+        type_map = {'train': 0, 'val': 1, 'test': 2}
+        self.set_type = type_map[flag]
+
+        self.features = features
+        self.target = target
+        self.scale = scale
+        self.timeenc = timeenc
+        self.freq = freq
+        self.flag = flag
+
+
+        self.scaler = scaler
+        
+
+        self.root_path = root_path
+        self.data_path = data_path
+        
+
+        
+        import os
+
+        # # 현재 파일의 경로 기준으로 preprocessed 디렉토리 경로 생성
+        # current_file_path = os.path.abspath(__file__)
+        # preprocessed_dir = os.path.join(os.path.dirname(current_file_path), '../data/OEDI/2107(Arbuckle_California)/preprocessed')
+
+        # preprocessed 폴더 내의 CSV 파일명들을 LOCATIONS에 저장
+        self.LOCATIONS = [
+            file_name for file_name in os.listdir(self.root_path) if file_name.endswith('.csv')
+        ]
+        
+        self.scalers = {}
+        self.site_data = {}
+
+        self.load_preprocessed_data()
+        self.indices = self.create_sequences_indices()
+
+        
+    # site 별로 scaler 적용
+    def load_preprocessed_data(self):
+        # 파일 로드 및 사이트별 데이터 수집
+        self._load_files()
+        # train, val, test split, 해당하는 flag에 맞게 데이터 가져옴
+        selected_sites = self._split_sites()[self.flag]
+        site_data = {}
+        # all_data = [] # 전체 데이터셋
+        self.scalers = {}
+        self.ap_max = {}
+        for site_id in selected_sites:
+            site_files = self.site_files.get(site_id, [])
+            self.scalers[site_id] = {}
+            for file_name in site_files:
+                file_path = os.path.join(self.root_path, file_name)
+                df_raw = pd.read_csv(file_path)
+                for col in df_raw.columns:
+                    scaler = MinMaxScaler()
+                    if col == 'timestamp': continue
+                    df_raw[col] = scaler.fit_transform(df_raw[[col]])                        
+
+                    self.scalers[site_id][col] = scaler
+                self.ap_max[site_id] = df_raw['Active_Power'].max()
+
+                
+                df_x, df_y, time_feature, timestamp, site = self._process_file(df_raw, site_id)
+                
+                os.makedirs(os.path.join(self.root_path, 'scaler'), exist_ok=True)
+                with open(os.path.join(self.root_path, 'scaler', f'{site_id}_scalers.pkl'), 'wb') as f:
+                    pickle.dump(self.scalers[site_id], f)
+                        
+            # # 'ap_max' 열을 추가
+            # df_x = df_x.assign(ap_max=self.ap_max[site_id])
+
+            # # 'Active_Power' 칼럼이 마지막이 되도록 열 순서 재정렬
+            # cols = [col for col in df_x.columns if col != 'Active_Power'] + ['Active_Power']
+            # df_x = df_x[cols]
+            # 데이터 저장
+            site_data.setdefault(site_id, []).append({
+                'x': df_x,
+                'y': df_y,
+                'data_stamp': time_feature,
+                'timestamp': timestamp
+            })
+
+                # for scaling
+        #     all_data.append(df_x)
+
+        
+        # combined_data = pd.concat(all_data, axis=0)
+    
+        self.site_data = site_data
+
+    def _process_file(self, df_raw, site_id):
+        # Time encoding ((년,) 월, 일, 요일, 시간)
+
+        data_stamp = pd.DataFrame()
+        data_stamp['date'] = pd.to_datetime(df_raw.timestamp)
+        data_stamp['year'] = data_stamp.date.apply(lambda row: row.year, 1)
+        data_stamp['month'] = data_stamp.date.apply(lambda row: row.month, 1)
+        data_stamp['day'] = data_stamp.date.apply(lambda row: row.day, 1)
+        data_stamp['weekday'] = data_stamp.date.apply(lambda row: row.weekday(), 1)
+        data_stamp['hour'] = data_stamp.date.apply(lambda row: row.hour, 1)
+        if self.timeenc == 0:
+            time_feature = data_stamp[['month', 'day', 'weekday', 'hour']].values
+        else: 
+            time_feature = time_features(pd.to_datetime(df_raw['timestamp'].values), freq=self.freq).T
+        timestamp = data_stamp[['year', 'month', 'day', 'weekday', 'hour']].values
+
+
+        # 필요한 칼럼만 추출
+        cols = df_raw.columns.tolist()
+     
+        cols.remove('timestamp')
+        cols.remove('Active_Power')
+        
+        # df_raw = df_raw[['date'] + cols + [self.target]]
+    
+        df_raw = df_raw[cols + [self.target]]
+
+        # TODO: MS, S, M 구분해서 처리하는 코드 추가
+
+        df_x = df_raw[cols + [self.target]]
+        # df_x['Wind_Speed'] = np.log
+        df_y = df_raw[[self.target]]
+        site_id = np.array([site_id]) * len(df_x)
+       
+        return df_x, df_y, time_feature, timestamp, site_id
+
+
+    def _load_files(self):
+        if self.data_path['type'] == 'all':
+            all_files = [f for f in os.listdir(self.root_path) if f.endswith('.csv')]
+            self.site_files = {}
+            for file_name in all_files:
+                site_id = int(file_name.split('_')[0])
+                self.site_files.setdefault(site_id, []).append(file_name)
+        if self.data_path['type'] == 'debug':
+            self.site_files = {}
+            for key in ['train', 'val', 'test']:
+                site_id = int(self.data_path[key].split('-')[0])
+                self.site_files.setdefault(site_id, []).append(self.data_path[key])
+    
+    
+    def _split_sites(self):
+        if self.data_path['type'] == 'all':
+            # site_ids = list(self.site_files.keys())
+            
+            train_sites = [1, 4, 7]
+            val_sites = [2, 6]
+            test_sites = [3, 5]
+
+            site_split = {
+                'train': train_sites,
+                'val': val_sites,
+                'test': test_sites 
+            }
+        elif self.data_path['type'] == 'debug':
+            site_split = {
+                'train': [int(self.data_path['train'].split('_')[0])],
+                'val': [int(self.data_path['val'].split('_')[0])],
+                'test': [int(self.data_path['test'].split('_')[0])]
+            }
+
+        print(f'[INFO] {self.flag.capitalize()} sites: {site_split[self.flag]}')
+        return site_split
+    
+    def create_sequences_indices(self):
+        indices = []
+        for site_id, data_list in self.site_data.items():
+            for data in data_list:
+                x_len = len(data['x'])
+                max_start = x_len - self.seq_len - self.pred_len + 1
+                indices.extend([(site_id, data, i) for i in range(max_start)])
+        return indices
+
+    
+    def __getitem__(self, index):
+        site_id, data, start_idx = self.indices[index]
+        s_begin = start_idx
+        s_end = s_begin + self.seq_len
+        r_begin = s_end - self.label_len
+        r_end = r_begin + self.label_len + self.pred_len
+
+        seq_x = data['x'].iloc[s_begin:s_end].values
+        seq_y = data['y'].iloc[r_begin:r_end].values
+        seq_x_mark = data['data_stamp'][s_begin:s_end]
+        seq_y_mark = data['data_stamp'][r_begin:r_end]
+        site = np.array([site_id]).repeat(s_end - s_begin).reshape(-1, 1)
+        seq_x_ds = data['timestamp'][s_begin:s_end]
+        seq_y_ds = data['timestamp'][r_begin:r_end]
+
+        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, seq_x_ds, seq_y_ds
+    
+    
+    def __len__(self):    
+        return len(self.indices)
+
+
+
+    # 평가 시 필요함
+    # def inverse_transform(self, site, data):
+    #     data_org = data.copy()
+       
+    #     data[-1] = self.scalers[site]['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+    #     data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
+    #     return data
+
+    # def inverse_transform(self, sites, data):
+    #     # 결과를 저장할 배열 초기화
+    #     # print(data.shape) (1024, 16, 1)
+    #     # print(sites.shape) torch.Size([1024, 1])
+    #     data_org = data.copy()
+    #     inverse_data = np.zeros_like(data.squeeze())
+    #     # print(sites.shape) torch.Size([1024, 256, 1])
+    #     # print(data.shape) (1024, 16, 1)
+    #     # 각 사이트별로 데이터의 역변환 수행
+    #     for i, site_id in enumerate(sites.squeeze()):
+    #         # print('site_id', site_id)
+    #         # print(site_id)
+    #         # print(site_id.shape) torch.Size([256])
+    #         inverse_data[i] = self.scalers[site_id.item()]['Active_Power'].inverse_transform(data[i].reshape(-1, 1)).flatten()
+    #     inverse_data.reshape(data_org.shape[0], data_org.shape[1], 1)
+    #     # print(f'{site_id}inverse, {inverse_data}')
+    #     return inverse_data
+    def inverse_transform(self, sites, data):
+        # 데이터 복사
+        data_org = data.copy()
+        inverse_data = np.zeros_like(data_org)
+        
+        # 각 사이트별로 데이터의 역변환 수행
+        for i in range(len(sites)):
+            site_id = sites[i]
+            if isinstance(site_id, torch.Tensor):
+                site_id = site_id.item()
+            if site_id not in self.scalers:
+                raise ValueError(f"Scaler for site {site_id} not found.")
+            scaler = self.scalers[site_id]['Active_Power']
+            reshaped_data = data[i].reshape(-1, 1)
+            inverse_transformed = scaler.inverse_transform(reshaped_data)
+            inverse_data[i] = inverse_transformed.reshape(data[i].shape)
+        
+        return inverse_data
+
+    def inverse_transform_tensor(self, sites, data):
+        data_org = data.clone()
+        inverse_data = torch.zeros_like(data_org)
+        
+        for i in range(len(sites)):
+            site_id = sites[i]
+            if isinstance(site_id, torch.Tensor):
+                site_id = site_id.item()
+            scaler = self.scalers[site_id]['Active_Power']
+            
+            # 스케일러의 종류에 따라 역변환 방식 결정
+            if isinstance(scaler, MinMaxScaler):
+                data_min = torch.tensor(scaler.data_min_, device=data.device)
+                data_max = torch.tensor(scaler.data_max_, device=data.device)
+                data_range = data_max - data_min
+                inverse_sample = data[i] * data_range + data_min
+            elif isinstance(scaler, StandardScaler):
+                mean = torch.tensor(scaler.mean_, device=data.device)
+                scale = torch.tensor(scaler.scale_, device=data.device)
+                inverse_sample = data[i] * scale + mean
+            else:
+                raise ValueError(f"Unsupported scaler type: {type(scaler)}")
+            
+            inverse_data[i] = inverse_sample.reshape(data[i].shape)
+        
+        return inverse_data
 
 ####################################################
 
@@ -2821,7 +2870,7 @@ class Dataset_Pred(Dataset):
     def inverse_transform(self, data):
         data_org = data.copy()
         
-        data[-1] = self.scalers['Active_Power'].inverse_transform(data[-1].reshape(-1, 1))
+        data = self.scalers['Active_Power'].inverse_transform(data.reshape(-1, 1))
         data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
         return data
 

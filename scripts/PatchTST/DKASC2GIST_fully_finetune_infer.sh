@@ -34,7 +34,7 @@ do
       --is_pretraining 0 \
       --is_fully_finetune 0 \
       --is_inference 1 \
-      --checkpoints  /home/seongho_bak/Projects/PatchTST/checkpoints/fully_finetune/fully_finetune_24110319_PatchTST_GIST_ftMS_sl256_ll0_pl16_dm256_nh8_el4_dl1_df512_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth\
+      --checkpoints /home/seongho_bak/Projects/PatchTST/checkpoints/fully_finetune/fully_finetune_24110407_PatchTST_GIST_ftMS_sl256_ll0_pl16_dm256_nh8_el4_dl1_df512_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth\
       --root_path $root_path_name \
       --data_path $data_path_name \
       --model_id $model_id \

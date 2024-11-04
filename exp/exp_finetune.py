@@ -150,7 +150,7 @@ class Exp_Finetune(Exp_Main):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
-                            outputs = self.model(batch_x)
+                            outputs = self.model(batch_x, False)
                         elif 'LSTM' in self.args.model:
                                 outputs = self.model(batch_x, dec_inp)
                         
@@ -162,7 +162,7 @@ class Exp_Finetune(Exp_Main):
                                 
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model:
-                        outputs = self.model(batch_x)
+                        outputs = self.model(batch_x, False)
                     elif 'LSTM' in self.args.model:
                         outputs = self.model(batch_x, dec_inp)
                     
@@ -339,7 +339,7 @@ class Exp_Finetune(Exp_Main):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
-                            outputs = self.model(batch_x)
+                            outputs = self.model(batch_x, False)
                         elif 'LSTM' in self.args.model:
                                 outputs = self.model(batch_x, dec_inp)
                         else:
@@ -353,7 +353,7 @@ class Exp_Finetune(Exp_Main):
                                 
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model:
-                        outputs = self.model(batch_x)
+                        outputs = self.model(batch_x, False)
                     elif 'LSTM' in self.args.model:
                         outputs = self.model(batch_x, dec_inp)
                     else:
@@ -454,7 +454,7 @@ class Exp_Finetune(Exp_Main):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
+                            outputs = self.model(batch_x, False)
                         elif 'LSTM' in self.args.model:
                             outputs = self.model(batch_x, dec_inp)
                         else:
@@ -464,7 +464,7 @@ class Exp_Finetune(Exp_Main):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model:
-                        outputs = self.model(batch_x)
+                        outputs = self.model(batch_x, False)
                     elif 'LSTM' in self.args.model:
                             outputs = self.model(batch_x, dec_inp)
                     else:
@@ -564,7 +564,7 @@ class Exp_Finetune(Exp_Main):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
+                            outputs = self.model(batch_x, False)
                         elif 'LSTM' in self.args.model:
                             outputs = self.model(batch_x, dec_inp)
                         else:
@@ -574,7 +574,7 @@ class Exp_Finetune(Exp_Main):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model:
-                        outputs = self.model(batch_x)
+                        outputs = self.model(batch_x, False)
                     elif 'LSTM' in self.args.model:
                         outputs = self.model(batch_x, dec_inp)
                     else:
