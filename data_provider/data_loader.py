@@ -12,6 +12,7 @@ import copy
 import pickle
 import joblib
 import random
+from collections import defaultdict
 
 warnings.filterwarnings('ignore')
 
@@ -838,18 +839,18 @@ class Dataset_German(Dataset):
             'DE_KN_residential4_pv.csv'      : '08_DE_KN_residential4_pv.csv',
             'DE_KN_residential6_pv.csv'      : '09_DE_KN_residential6_pv.csv'
         }
-        
-        # 파일명 변경 수행
-        for original_name, new_name in self.LOCATIONS.items():
-            original_path = os.path.join(self.root_path, original_name)
-            new_path = os.path.join(self.root_path, new_name)
-            
-            # 파일이 존재하는 경우에만 이름을 변경
-            if os.path.exists(original_path):
-                os.rename(original_path, new_path)
-                print(f"{original_name} -> {new_name} (파일명 변경 완료)")
-            else:
-                print(f"{original_name} (파일을 찾을 수 없습니다)")
+
+
+        if self.flag == 'train':
+            # 파일명 변경 수행
+            for original_name, new_name in self.LOCATIONS.items():
+                original_path = os.path.join(self.root_path, original_name)
+                new_path = os.path.join(self.root_path, new_name)
+                
+                # 파일이 존재하는 경우에만 이름을 변경
+                if os.path.exists(original_path):
+                    os.rename(original_path, new_path)
+                    print(f"{original_name} -> {new_name} (파일명 변경 완료)")
 
 
         self.scalers = {}
@@ -867,12 +868,13 @@ class Dataset_German(Dataset):
         selected_sites = self._split_sites()[self.flag]
         site_data = {}
         all_data = [] # 전체 데이터셋
-
+        self.site_ap_max = {}
         for site_id in selected_sites:
             site_files = self.site_files.get(site_id, [])
             for file_name in site_files:
                 file_path = os.path.join(self.root_path, file_name)
                 df_raw = pd.read_csv(file_path)
+                self.site_ap_max[site_id] = df_raw['Active_Power'].max()
                 df_x, df_y, time_feature, timestamp, site = self._process_file(df_raw, site_id)
 
                 # 데이터 저장
@@ -880,7 +882,8 @@ class Dataset_German(Dataset):
                     'x': df_x,
                     'y': df_y,
                     'data_stamp': time_feature,
-                    'timestamp': timestamp
+                    'timestamp': timestamp,
+                    'ap_max': self.site_ap_max[site_id]
                 })
 
                 # for scaling
@@ -904,10 +907,10 @@ class Dataset_German(Dataset):
                     self.scalers[col] = scaler
                     with open(os.path.join(self.root_path, f'{col}_scaler.pkl'), 'wb') as f:
                                 pickle.dump(scaler, f)
-                with open(os.path.join(self.root_path, f'Active_Power_min_max.pkl'), 'wb') as f:
-                    print(f"Active_Power min: {combined_data['Active_Power'].min()}")
-                    print(f"Active_Power max: {combined_data['Active_Power'].max()}")
-                    pickle.dump([combined_data['Active_Power'].min(), combined_data['Active_Power'].max()], f)
+                # with open(os.path.join(self.root_path, f'Active_Power_min_max.pkl'), 'wb') as f:
+                #     print(f"Train Active_Power min: {combined_data['Active_Power'].min()}")
+                #     print(f"Train Active_Power max: {combined_data['Active_Power'].max()}")
+                #     pickle.dump([combined_data['Active_Power'].min(), combined_data['Active_Power'].max()], f)
             
             
             else:
@@ -1033,8 +1036,9 @@ class Dataset_German(Dataset):
         site = np.array([site_id]).repeat(s_end - s_begin).reshape(-1, 1)
         seq_x_ds = data['timestamp'][s_begin:s_end]
         seq_y_ds = data['timestamp'][r_begin:r_end]
+        site_ap_max = np.array([data['ap_max']]).repeat(s_end - s_begin).reshape(-1, 1)
 
-        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, seq_x_ds, seq_y_ds
+        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, seq_x_ds, seq_y_ds, site_ap_max
     
     
     def __len__(self):    

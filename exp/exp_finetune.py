@@ -4,7 +4,7 @@ from exp.exp_main import Exp_Main
 from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, PatchTST, LSTM
 from models.Stat_models import Naive_repeat, Arima
 from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop, visual_out, visual_original
-from utils.metrics import metric
+from utils.metrics import MetricEvaluator
 from utils.mmd_loss import MMDLoss
 import pickle
 

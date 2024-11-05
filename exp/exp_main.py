@@ -3,7 +3,7 @@ from exp.exp_basic import Exp_Basic
 from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, PatchTST, LSTM
 from models.Stat_models import Naive_repeat, Arima
 from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop, visual_out, visual_original
-from utils.metrics import metric
+from utils.metrics import MetricEvaluator
 
 import numpy as np
 import torch
@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import wandb
 from utils.wandb_uploader import upload_files_to_wandb
+from collections import defaultdict
 
 warnings.filterwarnings('ignore')
 
@@ -135,7 +136,7 @@ class Exp_Main(Exp_Basic):
                 iter_count += 1
                 model_optim.zero_grad()
 
-                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts, batch_ap_max = data
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
@@ -143,6 +144,7 @@ class Exp_Main(Exp_Basic):
                 site = site.to(self.device)
                 batch_x_ts = batch_x_ts.to(self.device)
                 batch_y_ts = batch_y_ts.to(self.device)
+                batch_ap_max = batch_ap_max.to(self.device)
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
@@ -264,15 +266,55 @@ class Exp_Main(Exp_Basic):
         self.model.load_state_dict(torch.load(best_model_path))
 
         return self.model
-
+    
     def vali(self, vali_data, vali_loader, criterion):
+
+        def site_criterion(preds, targets, site_index, criterion):
+            # site_index를 1차원 텐서로 변환
+            if isinstance(site_index, torch.Tensor):
+                site_index = site_index.view(-1)
+            
+            # 사이트별 데이터 저장을 위한 딕셔너리 초기화
+            site_preds = defaultdict(list)
+            site_targets = defaultdict(list)
+            
+            # 사이트별로 예측값과 실제값을 그룹화
+            for i in range(len(site_index)):
+                # site_index[i]가 텐서인 경우 .item() 호출
+                site_id = site_index[i].item() if isinstance(site_index[i], torch.Tensor) else site_index[i]
+                site_preds[site_id].append(preds[i])
+                site_targets[site_id].append(targets[i])
+
+            total_loss = []
+            
+            # 고유한 사이트 ID 리스트 추출
+            if isinstance(site_index, torch.Tensor):
+                unique_sites = site_index.unique().tolist()
+            else:
+                unique_sites = list(set(site_index))
+            
+            # 사이트별로 손실 계산
+            for site_id in unique_sites:
+                if site_preds[site_id]:  # 해당 사이트의 데이터가 있는지 확인
+                    site_preds_tensor = torch.stack(site_preds[site_id])
+                    site_targets_tensor = torch.stack(site_targets[site_id])
+                    loss = criterion(site_preds_tensor, site_targets_tensor)
+                    
+                    # loss를 스칼라 값으로 변환하여 저장
+                    loss_value = loss.item() if isinstance(loss, torch.Tensor) else float(loss)
+                    total_loss.append(loss_value)
+            
+            # 모든 사이트의 평균 손실을 반환
+            total_loss = np.mean(total_loss) if total_loss else 0
+            return total_loss
+
         total_loss = []
         
         self.model.eval()
         with torch.no_grad():
             for i, data in enumerate(vali_loader):
                
-                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts, site_ap_max = data
                
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
@@ -281,6 +323,7 @@ class Exp_Main(Exp_Basic):
                 site = site.to(self.device)
                 batch_x_ts = batch_x_ts.to(self.device)
                 batch_y_ts = batch_y_ts.to(self.device)
+                site_ap_max = site_ap_max.to(self.device)
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
@@ -344,7 +387,7 @@ class Exp_Main(Exp_Basic):
                     pred = torch.from_numpy(pred_np[:, :, -1])
                     gt = torch.from_numpy(gt_np[:, :, -1])
 
-                loss = criterion(pred, gt) 
+                loss = site_criterion(pred, gt, site[:, 0], criterion) 
                 total_loss.append(loss.item())
         
         self.model.train()
@@ -359,170 +402,67 @@ class Exp_Main(Exp_Basic):
         
         if test:
             print(f'loading model: {model_path}')
-            if model_path != None:
+            if model_path is not None:
                 self.model.load_state_dict(torch.load(model_path))
             else:
                 self.model.load_state_dict(torch.load(os.path.join('./checkpoints/', setting, 'checkpoint.pth')))
-            
+        
         pred_list = []
         true_list = []
-        pred_normalized_list = []
-        true_normalized_list = []
         input_list = []
-
         folder_path = os.path.join('./test_results/', setting)
-        # folder_path_inout = os.path.join('./test_results/', 'in+out', setting)
-        # folder_path_out = os.path.join('./test_results/', 'out', setting)
+        os.makedirs(folder_path, exist_ok=True)
 
-        # if not os.path.exists(folder_path_inout):
-        #     os.makedirs(folder_path_inout)
-        # if not os.path.exists(folder_path_out):
-        #     os.makedirs(folder_path_out)
+        # MetricEvaluator 초기화 (평가 지표를 저장할 파일 경로 제공)
+        evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
 
         self.model.eval()
         with torch.no_grad():
-            # for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
             for i, data in enumerate(test_loader):
-                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts, site_ap_max = data
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
-                batch_x_mark = batch_x_mark.float().to(self.device)
-                batch_y_mark = batch_y_mark.float().to(self.device)
                 site = site.to(self.device)
-                batch_x_ts = batch_x_ts.to(self.device)
-                batch_y_ts = batch_y_ts.to(self.device)
+                site_ap_max = site_ap_max.to(self.device)
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
                 
                 mark = True if self.args.is_pretraining else False
-                # encoder - decoder
-                if self.args.use_amp:
-                    with torch.cuda.amp.autocast():
-                        if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
-                            outputs = self.model(batch_x, mark)
-                        else:
-                            if self.args.output_attention:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-                            else:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                # 모델 예측
+                if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
+                    outputs = self.model(batch_x, mark)
                 else:
-                    if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
-                        outputs = self.model(batch_x, mark)
-                    else:
-                        if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-                        else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-
+                    outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                
                 f_dim = -1 if self.args.features == 'MS' else 0
                 outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                 
-               
-                if self.args.model != 'LSTM':
-                   
-                    outputs_np = outputs.detach().cpu().numpy()
-                    batch_y_np = batch_y.detach().cpu().numpy()
+                # 역변환된 예측값과 실제값 계산
+                outputs_np = outputs.detach().cpu().numpy()
+                batch_y_np = batch_y.detach().cpu().numpy()
+                pred = test_data.inverse_transform(outputs_np.copy())
+                true = test_data.inverse_transform(batch_y_np.copy())
 
-                    # de-normalize the data and prediction 
-                    batch_x_np = batch_x.detach().cpu().numpy()
-                    # batch_x_ap = test_data.inverse_transform(site[:, 0], batch_x_np.copy()[:, :, -1])   
-                    # pred = test_data.inverse_transform(site[:, 0], outputs_np.copy())
-                    # true = test_data.inverse_transform(site[:, 0], batch_y_np.copy())
-                    batch_x_ap = test_data.inverse_transform(batch_x_np.copy()[:, :, -1])   
-                    pred = test_data.inverse_transform(outputs_np.copy())
-                    true = test_data.inverse_transform(batch_y_np.copy())
-
-
-                    # normalized된 결과
-                    pred_normalized = outputs_np
-                    true_normalized = batch_y_np
-
-                    # pred = pred.reshape(outputs_np.shape[0], outputs_np.shape[1], -1)
-                    # true = true.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
-                                 
-                else:
-                    # TODO: LSTM일 때, 코드 수정 필요
-                    pred_np = test_data.inverse_transform(outputs.detach().cpu().numpy())
-                    true_np = test_data.inverse_transform(batch_y.detach().cpu().numpy())
-                    
-                    # pred_np = pred_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
-                    # true_np = true_np.reshape(-1, outputs.shape[-2], batch_y_np.shape[-1])
-
-                    pred = torch.from_numpy(pred_np)[:, :, -1]
-                    true = torch.from_numpy(true_np)[:, :, -1]
-
-
+                # MetricEvaluator에 각 배치의 예측값, 실제값 업데이트
+                evaluator.update(preds=outputs, targets=batch_y, site_index=site[:, 0], site_max_capacities=site_ap_max[:, 0])
+                
                 pred_list.append(pred)
-                true_list.append(true[:,-self.args.pred_len:])
-                pred_normalized_list.append(pred_normalized)
-                true_normalized_list.append(true_normalized)
+                true_list.append(true)
                 input_list.append(batch_x.detach().cpu().numpy())
                 
-                # TODO: visualize code 수정 필요
-                # Visualize periodically
+                # Visualize predictions periodically
                 if i % 3 == 0:
-                    self.plot_predictions(i, batch_x_ap[0], true[0], pred[0], folder_path)
-                # if i % 10 == 0:
-                #     if self.args.model != 'LSTM':
-                #     # visualize_input_length = outputs.shape[1]*3 # visualize three times of the prediction length
-                #         input_np_s = batch_x[:, :, -1].detach().cpu().numpy()
-                #         input_inverse_transform_s = test_data.inverse_transform(input_np_s)
-                #         input_seq_s = input_inverse_transform_s[0,:]
-                #         gt_s = true[0, -self.args.pred_len:]
-                #         pd_s = pred[0, :]
-                #         visual(input_seq_s, gt_s, pd_s, os.path.join(folder_path_inout, str(i) + '.png'))
-                #         # visual_out(input_seq, gt, pd, os.path.join(folder_path_out, str(i) + '.png'))
-                #         # TODO: visual, visual_out은 거의 같은데 하나는 input을 포함하고 하나는 input을 포함하지 않는다.
-                #     else:
-                #         input_np = batch_x.detach().cpu().numpy()
-                #         input_inverse_transform = test_data.inverse_transform(input_np)
-
-                #         gt = np.concatenate((input_inverse_transform[0, :, -1], true[0, :, -1]), axis=0)
-                #         pd = np.concatenate((input_inverse_transform[0, :, -1], pred[0, :, -1]), axis=0)
-                #         visual_original(gt, pd, os.path.join(folder_path, str(i) + '.png'))
-                    
-
-        if self.args.test_flop:
-            test_params_flop((batch_x.shape[1],batch_x.shape[2]))
-            exit()
-
-        pred_np = np.array(pred_list)
-        trues_np = np.array(true_list)
-        pred_normalized_np = np.array(pred_normalized_list)
-        true_normalized_np = np.array(true_normalized_list)
-        inputx_np = np.array(input_list)
-
-        pred_np = pred_np.reshape(-1, pred_np.shape[-2], pred_np.shape[-1])
-        trues_np = trues_np.reshape(-1, trues_np.shape[-2], trues_np.shape[-1])
-        pred_normalized_np = pred_normalized_np.reshape(-1, pred_normalized_np.shape[-2], pred_normalized_np.shape[-1])
-        true_normalized_np = true_normalized_np.reshape(-1, true_normalized_np.shape[-2], true_normalized_np.shape[-1])
-        inputx_np = inputx_np.reshape(-1, inputx_np.shape[-2], inputx_np.shape[-1])
-
-        # result save
-        folder_path = os.path.join('./results/', setting)
-        txt_save_path = os.path.join(folder_path,
-                                     f"{self.args.seq_len}_{self.args.pred_len}_result.txt")
-        txt_save_path_normalized = os.path.join(folder_path,
-                                     f"{self.args.seq_len}_{self.args.pred_len}_result_normalized.txt")
+                    self.plot_predictions(i, batch_x[0, :, -1].cpu().numpy(), true[0], pred[0], folder_path)
         
-        os.makedirs(folder_path, exist_ok=True)
+        # 모든 배치 업데이트 완료 후, 최종 평가 지표 계산 및 파일에 저장
+        avg_mae, avg_mse, avg_rmse, avg_nrmse, avg_mape, avg_mspe, avg_rse, avg_r2 = evaluator.calculate_metrics()
 
-        avg_mae, avg_mse, avg_rmse, avg_nrmse, avg_mape, avg_mspe, avg_rse, avg_r2 = metric(pred_np, trues_np, site_max_capacities=test_data.site_max_capacities, file_path=txt_save_path)
-        avg_mae_n, avg_mse_n, avg_rmse_n, avg_nrmse_n, avg_mape_n, avg_mspe_n, avg_rse_n, avg_r2_n = metric(pred_normalized_np, true_normalized_np, site_max_capacities=test_data.site_max_capacities, file_path=txt_save_path_normalized)
-
-        print('\nAVG_MAE: {}, AVG_MSE: {}, AVG_RMSE: {}, AVG_NRMSE: {}, AVG_MAPE: {}, AVG_MSPE: {}, AVG_RSE: {}, AVG_R2: {}'.format(avg_mae, avg_mse, avg_rmse, avg_nrmse, avg_mape, avg_mspe, avg_rse, avg_r2))
-        print('\nAVG_MAE_NORMALIZED: {}, AVG_MSE_NORMALIZED: {}, AVG_RMSE_NORMALIZED: {}, AVG_NRMSE_NORMALIZED: {}, AVG_MAPE_NORMALIZED: {}, AVG_MSPE_NORMALIZED: {}, AVG_RSE_NORMALIZED: {}, AVG_R2_NORMALIZED: {}'.format(avg_mae_n, avg_mse_n, avg_rmse_n, avg_nrmse_n, avg_mape_n, avg_mspe_n, avg_rse_n, avg_r2_n))
-        
-
-        
-        # np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe,rse, corr]))
-        # np.save(folder_path + 'pred.npy', pred_np)
-        # np.save(folder_path + 'true.npy', trues_np)
-        # np.save(folder_path + 'x.npy', inputx_np)
-        return
+        # 결과 출력
+        print('\nAVG_MAE: {}, AVG_MSE: {}, AVG_RMSE: {}, AVG_NRMSE: {}, AVG_MAPE: {}, AVG_MSPE: {}, AVG_RSE: {}, AVG_R2: {}'.format(
+            avg_mae, avg_mse, avg_rmse, avg_nrmse, avg_mape, avg_mspe, avg_rse, avg_r2))
     import matplotlib.pyplot as plt
     import os
 
