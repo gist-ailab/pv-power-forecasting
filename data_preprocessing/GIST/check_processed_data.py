@@ -5,7 +5,7 @@ import os
 # folder_path = '../../data/OEDI/2107(Arbuckle_California)/preprocessed'
 # log_file_path = './california_log.txt'
 
-folder_path = '../../data/GIST_dataset/preprocessed'
+folder_path = '../../data/GIST_dataset/converted'
 log_file_path = './processed_data_info.txt'
 # 해당 폴더 내 모든 CSV 파일 가져오기
 file_names = sorted([f for f in os.listdir(folder_path) if f.endswith('.csv')])
