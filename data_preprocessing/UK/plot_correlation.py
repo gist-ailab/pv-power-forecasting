@@ -43,15 +43,15 @@ correlations = combined_df.corr()['Active_Power']
 plt.figure(figsize=(18, 12))
 
 # List of features to plot
-# features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed']
-features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
+features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed']
+# features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
 # features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Wind_Speed']
 
 colors = ['blue', 'green', 'red', 'purple']
 titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
           'Active Power [kW] vs Weather Temperature [℃]',
-          'Active Power [kW] vs Weather Relative Humidity [%]']
-          # 'Active Power [kW] vs Wind Speed [m/s]']
+          'Active Power [kW] vs Weather Relative Humidity [%]',
+          'Active Power [kW] vs Wind Speed [m/s]']
 
 # Loop through each feature and create a scatter plot
 for i, feature in enumerate(features):
