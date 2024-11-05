@@ -16,6 +16,27 @@ def calculate_site_capacity(raw_df):
     tenth_largest_value = raw_df['Active_Power'].nlargest(10).iloc[-1]
     return tenth_largest_value
 
+# Define a dictionary with pre-determined capacities for each site
+site_capacities = {
+    '축구장': 154.7,                   # Soccer-Field
+    '학생회관': 45.1,                  # W06_Student-Union
+    '중앙창고': 31.9,                  # W13_Centeral-Storage
+    '학사과정': 25.8,                  # E11_DormA
+    '다산빌딩': 37.4,                  # C09_Dasan
+    '시설관리동': 122.8,               # W11_Facility-Maintenance-Bldg
+    '대학C동': 14.9,                  # N06_College-Bldg
+    '동물실험동': 39.5,                # E02_Animal-Recource-Center
+    '중앙도서관': 33.0,               # N01_Central-Library
+    'LG도서관': 45.8,                 # N02_LG-Library
+    '신재생에너지동': 68.9,            # C10_Renewable-E-Bldg
+    '삼성환경동': 63.2,                # C07_Samsung-Env-Bldg
+    '중앙연구기기센터': 117.4,         # C11_GAIA
+    '산업협력관': 133.1,              # E03_GTI
+    '기숙사 B동': 52.1,               # E12_DormB
+    '자연과학동': 220.1               # E8_Natural-Science-Bldg
+}
+
+
 def combine_into_each_site(file_list, index_of_site,
                            kor_name, eng_name,
                            weather_data,
@@ -80,7 +101,7 @@ def combine_into_each_site(file_list, index_of_site,
 
         filtered_df = create_combined_filtered_data(preprocessed_df, daily_pv_data, daily_weather_data)
             # 추가: 각 사이트별 capacity 계산
-        site_capacity = calculate_site_capacity(filtered_df)
+        site_capacity = site_capacities.get(kor_name)
         filtered_df = delete_outlier_data(filtered_df, save_dir, kor_name, site_capacity)
 
         # DataFrame 결합 (concat)
@@ -338,9 +359,9 @@ if __name__ == '__main__':
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
     # # Get the path to the daily PV xls data
-    # pv_xls_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_xls')
-    # pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
-    # pv_file_list.sort()
+    pv_xls_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_xls')
+    pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
+    pv_file_list.sort()
 
     # Define the path to save the combined CSV file
     # weather_data = os.path.join(project_root, 'data/GIST_dataset/GIST_weather_data.csv')
@@ -353,7 +374,10 @@ if __name__ == '__main__':
     # Check for new columns in the PV data
     # check_new_columns(pv_file_list)
 
-    # convert_excel_to_hourly_csv(pv_file_list)
+    if not os.path.exists(os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')):
+        convert_excel_to_hourly_csv(pv_file_list)
+    else:
+        print('Skip converting xls to csv since csv files already exists')
 
     # raw_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')
     raw_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/daily_PV_csv')
