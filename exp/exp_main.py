@@ -227,8 +227,8 @@ class Exp_Main(Exp_Basic):
             print(f"Epoch: {epoch + 1} | cost time: {time.time() - epoch_time}")
             
             train_losses = np.average(train_losses)
-            vali_loss = self.vali(vali_data, vali_loader, criterion, denorm=0)
-            test_loss = self.vali(test_data, test_loader, criterion, denorm=1)
+            vali_loss = self.vali(vali_data, vali_loader, criterion)
+            test_loss = self.vali(test_data, test_loader, criterion)
             print(f"Epoch: {epoch + 1} | Train Loss: {train_losses:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
 
             # Log metrics for each epoch
@@ -267,7 +267,7 @@ class Exp_Main(Exp_Basic):
 
         return self.model
     
-    def vali(self, vali_data, vali_loader, criterion, denorm=0):
+    def vali(self, vali_data, vali_loader, criterion):
 
         def site_criterion(preds, targets, site_index, criterion):
             # site_index를 1차원 텐서로 변환
@@ -365,12 +365,13 @@ class Exp_Main(Exp_Basic):
                     
                     # active_power_np = vali_data.inverse_transform(site[:, 0], output_np.copy())
                     # active_power_gt_np = vali_data.inverse_transform(site[:, 0], batch_y_np.copy())
-                    if denorm:
-                        active_power_np = vali_data.inverse_transform(output_np.copy())
-                        active_power_gt_np = vali_data.inverse_transform(batch_y_np.copy())
-                    else:
-                        active_power_np = output_np
-                        active_power_gt_np = batch_y_np 
+                    active_power_np = vali_data.inverse_transform( output_np.copy())
+                    active_power_gt_np = vali_data.inverse_transform(batch_y_np.copy())
+                   
+
+                    # # scaler적용 후, 다시 3d로 되돌리기
+                    # active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
+                    # active_power_gt_np = active_power_gt_np.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
 
 
                     pred = torch.from_numpy(active_power_np).to(self.device)

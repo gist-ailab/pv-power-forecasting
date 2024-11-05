@@ -27,7 +27,7 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
     capacity = tenth_largest_value
 
     '''1. Extract only necessary columns'''
-    df = raw_df[['timestamp', invertor_name, 'Global_Horizontal_Radiation', 'Weather_Relative_Humidity', 'Weather_Temperature_Celsius']]
+    df = raw_df[['timestamp', invertor_name, 'Global_Horizontal_Radiation', 'Weather_Relative_Humidity', 'Weather_Temperature_Celsius', 'Wind_Speed']]
     df = cumulative_to_increment(df, invertor_name)
     df = df.rename(columns={invertor_name: 'Active_Power'})
 
@@ -117,11 +117,13 @@ def combine_into_each_invertor(invertor_name, index_of_invertor,
     df_cleaned_6.to_csv(os.path.join(save_dir, f'{invertor_name}.csv'), index=False)
 
 
-def merge_raw_data(active_power_path, temp_path, ghi_path, moisture_path):
+def merge_raw_data(active_power_path, temp_path, ghi_path, moisture_path, wind_path):
     active_powers = pd.read_csv(active_power_path)
     temp = pd.read_csv(temp_path, sep=";", na_values='-999')
     ghi = pd.read_csv(ghi_path, sep=";", na_values='-999')
     moisture = pd.read_csv(moisture_path, sep=";", na_values='-999')
+    wind = pd.read_csv(wind_path, sep=";", na_values='-999')
+    print(wind.head())
 
     active_powers['utc_timestamp'] = pd.to_datetime(active_powers['utc_timestamp'], utc=True)
     active_powers['timestamp'] = active_powers['utc_timestamp'] + pd.Timedelta(hours=1)  # Convert to local time (UTC+1)
@@ -131,6 +133,7 @@ def merge_raw_data(active_power_path, temp_path, ghi_path, moisture_path):
     temp['timestamp'] = pd.to_datetime(temp['MESS_DATUM'], format='%Y%m%d%H')
     ghi['timestamp'] = pd.to_datetime(ghi['MESS_DATUM'].str.split(":").str[0], format='%Y%m%d%H')
     moisture['timestamp'] = pd.to_datetime(moisture['MESS_DATUM'], format='%Y%m%d%H')
+    wind['timestamp'] = pd.to_datetime(wind['MESS_DATUM'], format='%Y%m%d%H')
 
     invertor_list = [
     'DE_KN_industrial1_pv_1',
@@ -149,12 +152,15 @@ def merge_raw_data(active_power_path, temp_path, ghi_path, moisture_path):
     moisture[['timestamp', 'RF_STD']], on='timestamp', how='left'
     ).merge(
     temp[['timestamp', 'TT_TU']], on='timestamp', how='left'
-    ).merge(active_powers, on='timestamp', how='left')
+    ).merge(active_powers, on='timestamp', how='left').merge(
+        wind[['timestamp', '   F']], on='timestamp', how='left'
+    )
 
     rename_dict = {
     'FG_LBERG': 'Global_Horizontal_Radiation',  # Unit: J/cm^2
     'RF_STD': 'Weather_Relative_Humidity',      # Unit: %
-    'TT_TU': 'Weather_Temperature_Celsius'      # Unit: tenths of degree Celsius
+    'TT_TU': 'Weather_Temperature_Celsius',      # Unit: tenths of degree Celsius
+    '   F': 'Wind_Speed'
     }
 
     combined_data = combined_data.rename(columns=rename_dict)
@@ -208,7 +214,8 @@ if __name__ == '__main__':
     temp_path = os.path.join(project_root, 'data/Germany_Household_Data/Konstanz_weather_data/air_temperature/stundenwerte_TU_02712_19710101_20231231_hist/produkt_tu_stunde_19710101_20231231_02712.txt')
     ghi_path = os.path.join(project_root, 'data/Germany_Household_Data/Konstanz_weather_data/GHI_DHI/stundenwerte_ST_02712_row/produkt_st_stunde_19770101_20240731_02712.txt')
     moisture_path = os.path.join(project_root, 'data/Germany_Household_Data/Konstanz_weather_data/moisture/stundenwerte_TF_02712_19520502_20231231_hist/produkt_tf_stunde_19520502_20231231_02712.txt')
-    merged_data = merge_raw_data(active_power_path, temp_path, ghi_path, moisture_path)
+    wind_path = os.path.join(project_root, 'data/Germany_Household_Data/Konstanz_weather_data/wind/produkt_ff_stunde_19590701_20231231_02712.txt')
+    merged_data = merge_raw_data(active_power_path, temp_path, ghi_path, moisture_path, wind_path)
 
     invertor_list = [
     'DE_KN_industrial1_pv_1',
