@@ -29,8 +29,10 @@ python -u run_longExp.py \
     --gpu 0 \
     --use_amp \
     --random_seed $random_seed \
+    --individual 1 \
+    --is_pretraining 1 \
     --is_inference 1 \
-    --checkpoints 
+    --checkpoints /home/seongho_bak/Projects/PatchTST/checkpoints/24110405_PatchTST_DKASC_AliceSprings_ftMS_sl256_ll0_pl16_dm256_nh8_el4_dl1_df512_fc1_ebtimeF_dtTrue_1024_0/checkpoint.pth\
     --root_path $root_path_name \
     --data_path $data_path_name \
     --model_id $model_id \

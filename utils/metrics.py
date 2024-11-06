@@ -1,94 +1,63 @@
 import numpy as np
 import torch
-import torchmetrics
-from collections import defaultdict
-import os
+from torchmetrics import R2Score
 
 class MetricEvaluator:
     def __init__(self, file_path):
         self.file_path = file_path
-        self.site_max_capacities = {}
-        self.site_preds = defaultdict(list)
-        self.site_targets = defaultdict(list)
-        
-        # 전체 지표 초기화
-        self.mae_sum, self.mse_sum, self.rmse_sum = 0, 0, 0
-        self.nrmse_sum, self.mape_sum, self.mspe_sum, self.rse_sum, self.r2_sum = 0, 0, 0, 0, 0
+        self.preds_list = []
+        self.targets_list = []
 
-    def update(self, preds, targets, site_index, site_max_capacities):
+    def update(self, preds, targets):
         """
-        매 배치마다 사이트별 예측값과 실제값을 누적하며, 새 사이트가 있으면 최대 용량 정보를 업데이트
+        매 배치마다 전체 예측값과 실제값을 누적하여 사용
         """
-        for i in range(len(site_index)):
-            site_id = site_index[i].item()  # 사이트 ID
-            if site_id not in self.site_max_capacities:
-                self.site_max_capacities[site_id] = site_max_capacities[i]  # 최대 용량 정보 업데이트
-            self.site_preds[site_id].append(preds[i].cpu().numpy())
-            self.site_targets[site_id].append(targets[i].cpu().numpy())
+        # numpy 배열로 변환 후 누적
+        self.preds_list.append(preds.cpu().numpy())
+        self.targets_list.append(targets.cpu().numpy())
 
     def calculate_metrics(self):
-        num_sites = len(self.site_max_capacities)  # 누적된 사이트 개수 계산
+        # 전체 예측 및 실제값을 통합
+        preds = np.concatenate(self.preds_list)
+        targets = np.concatenate(self.targets_list)
 
+        # 텐서를 1D로 변환하여 R2Score와 호환되도록 수정
+        preds_flat = torch.tensor(preds).flatten()
+        targets_flat = torch.tensor(targets).flatten()
+
+        # 전체 데이터에 대한 지표 계산
+        mae = np.mean(np.abs(preds - targets))
+        mse = np.mean((preds - targets) ** 2)
+        rmse = np.sqrt(mse)
+
+        # nRMSE (최대-최소 및 평균값 기준)
+        targets_min = np.min(targets)
+        targets_max = np.max(targets)
+        targets_mean = np.mean(targets)
+
+        nrmse_range = (rmse / (targets_max - targets_min)) * 100  # (최대-최소) 기준 nRMSE
+        nrmse_mean = (rmse / targets_mean) * 100  # 평균 기준 nRMSE
+
+        # nMAE 계산 (평균값 기준)
+        nmae = (mae / targets_mean) * 100  # 평균 기준 nMAE
+
+        # MAPE 계산
+        mape = np.mean(np.abs((preds - targets) / targets)) * 100
+
+        # R2 Score 계산 (1D 텐서로 변환된 값을 사용)
+        r2 = R2Score()(preds_flat, targets_flat).item()
+
+        # 결과를 파일에 기록
         with open(self.file_path, "w") as file:
-            file.write("Site-wise Evaluation Metrics\n")
+            file.write("Overall Evaluation Metrics\n")
+            file.write("="*50 + "\n")
+            file.write(f"RMSE: {rmse:.4f} kW\n")
+            file.write(f"nRMSE (Range): {nrmse_range:.4f}%\n")
+            file.write(f"nRMSE (Mean): {nrmse_mean:.4f}%\n")
+            file.write(f"MAE: {mae:.4f} kW\n")
+            file.write(f"nMAE: {nmae:.4f}%\n")
+            file.write(f"MAPE: {mape:.4f}%\n")
+            file.write(f"R2 Score: {r2:.4f}\n")
             file.write("="*50 + "\n")
 
-            for site_id, site_max in self.site_max_capacities.items():
-                preds = np.stack(self.site_preds[site_id])
-                targets = np.stack(self.site_targets[site_id])
-
-                mae = np.mean(np.abs(preds - targets))
-                mse = np.mean((preds - targets) ** 2)
-                rmse = np.sqrt(mse)
-                nrmse = ((rmse / site_max) * 100).item()
-                mape = np.mean(np.abs((preds - targets) / targets)) * 100
-                mspe = np.mean(np.square((preds - targets) / targets)) * 100
-                rse = np.sqrt(np.sum((targets - preds) ** 2)) / np.sqrt(np.sum((targets - targets.mean()) ** 2))
-                r2 = torchmetrics.R2Score()(torch.tensor(preds.squeeze()), torch.tensor(targets.squeeze()))
-
-                # 사이트별 지표 기록
-                file.write(f"Site {site_id} Metrics:\n")
-                file.write(f"Max Capacity: {site_max}\n")
-                file.write(f"MAE: {mae:.4f}\n")
-                file.write(f"MSE: {mse:.4f}\n")
-                file.write(f"RMSE: {rmse:.4f}\n")
-                file.write(f"nRMSE: {nrmse:.4f}%\n")
-                file.write(f"MAPE: {mape:.4f}%\n")
-                file.write(f"MSPE: {mspe:.4f}%\n")
-                file.write(f"RSE: {rse:.4f}\n")
-                file.write(f"R2 Score: {r2:.4f}\n")
-                file.write("="*50 + "\n")
-
-                # 지표별 합계 업데이트
-                self.mae_sum += mae
-                self.mse_sum += mse
-                self.rmse_sum += rmse
-                self.nrmse_sum += nrmse
-                self.mape_sum += mape
-                self.mspe_sum += mspe
-                self.rse_sum += rse
-                self.r2_sum += r2
-
-            # 평균 지표 계산 및 기록
-            avg_mae = self.mae_sum / num_sites
-            avg_mse = self.mse_sum / num_sites
-            avg_rmse = self.rmse_sum / num_sites
-            avg_nrmse = self.nrmse_sum / num_sites
-            avg_mape = self.mape_sum / num_sites
-            avg_mspe = self.mspe_sum / num_sites
-            avg_rse = self.rse_sum / num_sites
-            avg_r2 = self.r2_sum / num_sites
-
-            file.write("\nOverall Average Metrics:\n")
-            file.write("="*50 + "\n")
-            file.write(f"Average MAE: {avg_mae:.4f}\n")
-            file.write(f"Average MSE: {avg_mse:.4f}\n")
-            file.write(f"Average RMSE: {avg_rmse:.4f}\n")
-            file.write(f"Average nRMSE: {avg_nrmse:.4f}%\n")
-            file.write(f"Average MAPE: {avg_mape:.4f}%\n")
-            file.write(f"Average MSPE: {avg_mspe:.4f}%\n")
-            file.write(f"Average RSE: {avg_rse:.4f}\n")
-            file.write(f"Average R2 Score: {avg_r2:.4f}\n")
-            file.write("="*50 + "\n")
-
-        return avg_mae, avg_mse, avg_rmse, avg_nrmse, avg_mape, avg_mspe, avg_rse, avg_r2
+        return rmse, nrmse_range, nrmse_mean, mae, nmae, mape, r2

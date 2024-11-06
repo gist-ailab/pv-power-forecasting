@@ -57,7 +57,7 @@ for i in "${!pred_len[@]}"; do
       --head_dropout 0\
       --patch_len 16\
       --stride 8\
-      --des 'Exp' \
+      --des 'direct' \
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \

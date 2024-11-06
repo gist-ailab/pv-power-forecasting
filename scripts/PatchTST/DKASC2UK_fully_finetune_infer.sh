@@ -48,9 +48,9 @@ do
       --head_dropout 0\
       --patch_len 16\
       --stride 8\
-      --des 'Exp' \
+      --des 'fully_finetune' \
       --train_epochs 100\
       --patience 20\
       --embed 'timeF' \
-      --itr 1 --batch_size 1024 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
+      --itr 1 --batch_size 16 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len.log
 done

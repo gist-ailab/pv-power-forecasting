@@ -10,6 +10,12 @@ import torch
 import torch.nn as nn
 from torch import optim
 from torch.optim import lr_scheduler
+import matplotlib.pyplot as plt
+import os
+
+import os
+import matplotlib.pyplot as plt
+import pandas as pd
 
 import os
 import time
@@ -136,7 +142,7 @@ class Exp_Main(Exp_Basic):
                 iter_count += 1
                 model_optim.zero_grad()
 
-                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts, batch_ap_max = data
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
@@ -144,8 +150,7 @@ class Exp_Main(Exp_Basic):
                 site = site.to(self.device)
                 batch_x_ts = batch_x_ts.to(self.device)
                 batch_y_ts = batch_y_ts.to(self.device)
-                batch_ap_max = batch_ap_max.to(self.device)
-
+             
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
@@ -186,14 +191,6 @@ class Exp_Main(Exp_Basic):
                 outputs = outputs[:, -self.args.pred_len:, f_dim:].to(self.device)
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
 
-                # outputs_inv = train_data.inverse_transform_tensor(site[:, 0], outputs)
-                # batch_y_inv = train_data.inverse_transform_tensor(site[:, 0], batch_y)
-
-                # outputs_np = torch.from_numpy(outputs_np).to(self.device)
-                # batch_y_np = torch.from_numpy(batch_y_np).to(self.device)
-
-                # outputs_np.requires_grad = True
-                # batch_y_np.requires_grad = True
                 loss = criterion(outputs, batch_y)
                 train_losses.append(loss.item())
 
@@ -267,46 +264,48 @@ class Exp_Main(Exp_Basic):
 
         return self.model
     
-    def vali(self, vali_data, vali_loader, criterion):
+    # def vali(self, vali_data, vali_loader, criterion):
+    #     def site_criterion(self, preds, targets, site_index, criterion):
+    #             # site_index를 1차원 텐서로 변환
+    #         if isinstance(site_index, torch.Tensor):
+    #             site_index = site_index.view(-1)
+            
+    #         # 사이트별 데이터 저장을 위한 딕셔너리 초기화
+    #         site_preds = defaultdict(list)
+    #         site_targets = defaultdict(list)
+            
+    #         # 사이트별로 예측값과 실제값을 그룹화
+    #         for i in range(len(site_index)):
+    #             # site_index[i]가 텐서인 경우 .item() 호출
+    #             site_id = site_index[i].item() if isinstance(site_index[i], torch.Tensor) else site_index[i]
+    #             site_preds[site_id].append(preds[i])
+    #             site_targets[site_id].append(targets[i])
 
-        def site_criterion(preds, targets, site_index, criterion):
-            # site_index를 1차원 텐서로 변환
-            if isinstance(site_index, torch.Tensor):
-                site_index = site_index.view(-1)
+    #         total_loss = []
             
-            # 사이트별 데이터 저장을 위한 딕셔너리 초기화
-            site_preds = defaultdict(list)
-            site_targets = defaultdict(list)
+    #         # 고유한 사이트 ID 리스트 추출
+    #         if isinstance(site_index, torch.Tensor):
+    #             unique_sites = site_index.unique().tolist()
+    #         else:
+    #             unique_sites = list(set(site_index))
             
-            # 사이트별로 예측값과 실제값을 그룹화
-            for i in range(len(site_index)):
-                # site_index[i]가 텐서인 경우 .item() 호출
-                site_id = site_index[i].item() if isinstance(site_index[i], torch.Tensor) else site_index[i]
-                site_preds[site_id].append(preds[i])
-                site_targets[site_id].append(targets[i])
-
-            total_loss = []
-            
-            # 고유한 사이트 ID 리스트 추출
-            if isinstance(site_index, torch.Tensor):
-                unique_sites = site_index.unique().tolist()
-            else:
-                unique_sites = list(set(site_index))
-            
-            # 사이트별로 손실 계산
-            for site_id in unique_sites:
-                if site_preds[site_id]:  # 해당 사이트의 데이터가 있는지 확인
-                    site_preds_tensor = torch.stack(site_preds[site_id])
-                    site_targets_tensor = torch.stack(site_targets[site_id])
-                    loss = criterion(site_preds_tensor, site_targets_tensor)
+    #         # 사이트별로 손실 계산
+    #         for site_id in unique_sites:
+    #             if site_preds[site_id]:  # 해당 사이트의 데이터가 있는지 확인
+    #                 site_preds_tensor = torch.stack(site_preds[site_id])
+    #                 site_targets_tensor = torch.stack(site_targets[site_id])
+    #                 loss = criterion(site_preds_tensor, site_targets_tensor)
                     
-                    # loss를 스칼라 값으로 변환하여 저장
-                    loss_value = loss.item() if isinstance(loss, torch.Tensor) else float(loss)
-                    total_loss.append(loss_value)
+    #                 # loss를 스칼라 값으로 변환하여 저장
+    #                 loss_value = loss.item() if isinstance(loss, torch.Tensor) else float(loss)
+    #                 total_loss.append(loss_value)
             
-            # 모든 사이트의 평균 손실을 반환
-            total_loss = np.mean(total_loss) if total_loss else 0
-            return total_loss
+    #         # 모든 사이트의 평균 손실을 반환
+    #         total_loss = np.mean(total_loss) if total_loss else 0
+    #         return total_loss
+
+    def vali(self, vali_data, vali_loader, criterion, denorm=0):
+
 
         total_loss = []
         
@@ -314,7 +313,7 @@ class Exp_Main(Exp_Basic):
         with torch.no_grad():
             for i, data in enumerate(vali_loader):
                
-                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts, site_ap_max = data
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
                
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
@@ -323,7 +322,7 @@ class Exp_Main(Exp_Basic):
                 site = site.to(self.device)
                 batch_x_ts = batch_x_ts.to(self.device)
                 batch_y_ts = batch_y_ts.to(self.device)
-                site_ap_max = site_ap_max.to(self.device)
+          
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
@@ -387,7 +386,7 @@ class Exp_Main(Exp_Basic):
                     pred = torch.from_numpy(pred_np[:, :, -1])
                     gt = torch.from_numpy(gt_np[:, :, -1])
 
-                loss = site_criterion(pred, gt, site[:, 0], criterion) 
+                loss = criterion(pred, gt) 
                 total_loss.append(loss.item())
         
         self.model.train()
@@ -419,11 +418,12 @@ class Exp_Main(Exp_Basic):
         self.model.eval()
         with torch.no_grad():
             for i, data in enumerate(test_loader):
-                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts, site_ap_max = data
+                batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts = data
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 site = site.to(self.device)
-                site_ap_max = site_ap_max.to(self.device)
+    
+          
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
@@ -443,11 +443,18 @@ class Exp_Main(Exp_Basic):
                 # 역변환된 예측값과 실제값 계산
                 outputs_np = outputs.detach().cpu().numpy()
                 batch_y_np = batch_y.detach().cpu().numpy()
+
+                batch_x_np = batch_x.detach().cpu().numpy()
+                batch_x_ts_np = batch_x_ts.detach().cpu().numpy()
+                batch_y_ts_np = batch_y_ts.detach().cpu().numpy()
+
+                batch_x_np = test_data.inverse_transform(batch_x_np[:, :, -1].copy())
+
                 pred = test_data.inverse_transform(outputs_np.copy())
                 true = test_data.inverse_transform(batch_y_np.copy())
 
                 # MetricEvaluator에 각 배치의 예측값, 실제값 업데이트
-                evaluator.update(preds=outputs, targets=batch_y, site_index=site[:, 0], site_max_capacities=site_ap_max[:, 0])
+                evaluator.update(preds=outputs, targets=batch_y)#, site_index=site[:, 0])#, site_max_ap=test_data.site_ap_max[:, 0], site_ap_min=test_data.site_ap_min[:, 0])
                 
                 pred_list.append(pred)
                 true_list.append(true)
@@ -455,51 +462,101 @@ class Exp_Main(Exp_Basic):
                 
                 # Visualize predictions periodically
                 if i % 3 == 0:
-                    self.plot_predictions(i, batch_x[0, :, -1].cpu().numpy(), true[0], pred[0], folder_path)
+                    self.plot_predictions(i, batch_x_np[0], true[0], pred[0], folder_path)# batch_x_ts_np[0], batch_y_ts_np[0])
         
         # 모든 배치 업데이트 완료 후, 최종 평가 지표 계산 및 파일에 저장
-        avg_mae, avg_mse, avg_rmse, avg_nrmse, avg_mape, avg_mspe, avg_rse, avg_r2 = evaluator.calculate_metrics()
+        rmse, nrmse_range, nrmse_mean, mae, nmae, mape, r2 = evaluator.calculate_metrics()
 
         # 결과 출력
-        print('\nAVG_MAE: {}, AVG_MSE: {}, AVG_RMSE: {}, AVG_NRMSE: {}, AVG_MAPE: {}, AVG_MSPE: {}, AVG_RSE: {}, AVG_R2: {}'.format(
-            avg_mae, avg_mse, avg_rmse, avg_nrmse, avg_mape, avg_mspe, avg_rse, avg_r2))
-    import matplotlib.pyplot as plt
-    import os
-
+        print('\nRMSE: {}, NRMSE (RANGE): {}, RMSE (MEAN): {}, MAE: {}, NMAE: {}, MAPE: {}, R2: {}'.format(
+            rmse, nrmse_range, nrmse_mean, mae, nmae, mape, r2))
     def plot_predictions(self, i, input_sequence, ground_truth, predictions, save_path):
         """
-        예측 시각화 함수
+        예측 시각화 함수 (인덱스 기반, 시각적 개선)
         Args:
             input_sequence (numpy array): 입력 시퀀스 데이터
             ground_truth (numpy array): 실제값
             predictions (numpy array): 예측값
             save_path (str): 플롯을 저장할 경로
         """
-        plt.figure(figsize=(12, 6))
+        # 인덱스 기반으로 x축을 설정
+        input_index = np.arange(len(input_sequence))
         
-        # 입력 시퀀스 플롯
-        plt.plot(range(len(input_sequence)), input_sequence, label='Input Sequence', color='blue', linestyle='--')
+        # ground_truth와 predictions에 input_sequence의 마지막 값을 앞에 추가하여 연결
+        ground_truth = np.insert(ground_truth, 0, input_sequence[-1])
+        predictions = np.insert(predictions, 0, input_sequence[-1])
         
-        # 실제값 플롯
-        prediction_start = len(input_sequence)
-        plt.plot(range(prediction_start, prediction_start + len(ground_truth)), ground_truth, label='Ground Truth', color='green')
+        ground_truth_index = np.arange(len(input_sequence) - 1, len(input_sequence) + len(ground_truth) - 1)
+        predictions_index = np.arange(len(input_sequence) - 1, len(input_sequence) + len(predictions) - 1)
+
+        plt.figure(figsize=(14, 8))  # 더 큰 크기로 설정하여 가독성 향상
+
+        # 입력 시퀀스의 마지막 5개 데이터만 플롯 (점선과 작은 점 추가, 투명도 적용)
+        plt.plot(input_index[-10:], input_sequence.squeeze()[-10:], label='Input Sequence', color='royalblue', linestyle='--', alpha=0.7)
+        plt.scatter(input_index[-10:], input_sequence.squeeze()[-10:], color='royalblue', s=10, alpha=0.6)
+
+        # 수정된 ground_truth 사용하여 실제값 플롯 (굵기와 투명도 적용)
+        plt.plot(ground_truth_index, ground_truth.squeeze(), label='Ground Truth', color='green', linewidth=2, alpha=0.8)
         
-        # 예측값 플롯
-        plt.plot(range(prediction_start, prediction_start + len(predictions)), predictions, label='Predictions', color='red')
-        
+        # 예측값 플롯 (굵기와 투명도 적용)
+        plt.plot(predictions_index, predictions.squeeze(), label='Predictions', color='red', linewidth=2, alpha=0.8)
+
         # 레이블, 제목 설정
-        plt.xlabel('Time Steps')
-        plt.ylabel('Value')
-        plt.title('Prediction vs Ground Truth')
-        plt.legend()
+        plt.xlabel('Index', fontsize=12)
+        plt.ylabel('Value', fontsize=12)
+        plt.title('Prediction vs Ground Truth', fontsize=14)
         
+        # 레전드를 오른쪽 상단에 고정
+        plt.legend(loc='upper right', fontsize=10)
+        
+        # Grid 추가
+        plt.grid(color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+
         # 플롯 저장
         os.makedirs(save_path, exist_ok=True)
         plt.savefig(os.path.join(save_path, f'pred_{i}.png'))
-        plt.close()        
+        plt.close()    # def plot_predictions(self, i, input_sequence, ground_truth, predictions, save_path):
+    #     """
+    #     예측 시각화 함수 (인덱스 기반)
+    #     Args:
+    #         input_sequence (numpy array): 입력 시퀀스 데이터
+    #         ground_truth (numpy array): 실제값
+    #         predictions (numpy array): 예측값
+    #         save_path (str): 플롯을 저장할 경로
+    #     """
+    #     # 인덱스 기반으로 x축을 설정
+    #     input_index = np.arange(len(input_sequence))
+        
+    #     # ground_truth와 predictions에 input_sequence의 마지막 값을 앞에 추가하여 연결
+    #     ground_truth = np.insert(ground_truth, 0, input_sequence[-1])
+    #     predictions = np.insert(predictions, 0, input_sequence[-1])
+    #     ground_truth_index = np.arange(len(input_sequence) - 1, len(input_sequence) + len(ground_truth) - 1)
+        
+    #     predictions_index = np.arange(len(input_sequence) -1, len(input_sequence) + len(predictions)-1)
 
+    #     plt.figure(figsize=(12, 6))
 
+    #     # 입력 시퀀스 플롯
+    #     plt.plot(input_index, input_sequence.squeeze(), label='Input Sequence', color='blue', linestyle='--')
+        
+    #     # 수정된 ground_truth 사용하여 실제값 플롯
+    #     plt.plot(ground_truth_index, ground_truth.squeeze(), label='Ground Truth', color='green')
+        
+    #     # 예측값 플롯
+    #     plt.plot(predictions_index, predictions.squeeze(), label='Predictions', color='red')
 
+    #     # 레이블, 제목 설정
+    #     plt.xlabel('Index')
+    #     plt.ylabel('Value')
+    #     plt.title('Prediction vs Ground Truth')
+        
+    #     # 레전드를 오른쪽 상단에 고정
+    #     plt.legend(loc='upper right')
+
+    #     # 플롯 저장
+    #     os.makedirs(save_path, exist_ok=True)
+    #     plt.savefig(os.path.join(save_path, f'pred_{i}.png'))
+    #     plt.close()   
     def predict(self, setting, load=False):
         pred_data, pred_loader = self._get_data(flag='pred')
 

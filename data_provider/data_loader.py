@@ -146,7 +146,7 @@ class Dataset_DKASC_AliceSprings(Dataset):
                     self.scalers[col] = scaler
                     with open(os.path.join(self.root_path, f'{col}_scaler.pkl'), 'wb') as f:
                         pickle.dump(scaler, f)
-                with open(os.path.join(self.root_path, f'Active_Power_min_max.pkl'), 'wb') as f:
+                with open(os.path.join(self.root_path, f'Active_Power_min_max_train.pkl'), 'wb') as f:
                     print(f"Active_Power min: {combined_data['Active_Power'].min()}")
                     print(f"Active_Power max: {combined_data['Active_Power'].max()}")
                     pickle.dump([combined_data['Active_Power'].min(), combined_data['Active_Power'].max()], f)
@@ -158,12 +158,27 @@ class Dataset_DKASC_AliceSprings(Dataset):
                     with open(os.path.join(self.root_path, f'{col}_scaler.pkl'), 'rb') as f:
                         scaler = pickle.load(f)
                         self.scalers[col] = scaler
-                with open(os.path.join(self.root_path, f'Active_Power_min_max.pkl'), 'rb') as f:
-                    min_max = pickle.load(f)
-                    self.ap_min = min_max[0]
-                    self.ap_max = min_max[1]
-                    self.ap_min_normalized = self.scalers['Active_Power'].transform(np.array([self.ap_min]).reshape(1, -1)).squeeze()
-                    self.ap_max_normalized = self.scalers['Active_Power'].transform(np.array([self.ap_max]).reshape(1, -1)).squeeze()
+                if self.flag == 'val':
+                    with open(os.path.join(self.root_path, f'Active_Power_min_max_val.pkl'), 'wb') as f:
+                        print(f"Active_Power min: {combined_data['Active_Power'].min()}")
+                        print(f"Active_Power max: {combined_data['Active_Power'].max()}")
+                        pickle.dump([combined_data['Active_Power'].min(), combined_data['Active_Power'].max()], f)
+                
+                else:
+                    with open(os.path.join(self.root_path, f'Active_Power_min_max_train.pkl'), 'rb') as f:
+                        min_max = pickle.load(f)
+                        train_ap_min = min_max[0]
+                        train_ap_max = min_max[1]
+                    with open(os.path.join(self.root_path, f'Active_Power_min_max_val.pkl'), 'rb') as f:
+                        min_max = pickle.load(f)
+                        val_ap_min = min_max[0]
+                        val_ap_max = min_max[1]
+                    
+                    self.ap_max = max(train_ap_max, val_ap_max)
+                    self.ap_min = min(train_ap_min, val_ap_min)
+
+                        # self.ap_min_normalized = self.scalers['Active_Power'].transform(np.array([self.ap_min]).reshape(1, -1)).squeeze()
+                        # self.ap_max_normalized = self.scalers['Active_Power'].transform(np.array([self.ap_max]).reshape(1, -1)).squeeze()
 
             # scaler 적용 및 site data update
             for site_id in site_data.keys():
@@ -234,12 +249,6 @@ class Dataset_DKASC_AliceSprings(Dataset):
             train_keys=[57, 61, 70, 92, 59, 212, 213, 218, 56, 66, 52, 90, 72, 77, 60, 74, 67, 73, 214, 58, 68, 54, 79, 84]
             val_keys=[64, 99, 71, 98, 93, 100, 97]
             test_keys=[63, 85, 55, 69]
-
-            # random.seed(42)
-            # random.shuffle(site_ids)
-            # total_sites = len(site_ids)
-            # train_end = int(total_sites * 0.7)
-            # val_end = train_end + int(total_sites * 0.2)
 
             site_split = {
                 'train': train_keys,
@@ -1036,9 +1045,9 @@ class Dataset_German(Dataset):
         site = np.array([site_id]).repeat(s_end - s_begin).reshape(-1, 1)
         seq_x_ds = data['timestamp'][s_begin:s_end]
         seq_y_ds = data['timestamp'][r_begin:r_end]
-        site_ap_max = np.array([data['ap_max']]).repeat(s_end - s_begin).reshape(-1, 1)
+        # site_ap_max = np.array([data['ap_max']]).repeat(s_end - s_begin).reshape(-1, 1)
 
-        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, seq_x_ds, seq_y_ds, site_ap_max
+        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, seq_x_ds, seq_y_ds
     
     
     def __len__(self):    
