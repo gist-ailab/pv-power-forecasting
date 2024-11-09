@@ -10,66 +10,51 @@ current_file_path = os.path.abspath(__file__)
 # Get the root directory (assuming the root is two levels up from the current file)
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-# Each sites' data directory
-# data_dir = os.path.join(project_root, 'data/GIST_dataset/converted')
-data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings/converted')
-# data_dir = os.path.join(project_root, 'data/DKASC_Yulara/converted')
-# data_dir = os.path.join(project_root, 'data/Miryang/PV_merged')
-# data_dir = os.path.join(project_root, 'data/Germany_Household_Data/preprocessed')
-# data_dir = os.path.join(project_root, 'data/UK_data/preprocessed')
-# data_dir = os.path.join(project_root, 'data/OEDI/9069(Georgia)/preprocessed')
-# data_dir = os.path.join(project_root, 'data/Germany_Household_Data/preprocessed')
+data_name = 'DKASC_AliceSprings'
+data_dir = os.path.join(project_root, 'data/DKASC_AliceSprings/uniform_format_data')
 
 data_list = os.listdir(data_dir)
 data_list = [file for file in data_list if file.endswith('.csv')]
 
-
-combined_df = pd.DataFrame()
-for file in tqdm(data_list, desc='Loading data'):
-    data_path = os.path.join(data_dir, file)
-    df = pd.read_csv(data_path)
-    df.drop(columns=['timestamp'], inplace=True)
-    # df = df[df['Global_Horizontal_Radiation'] > 0].dropna()
-    # Filter out rows where Active_Power is negative
-    df = df[df['Active_Power'] >= 0]
-    # Normalize Active_Power by dividing by the maximum value for each site
-    df['Normalized_Active_Power'] = df['Active_Power'] / df['Active_Power'].max()
-    combined_df = pd.concat([combined_df, df], ignore_index=True)
-
-# Calculate the correlation between Active_Power and other features
-correlations = combined_df.corr()['Active_Power']
-
-# Plot the relationship between Active_Power and other features
-plt.figure(figsize=(18, 12))
-
 # List of features to plot
 features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed']
-# features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity']
-# features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Wind_Speed']
-
 colors = ['blue', 'green', 'red', 'purple']
 titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
           'Active Power [kW] vs Weather Temperature [℃]',
           'Active Power [kW] vs Weather Relative Humidity [%]',
           'Active Power [kW] vs Wind Speed [m/s]']
 
-# Loop through each feature and create a scatter plot
-for i, feature in enumerate(features):
-    plt.subplot(len(features), 1, i+1)
-    corr_value = correlations[feature]  # Get the correlation value for each feature
-    plt.scatter(combined_df[feature], combined_df['Normalized_Active_Power'], color=colors[i], marker='x', alpha=0.6)
-    plt.xlabel(f'{feature}')
-    plt.ylabel('Active Power (kW)')
-    plt.title(f'{titles[i]} (Correlation: {corr_value:.2f})')  # Add correlation to title
-    # plt.title(titles[i])
-    plt.grid(True, alpha=0.3)
+# Iterate over each file in data_list and visualize separately
+for file in tqdm(data_list, desc='Processing data files'):
+    data_path = os.path.join(data_dir, file)
+    df = pd.read_csv(data_path)
+    df.drop(columns=['timestamp'], inplace=True)
 
-plt.tight_layout()
-plt.show()
+    # Normalize Active_Power by dividing by the maximum value for each site
+    df['Normalized_Active_Power'] = df['Active_Power'] / df['Active_Power'].max()
 
-# Save the plot as an image file (e.g., PNG format)
-data_name = "Alicespring"
-plot_path = os.path.join('./', f'{data_name}_feature_vs_power_plot.png')
-plt.savefig(plot_path)
+    # Calculate the correlation between Active_Power and other features
+    correlations = df.corr()['Active_Power']
 
-print(f"Plot saved at: {plot_path}")
+    # Plot the relationship between Active_Power and other features
+    plt.figure(figsize=(18, 12))
+
+    for i, feature in enumerate(features):
+        plt.subplot(len(features), 1, i+1)
+        corr_value = correlations.get(feature, 0)  # Get correlation, default to 0 if not present
+        plt.scatter(df[feature], df['Normalized_Active_Power'], color=colors[i], marker='x', alpha=0.6)
+        plt.xlabel(f'{feature}')
+        plt.ylabel('Active Power (kW)')
+        plt.title(f'{titles[i]} (Correlation: {corr_value:.2f})')
+        plt.grid(True, alpha=0.3)
+
+    plt.subplots_adjust(hspace=0.5, top=0.93)
+    plt.suptitle(f'Feature Analysis vs Normalized Active Power for {file}', fontsize=20, y=1)
+
+    # Save the plot as an image file (e.g., PNG format) with a tight bounding box
+    plot_filename = f'{file.split(".")[0]}_feature_vs_power_plot.png'
+    plot_path = os.path.join('./raw_info', plot_filename)
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.show()
+
+    print(f"Plot saved for {file} at: {plot_path}")
