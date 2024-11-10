@@ -4,13 +4,10 @@ import os
 # 폴더 경로 지정
 # folder_path = '../../data/OEDI/2107(Arbuckle_California)/preprocessed'
 # log_file_path = './california_log.txt'
+os.makedirs('./processed_info', exist_ok=True)
 
-# folder_path = '../../data/DKASC_AliceSprings/converted'
-# log_file_path = './log.txt'
-
-
-folder_path = '../../data/DKASC_Yulara/converted'
-log_file_path = './processed_data_info.txt'
+folder_path = '../../data/DKASC_Yulara/processed_data'
+log_file_path = './processed_info/processed_data_info.txt'
 
 # 해당 폴더 내 모든 CSV 파일 가져오기
 file_names = sorted([f for f in os.listdir(folder_path) if f.endswith('.csv')])
@@ -26,6 +23,10 @@ for file_name in file_names:
     file_path = os.path.join(folder_path, file_name)
     df = pd.read_csv(file_path)
 
+    # timestamp 열을 날짜 형식으로 변환
+    if 'timestamp' in df.columns:
+        df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')  # 변환 실패 시 NaT로 처리
+
     # row 수 계산
     row_counts[file_name] = len(df)
 
@@ -33,8 +34,8 @@ for file_name in file_names:
     stats = {}
     for column in df.columns:
         missing_count = df[column].isnull().sum()
-        min_value = df[column].min() if df[column].dtype in ['float64', 'int64'] else 'N/A'
-        max_value = df[column].max() if df[column].dtype in ['float64', 'int64'] else 'N/A'
+        min_value = df[column].min() if df[column].dtype in ['float64', 'int64', 'datetime64[ns]'] else 'N/A'
+        max_value = df[column].max() if df[column].dtype in ['float64', 'int64', 'datetime64[ns]'] else 'N/A'
         stats[column] = {
             'missing': missing_count,
             'min': min_value,
