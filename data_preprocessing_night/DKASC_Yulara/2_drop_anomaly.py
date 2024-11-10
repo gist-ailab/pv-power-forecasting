@@ -1,5 +1,12 @@
 import os
 import pandas as pd
+import sys
+import os
+# 현재 파일에서 두 단계 상위 디렉토리를 sys.path에 추가
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
+
+# 이제 상위 폴더의 상위 폴더 내부의 utils 폴더의 파일 import 가능
+from utils import plot_correlation_each, check_data
 
 # Detect 2 consecutive NaN values in any column
 def detect_consecutive_nans(df, max_consecutive=2):
@@ -74,7 +81,8 @@ if __name__ == '__main__':
         df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
     
         # Modify Active_Power based on the condition of Normalized_Active_Power
-        df_hourly.loc[(df_hourly['Normalized_Active_Power'] >= -0.01) & (df_hourly['Normalized_Active_Power'] < 0), 'Active_Power'] = 0 # DKASC Yulara의 경우에 적용
+        df_hourly.loc[(df_hourly['Normalized_Active_Power'] >= -0.05) & (df_hourly['Normalized_Active_Power'] < 0), 'Active_Power'] = 0
+        df_hourly.loc[(df_hourly['Normalized_Active_Power'] < -0.05), 'Active_Power'] = pd.NA
 
         df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
         
@@ -111,3 +119,17 @@ if __name__ == '__main__':
         df_hourly.to_csv(output_file_path, index=False)
         
         print(f"Processed and saved: {output_file_path}")
+    check_data.process_data_and_log(
+    folder_path=save_dir,
+    log_file_path=os.path.join(project_root, 'data_preprocessing_night/DKASC_Yulara/processed_info/processed_data_info.txt')
+    )
+    plot_correlation_each.plot_feature_vs_active_power(
+            data_dir=save_dir, 
+            save_dir=os.path.join(project_root, 'data_preprocessing_night/DKASC_Yulara/processed_info'), 
+            features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed'],
+            colors = ['blue', 'green', 'red', 'purple'],
+            titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
+          'Active Power [kW] vs Weather Temperature [℃]',
+          'Active Power [kW] vs Weather Relative Humidity [%]',
+          'Active Power [kW] vs Wind Speed [m/s]']
+            )

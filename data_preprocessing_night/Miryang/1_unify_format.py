@@ -1,10 +1,16 @@
 import os
+import sys
 import numpy as np
 import pandas as pd
 from datetime import timedelta
 
 from tqdm import tqdm
 from copy import deepcopy
+# 현재 파일에서 두 단계 상위 디렉토리를 sys.path에 추가
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
+
+# 이제 상위 폴더의 상위 폴더 내부의 utils 폴더의 파일 import 가능
+from utils import plot_correlation_each, check_data
 
 ### 기상데이터 column 정보
 # result_Code 결과코드
@@ -70,19 +76,8 @@ def convert_excel_to_csv(file_list):
                     if (start > 0 and end < len(df) - 1 and 
                             df.loc[start - 1, column] == 0 and df.loc[end + 1, column] == 0):
                         df.loc[start:end, column] = 0
-
-                    # 연속된 결측치가 2개이면 보간
-                    elif num_missing <= 2:
-                        df.loc[start:end, column] = df.loc[start:end, column].interpolate(method='polynomial', order=5)
-
-                    # 연속된 결측치가 3개 이상이면 인덱스를 필터링 리스트에 추가
-                    elif num_missing >= 3:
-                        filtered_indices.extend(range(start, end + 1))
                 else:
                     i += 1
-
-            # 3개 이상의 연속된 결측치를 가진 행 제거
-            df = df.drop(filtered_indices).reset_index(drop=True)
 
         base_filename = os.path.basename(file)
         output_filename = os.path.splitext(base_filename)[0] + '.csv'
@@ -123,25 +118,16 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
             'wind': 'Wind_Speed'
         })
 
-        # 날짜별로 그룹화하고 각 날짜의 row 개수를 확인하여 24가 아닌 경우 필터링
-        # 하루에 24개의 row가 아닌 경우 해당 날짜를 제거
-        day_counts = weather_df['timestamp'].dt.date.value_counts()
-        days_with_missing_data = day_counts[day_counts != 24].index
-
-        # 결측치가 있는 날짜를 제거
-        filtered_weather_df = weather_df[~weather_df['timestamp'].dt.date.isin(days_with_missing_data)].reset_index(drop=True)
-
         # 파일 이름에 따라 데이터프레임 저장
         if '산내면' in i:
-            산내면_기상 = filtered_weather_df
+            산내면_기상 = weather_df
         elif '상남면' in i:
-            상남면_기상 = filtered_weather_df
+            상남면_기상 = weather_df
 
     # Combine the CSV files
     for file in csv_file_list:
         power_df = pd.read_csv(file, parse_dates=['timestamp'])
         file = os.path.basename(file)
-        maximum_ap = int(file.split('_')[1].split('kW')[0])
         
         # 기존의 'Active_Power' 열을 그대로 사용
         # 불필요한 인버터별 합산 부분 제거
@@ -155,44 +141,15 @@ def combine_csv_files(csv_file_dir, weather_file_dir):
             weather_df = deepcopy(상남면_기상)
         merged_df = pd.merge(power_df, weather_df, on='timestamp', how='left')
 
-        # Remove rows where weather data has missing values but Active_Power has data
-        merged_df = merged_df.dropna(subset=['Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 
-                                     'Global_Horizontal_Radiation', 'Wind_Speed'])
-
-        # GHR 값이 0보다 큰 구간 찾기
-        filtered_indices = merged_df[merged_df['Global_Horizontal_Radiation'] > 0].index
-
-        # 앞뒤로 한 시간씩 마진을 주기 위해 인덱스 확장
-        expanded_indices = set()
-        for idx in filtered_indices:
-            expanded_indices.add(idx)      # 현재 인덱스 추가
-            if idx - 1 >= 0:               # 앞의 인덱스 추가 (범위를 벗어나지 않는지 확인)
-                expanded_indices.add(idx - 1)
-            if idx + 1 < len(merged_df):   # 뒤의 인덱스 추가 (범위를 벗어나지 않는지 확인)
-                expanded_indices.add(idx + 1)
-
-        # 유효한 인덱스만 남기기 위해 교차 확인
-        expanded_indices = sorted(i for i in expanded_indices if i in merged_df.index)
-        
-        filtered_df = merged_df.loc[expanded_indices]
-
-        # GHR이 0보다 큰데 Active_Power가 0과 같거나 0보다 작은 경우, 그리고 GHR이 2000 이상인 경우 필터링
-        filtered_df = filtered_df[
-            ~((filtered_df['Global_Horizontal_Radiation'] > 0) & (filtered_df['Active_Power'] <= 0)) &
-            (filtered_df['Global_Horizontal_Radiation'] < 2000)
-        ]
-
-        # Active_Power가 maximum_ap보다 큰 경우 maximum_ap로 변환
-        filtered_df['Active_Power'] = filtered_df['Active_Power'].clip(upper=maximum_ap)
-
-        # 최종 데이터프레임 저장 또는 처리
+        # 새 파일 이름 만들기
         base_filename = os.path.basename(file)
-        save_dir = os.path.join(csv_file_dir.split('PV_csv')[0], 'converted')
+        new_filename = "_".join(base_filename.split('_')[:2]) + '.csv'  # 첫 번째와 두 번째 요소만 사용
+
+        save_dir = os.path.join(csv_file_dir.split('PV_csv')[0], 'uniform_format_data')
         os.makedirs(save_dir, exist_ok=True)
 
-        output_filename = os.path.splitext(base_filename)[0] + '_merged.csv'
-        output_path = os.path.join(save_dir, output_filename)
-        filtered_df.to_csv(output_path, index=False)
+        output_path = os.path.join(save_dir, new_filename)
+        merged_df.to_csv(output_path, index=False)
         print(f'Saved: {output_path}')
 
     print('Combination and merging completed!')
@@ -210,8 +167,27 @@ if __name__ == '__main__':
     pv_file_list = [os.path.join(pv_xls_data_dir, _) for _ in os.listdir(pv_xls_data_dir)]
     pv_file_list.sort()
 
-    csv_file_dir = convert_excel_to_csv(pv_file_list)   # Convert Excel files to CSV files
+      
     csv_file_dir = os.path.join(project_root, 'data/Miryang/PV_csv')
+    if not os.path.exists(csv_file_dir):
+        # Convert Excel files to CSV files
+        csv_file_dir = convert_excel_to_csv(pv_file_list) 
     weather_file_dir = os.path.join(project_root, 'data/Miryang/weather')
 
     combine_csv_files(csv_file_dir, weather_file_dir)
+
+    check_data.process_data_and_log(
+    folder_path=os.path.join(project_root, 'data/Miryang/uniform_format_data'),
+    log_file_path=os.path.join(project_root, 'data_preprocessing_night/Miryang/raw_info/raw_data_info.txt')
+    )
+    plot_correlation_each.plot_feature_vs_active_power(
+            data_dir=os.path.join(project_root, 'data/Miryang/uniform_format_data'), 
+            save_dir=os.path.join(project_root, 'data_preprocessing_night/Miryang/raw_info'), 
+            features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed'],
+            colors = ['blue', 'green', 'red', 'purple'],
+            titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
+          'Active Power [kW] vs Weather Temperature [℃]',
+          'Active Power [kW] vs Weather Relative Humidity [%]',
+          'Active Power [kW] vs Wind Speed [m/s]']
+            )
+
