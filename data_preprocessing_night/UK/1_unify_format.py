@@ -73,7 +73,7 @@ def change_unit(combined_data, invertor_list):
     #     combined_data[invertor] = combined_data[invertor].diff() # kWh to kW
     # combined_data['Global_Horizontal_Radiation'] *= 2.78 # J/cm^2 to w/m^2 
     # nothing to change
-    combined_data['Active_Power'] /= 1000 # W to kW
+    # combined_data['Active_Power'] /= 1000 # W to kW
     return combined_data
 
 def make_unifrom_csv_files(merged_data, save_dir, invertor_list):

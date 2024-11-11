@@ -3,7 +3,7 @@
 Forest Road.csv: 4392개
 열별 결측치, 최소, 최대값:
  - timestamp: 결측치=0개, 최소값=2013-12-23 00:00:00, 최대값=2014-09-23 23:00:00
- - Active_Power: 결측치=0개, 최소값=1.5e-06, 최대값=0.002668
+ - Active_Power: 결측치=0개, 최소값=0.0015, 최대값=2.668
  - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=927.5
  - Weather_Temperature_Celsius: 결측치=0개, 최소값=-1.05, 최대값=32.55
  - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=18.0
@@ -13,7 +13,7 @@ Forest Road.csv: 4392개
 Maple Drive East.csv: 6480개
 열별 결측치, 최소, 최대값:
  - timestamp: 결측치=0개, 최소값=2013-12-06 00:00:00, 최대값=2014-11-12 23:00:00
- - Active_Power: 결측치=0개, 최소값=0.0, 최대값=0.003347
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=3.347
  - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=914.5
  - Weather_Temperature_Celsius: 결측치=0개, 최소값=-0.8500000000000001, 최대값=26.8
  - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=12.5
@@ -23,7 +23,7 @@ Maple Drive East.csv: 6480개
 YMCA.csv: 6864개
 열별 결측치, 최소, 최대값:
  - timestamp: 결측치=0개, 최소값=2014-01-08 00:00:00, 최대값=2014-11-18 23:00:00
- - Active_Power: 결측치=0개, 최소값=0.0, 최대값=0.000356
+ - Active_Power: 결측치=0개, 최소값=0.0, 최대값=0.356
  - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=970.5
  - Weather_Temperature_Celsius: 결측치=0개, 최소값=-1.8, 최대값=28.55
  - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=12.5
