@@ -80,7 +80,7 @@ if __name__ == '__main__':
     for file_path in hourly_csv_list:
         df_hourly = pd.read_csv(file_path)
 
-        df_hourly['Active_Power'] = df_hourly['Active_Power'] - min(df_hourly['Active_Power']) # 최솟값이 0.2 정도인 문제 해결
+        # df_hourly['Active_Power'] = df_hourly['Active_Power'] - min(df_hourly['Active_Power']) # 최솟값이 0.2 정도인 문제 해결
 
         df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
         

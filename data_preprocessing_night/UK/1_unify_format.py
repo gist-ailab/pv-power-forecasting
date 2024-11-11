@@ -4,6 +4,12 @@ import os
 import matplotlib.pyplot as plt
 from datetime import timedelta
 from tqdm import tqdm
+import sys
+# 현재 파일에서 두 단계 상위 디렉토리를 sys.path에 추가
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
+
+# 이제 상위 폴더의 상위 폴더 내부의 utils 폴더의 파일 import 가능
+from utils import plot_correlation_each, check_data
 
 def merge_raw_data(active_power_path, weather_path, site_list):
     
@@ -43,9 +49,10 @@ def merge_raw_data(active_power_path, weather_path, site_list):
 
     
     # Active_Power 계산
-    active_powers['Active_Power'] = \
-    (active_powers['V_MIN_Filtered'] + active_powers['V_MAX_Filtered']) / 2 * \
-    (active_powers['I_GEN_MIN_Filtered'] + active_powers['I_GEN_MAX_Filtered']) / 2
+    # active_powers['Active_Power'] = \
+    # (active_powers['V_MIN_Filtered'] + active_powers['V_MAX_Filtered']) / 2 * \
+    # (active_powers['I_GEN_MIN_Filtered'] + active_powers['I_GEN_MAX_Filtered']) / 2
+    active_powers['Active_Power'] = (active_powers['P_GEN_MIN']+active_powers['P_GEN_MAX']) / 2
     # active_powers['Active_Power'] = active_powers['V_MIN_Filtered'] * active_powers['I_GEN_MIN_Filtered']
 
 
@@ -97,5 +104,20 @@ if __name__ == '__main__':
 
     unit_changed_data = change_unit(merged_data, site_list)
     make_unifrom_csv_files(unit_changed_data, save_dir, site_list)
+    
+    check_data.process_data_and_log(
+    folder_path=os.path.join(project_root, 'data/UK_data/uniform_format_data'),
+    log_file_path=os.path.join(project_root, 'data_preprocessing_night/UK/raw_info/raw_data_info.txt')
+    )
+    plot_correlation_each.plot_feature_vs_active_power(
+            data_dir=os.path.join(project_root, 'data/UK_data/uniform_format_data'), 
+            save_dir=os.path.join(project_root, 'data_preprocessing_night/UK/raw_info'), 
+            features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed'],
+            colors = ['blue', 'green', 'red', 'purple'],
+            titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
+          'Active Power [kW] vs Weather Temperature [℃]',
+          'Active Power [kW] vs Weather Relative Humidity [%]',
+          'Active Power [kW] vs Wind Speed [m/s]']
+            )
 
     
