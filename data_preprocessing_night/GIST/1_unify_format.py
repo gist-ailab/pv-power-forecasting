@@ -1,9 +1,16 @@
 import os
+import sys
 import numpy as np
 import pandas as pd
+from datetime import timedelta
 
 from tqdm import tqdm
 from copy import deepcopy
+# 현재 파일에서 두 단계 상위 디렉토리를 sys.path에 추가
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
+
+# 이제 상위 폴더의 상위 폴더 내부의 utils 폴더의 파일 import 가능
+from utils import plot_correlation_each, check_data
 
 def combine_into_each_site(file_list, index_of_site,
                            kor_name, eng_name,
@@ -225,3 +232,17 @@ if __name__ == '__main__':
                                kor_name=kor_name, eng_name=eng_name,
                                weather_data=weather_data,
                                save_dir=os.path.join(project_root,  'data/GIST_dataset/uniform_format_data'))
+    check_data.process_data_and_log(
+    folder_path=os.path.join(project_root, 'data/GIST_dataset/uniform_format_data'),
+    log_file_path=os.path.join(project_root, 'data_preprocessing_night/GIST/raw_info/raw_data_info.txt')
+    )
+    plot_correlation_each.plot_feature_vs_active_power(
+            data_dir=os.path.join(project_root, 'data/GIST_dataset/uniform_format_data'), 
+            save_dir=os.path.join(project_root, 'data_preprocessing_night/GIST/raw_info'), 
+            features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed'],
+            colors = ['blue', 'green', 'red', 'purple'],
+            titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
+          'Active Power [kW] vs Weather Temperature [℃]',
+          'Active Power [kW] vs Weather Relative Humidity [%]',
+          'Active Power [kW] vs Wind Speed [m/s]']
+            )

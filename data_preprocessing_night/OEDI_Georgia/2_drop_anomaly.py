@@ -149,7 +149,10 @@ if __name__ == '__main__':
         
         df_hourly = df_hourly[['timestamp','Active_Power','Global_Horizontal_Radiation','Weather_Temperature_Celsius','Wind_Speed']]
 
-        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
+        max_active_power = df_hourly['Active_Power'].max(skipna=True)
+        print("max active power: "+ str(max_active_power))
+
+        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max_active_power
         
         file_name= file_path.split("/")[-1]
         print(file_name)

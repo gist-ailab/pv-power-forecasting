@@ -1,10 +1,16 @@
 import os
+import sys
 import numpy as np
 import pandas as pd
 from datetime import timedelta
 
 from tqdm import tqdm
 from copy import deepcopy
+# 현재 파일에서 두 단계 상위 디렉토리를 sys.path에 추가
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
+
+# 이제 상위 폴더의 상위 폴더 내부의 utils 폴더의 파일 import 가능
+from utils import plot_correlation_each, check_data
 
 def combine_wind_speed_data(raw_weather_list, save_path):
     # 모든 데이터프레임을 저장할 리스트 초기화
@@ -93,3 +99,17 @@ if __name__ == '__main__':
         combine_into_each_site(file_path, i,
                                save_dir,  # for local
                                combined_weather_hourly)
+    check_data.process_data_and_log(
+    folder_path=os.path.join(project_root, 'data/DKASC_AliceSprings/uniform_format_data'),
+    log_file_path=os.path.join(project_root, 'data_preprocessing_night/DKASC_Alicesprings/raw_info/raw_data_info.txt')
+    )
+    plot_correlation_each.plot_feature_vs_active_power(
+            data_dir=os.path.join(project_root, 'data/DKASC_AliceSprings/uniform_format_data'), 
+            save_dir=os.path.join(project_root, 'data_preprocessing_night/DKASC_Alicesprings/raw_info'), 
+            features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed'],
+            colors = ['blue', 'green', 'red', 'purple'],
+            titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
+          'Active Power [kW] vs Weather Temperature [℃]',
+          'Active Power [kW] vs Weather Relative Humidity [%]',
+          'Active Power [kW] vs Wind Speed [m/s]']
+            )

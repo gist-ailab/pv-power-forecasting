@@ -80,7 +80,10 @@ if __name__ == '__main__':
     for file_path in hourly_csv_list:
         df_hourly = pd.read_csv(file_path)
 
-        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
+        max_active_power = df_hourly['Active_Power'].max(skipna=True)
+        print("max active power: "+ str(max_active_power))
+
+        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max_active_power
         
         file_name= file_path.split("/")[-1]
         print(file_name)

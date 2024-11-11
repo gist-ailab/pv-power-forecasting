@@ -80,7 +80,23 @@ if __name__ == '__main__':
     for file_path in hourly_csv_list:
         df_hourly = pd.read_csv(file_path)
 
-        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
+        # Ensure 'timestamp' is in datetime format
+        df_hourly['timestamp'] = pd.to_datetime(df_hourly['timestamp'], errors='coerce')
+
+        # Find the first date where Active_Power is non-zero
+        first_non_zero_date = df_hourly[df_hourly['Active_Power'] != 0]['timestamp'].min().floor('D')
+
+        # Filter the DataFrame to include only data from the first non-zero date onwards
+        df_hourly = df_hourly[df_hourly['timestamp'] >= first_non_zero_date]
+
+        # Ensure full day timestamps
+        df_hourly = ensure_full_day_timestamps(df_hourly, 'timestamp')
+
+
+        max_active_power = df_hourly['Active_Power'].max(skipna=True)
+        print("max active power: "+ str(max_active_power))
+
+        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max_active_power
         
         file_name= file_path.split("/")[-1]
         print(file_name)
@@ -88,13 +104,17 @@ if __name__ == '__main__':
         if file_name in ['DE_KN_industrial2_pv.csv', 'DE_KN_residential3_pv.csv']:
             print(file_name+ " 사이트 active power 이상치 제거")
             df_hourly.loc[df_hourly['Normalized_Active_Power'] > 0.2, 'Active_Power'] = pd.NA
-            df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
+            max_active_power = df_hourly['Active_Power'].max(skipna=True)
+            df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max_active_power
     
         # Modify Active_Power based on the condition of Normalized_Active_Power
         df_hourly.loc[(df_hourly['Normalized_Active_Power'] >= -0.05) & (df_hourly['Normalized_Active_Power'] < 0), 'Active_Power'] = 0
         df_hourly.loc[(df_hourly['Normalized_Active_Power'] < -0.05), 'Active_Power'] = pd.NA
 
-        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
+        max_active_power = df_hourly['Active_Power'].max(skipna=True)
+        print("max active power: "+ str(max_active_power))
+
+        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max_active_power
         
         # Ensure 'timestamp' is in datetime format
         df_hourly['timestamp'] = pd.to_datetime(df_hourly['timestamp'], errors='coerce')

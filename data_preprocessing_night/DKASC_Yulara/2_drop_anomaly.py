@@ -84,7 +84,10 @@ if __name__ == '__main__':
         df_hourly.loc[(df_hourly['Normalized_Active_Power'] >= -0.05) & (df_hourly['Normalized_Active_Power'] < 0), 'Active_Power'] = 0
         df_hourly.loc[(df_hourly['Normalized_Active_Power'] < -0.05), 'Active_Power'] = pd.NA
 
-        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
+        max_active_power = df_hourly['Active_Power'].max(skipna=True)
+        print("max active power: "+ str(max_active_power))
+
+        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max_active_power
         
         # Ensure 'timestamp' is in datetime format
         df_hourly['timestamp'] = pd.to_datetime(df_hourly['timestamp'], errors='coerce')

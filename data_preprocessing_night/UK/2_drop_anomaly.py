@@ -82,7 +82,10 @@ if __name__ == '__main__':
 
         # df_hourly['Active_Power'] = df_hourly['Active_Power'] - min(df_hourly['Active_Power']) # 최솟값이 0.2 정도인 문제 해결
 
-        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
+        max_active_power = df_hourly['Active_Power'].max(skipna=True)
+        print("max active power: "+ str(max_active_power))
+
+        df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max_active_power
         
         file_name= file_path.split("/")[-1]
         print(file_name)
