@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(
 from utils import plot_correlation_each, check_data
 
 def combine_into_each_invertor(invertor_name, index_of_invertor,
-                           save_dir, log_file_path, raw_df):
+                           save_dir, raw_df):
     os.makedirs(save_dir, exist_ok=True)
     raw_df['timestamp'] = pd.to_datetime(raw_df['timestamp'])
     # print(raw_df.head())
@@ -110,16 +110,15 @@ if __name__ == '__main__':
         )
     
     check_data.process_data_and_log(
-    folder_path=os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/uniform_format_data'),
-    log_file_path=os.path.join(project_root, 'data_preprocessing_night/OEDI_California/raw_info/raw_data_info.txt')
+    folder_path=os.path.join(project_root, 'data/OEDI/9069(Georgia)/uniform_format_data'),
+    log_file_path=os.path.join(project_root, 'data_preprocessing_night/OEDI_Georgia/raw_info/raw_data_info.txt')
     )
     plot_correlation_each.plot_feature_vs_active_power(
-            data_dir=os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/uniform_format_data'), 
-            save_dir=os.path.join(project_root, 'data_preprocessing_night/OEDI_California/raw_info'), 
-            features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Wind_Speed', 'POA_Irradiance'],
-            colors = ['blue', 'green', 'purple', 'yellow'],
+            data_dir=os.path.join(project_root, 'data/OEDI/9069(Georgia)/uniform_format_data'), 
+            save_dir=os.path.join(project_root, 'data_preprocessing_night/OEDI_Georgia/raw_info'), 
+            features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Wind_Speed'],
+            colors = ['blue', 'green', 'purple'],
             titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
           'Active Power [kW] vs Weather Temperature [℃]',
-          'Active Power [kW] vs Wind Speed [m/s]',
-          'Active Power [kW] vs POA [w/m²]']
+          'Active Power [kW] vs Wind Speed [m/s]']
             )

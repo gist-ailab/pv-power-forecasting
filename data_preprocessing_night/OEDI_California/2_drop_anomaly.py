@@ -61,6 +61,43 @@ def detect_consecutive_identical_values(df, column, min_consecutive=10):
     count_series = mask.groupby(mask.ne(mask.shift()).cumsum()).cumsum()
     return count_series >= min_consecutive
 
+# Process all processed CSV files and create an aggregated DataFrame with sum values
+def create_aggregated_df(csv_dir, timestamp_col='timestamp', sum_col='Active_Power'):
+    # List to store individual DataFrames
+    df_list = []
+
+    # Iterate through all CSV files in the directory
+    for file_name in os.listdir(csv_dir):
+        if file_name.endswith('.csv'):
+            file_path = os.path.join(csv_dir, file_name)
+            df = pd.read_csv(file_path)
+            
+            # Ensure timestamp column is in datetime format
+            df[timestamp_col] = pd.to_datetime(df[timestamp_col], errors='coerce')
+            
+            # Replace NaN values in Active_Power column with 0
+            df[sum_col] = df[sum_col].fillna(0)
+
+            # Append DataFrame to the list
+            df_list.append(df)
+
+    # Concatenate all DataFrames
+    combined_df = pd.concat(df_list)
+    
+    # Group by timestamp and calculate the sum for the 'Active_Power' column
+    aggregated_sum = combined_df.groupby(timestamp_col)[sum_col].sum()
+
+    # Group by timestamp and calculate the mean for other columns (ignoring NaN) except 'Active_Power'
+    columns_for_mean = combined_df.columns.difference([sum_col, timestamp_col])
+    aggregated_mean = combined_df.groupby(timestamp_col)[columns_for_mean].mean(numeric_only=True)
+
+    # Combine the results
+    aggregated_df = pd.concat([aggregated_sum, aggregated_mean], axis=1)
+
+    # Reset index to have timestamp as a column
+    aggregated_df.reset_index(inplace=True)
+
+    return aggregated_df
 
 
 import logging
@@ -94,31 +131,7 @@ def ensure_full_day_timestamps(df, timestamp_col):
     return df
 
 
-# Process all processed CSV files and create an aggregated DataFrame with average values
-def create_aggregated_average_df(csv_dir, timestamp_col='timestamp'):
-    # List to store individual DataFrames
-    df_list = []
 
-    # Iterate through all CSV files in the directory
-    for file_name in os.listdir(csv_dir):
-        if file_name.endswith('.csv'):
-            file_path = os.path.join(csv_dir, file_name)
-            df = pd.read_csv(file_path)
-            
-            # Ensure timestamp column is in datetime format
-            df[timestamp_col] = pd.to_datetime(df[timestamp_col], errors='coerce')
-            
-            # Append DataFrame to the list
-            df_list.append(df)
-
-    # Concatenate all DataFrames and calculate the mean for each timestamp
-    combined_df = pd.concat(df_list)
-    aggregated_df = combined_df.groupby(timestamp_col).mean()
-
-    # Reset index to have timestamp as a column
-    aggregated_df.reset_index(inplace=True)
-
-    return aggregated_df
 
 
 if __name__ == '__main__':
@@ -128,7 +141,7 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
     
-    save_dir = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/processed_data')
+    save_dir = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/processed_data_invertor')
     os.makedirs(save_dir, exist_ok=True)
     
     hourly_csv_data_dir = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/uniform_format_data')  # for local
@@ -191,17 +204,17 @@ if __name__ == '__main__':
         df_hourly.to_csv(output_file_path, index=False)
         
         print(f"Processed and saved: {output_file_path}")
-    aggregated_df = create_aggregated_average_df(save_dir)
-    aggregated_output_path = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/processed_data/aggregated_average_data.csv')
+    aggregated_df = create_aggregated_df(save_dir, timestamp_col='timestamp', sum_col='Active_Power')
+    aggregated_output_path = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/processed_data/aggregated_data.csv')
     os.makedirs(os.path.dirname(aggregated_output_path), exist_ok=True)
     aggregated_df.to_csv(aggregated_output_path, index=False)
     
     check_data.process_data_and_log(
-    folder_path=save_dir,
+    folder_path=os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/processed_data'),
     log_file_path=os.path.join(project_root, 'data_preprocessing_night/OEDI_California/processed_info/processed_data_info.txt')
     )
     plot_correlation_each.plot_feature_vs_active_power(
-            data_dir=save_dir, 
+            data_dir=os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/processed_data'), 
             save_dir=os.path.join(project_root, 'data_preprocessing_night/OEDI_California/processed_info'), 
             features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Wind_Speed'],
             colors = ['blue', 'green', 'purple'],
