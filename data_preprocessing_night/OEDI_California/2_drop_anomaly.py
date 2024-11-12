@@ -7,6 +7,15 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(
 
 # 이제 상위 폴더의 상위 폴더 내부의 utils 폴더의 파일 import 가능
 from utils import plot_correlation_each, check_data
+import shutil
+
+# 디렉토리 삭제 함수
+def remove_directory_if_exists(dir_path):
+    if os.path.exists(dir_path) and os.path.isdir(dir_path):
+        shutil.rmtree(dir_path)
+        print(f"Deleted directory: {dir_path}")
+    else:
+        print(f"Directory not found or not a directory: {dir_path}")
 
 # Detect 2 consecutive NaN values in any column
 def detect_consecutive_nans(df, max_consecutive=2):
@@ -141,10 +150,19 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
     
-    save_dir = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/processed_data_invertor')
-    os.makedirs(save_dir, exist_ok=True)
+    dataset_name = 'OEDI_California'
     
-    hourly_csv_data_dir = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/uniform_format_data')  # for local
+    save_dir = os.path.join(project_root, f'data/{dataset_name}/processed_data_night')
+    log_save_dir = os.path.join(project_root, f'data_preprocessing_night/{dataset_name}/processed_info')
+
+    # 디렉토리 삭제
+    remove_directory_if_exists(save_dir)
+    remove_directory_if_exists(log_save_dir)
+
+    os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(log_save_dir, exist_ok=True)
+    
+    hourly_csv_data_dir = os.path.join(project_root, f'data/{dataset_name}/uniform_format_data')  # for local
     hourly_csv_list = [os.path.join(hourly_csv_data_dir, _) for _ in os.listdir(hourly_csv_data_dir) if _.endswith('.csv')]
     
     for file_path in hourly_csv_list:
@@ -205,20 +223,20 @@ if __name__ == '__main__':
         
         print(f"Processed and saved: {output_file_path}")
     aggregated_df = create_aggregated_df(save_dir, timestamp_col='timestamp', sum_col='Active_Power')
-    aggregated_output_path = os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/processed_data/aggregated_data.csv')
-    os.makedirs(os.path.dirname(aggregated_output_path), exist_ok=True)
+    max_active_power = aggregated_df['Active_Power'].max(skipna=True)
+    aggregated_output_path = os.path.join(project_root, f'data/{dataset_name}/processed_data/{max_active_power}_{dataset_name}.csv')
+    print("aggregated output saved")
+    aggregated_output_dir = os.path.dirname(aggregated_output_path)
+    remove_directory_if_exists(aggregated_output_dir)
+    os.makedirs(aggregated_output_dir, exist_ok=True)
     aggregated_df.to_csv(aggregated_output_path, index=False)
     
     check_data.process_data_and_log(
-    folder_path=os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/processed_data'),
-    log_file_path=os.path.join(project_root, 'data_preprocessing_night/OEDI_California/processed_info/processed_data_info.txt')
+    folder_path=os.path.join(project_root, aggregated_output_dir),
+    log_file_path=os.path.join(log_save_dir, 'processed_data_info.txt')
     )
     plot_correlation_each.plot_feature_vs_active_power(
-            data_dir=os.path.join(project_root, 'data/OEDI/2107(Arbuckle_California)/processed_data'), 
-            save_dir=os.path.join(project_root, 'data_preprocessing_night/OEDI_California/processed_info'), 
-            features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Wind_Speed'],
-            colors = ['blue', 'green', 'purple'],
-            titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
-          'Active Power [kW] vs Weather Temperature [℃]',
-          'Active Power [kW] vs Wind Speed [m/s]']
+            data_dir=aggregated_output_dir, 
+            save_dir=log_save_dir, 
+            dataset_name=dataset_name
             )

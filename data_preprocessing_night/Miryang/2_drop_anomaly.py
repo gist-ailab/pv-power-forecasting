@@ -8,6 +8,17 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(
 # 이제 상위 폴더의 상위 폴더 내부의 utils 폴더의 파일 import 가능
 from utils import plot_correlation_each, check_data
 
+import shutil
+import os
+
+# 디렉토리 삭제 함수
+def remove_directory_if_exists(dir_path):
+    if os.path.exists(dir_path) and os.path.isdir(dir_path):
+        shutil.rmtree(dir_path)
+        print(f"Deleted directory: {dir_path}")
+    else:
+        print(f"Directory not found or not a directory: {dir_path}")
+
 # Detect 2 consecutive NaN values in any column
 def detect_consecutive_nans(df, max_consecutive=2):
     """
@@ -71,10 +82,19 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
     
-    save_dir = os.path.join(project_root, 'data/Miryang/processed_data')
-    os.makedirs(save_dir, exist_ok=True)
+    dataset_name = 'Miryang'
     
-    hourly_csv_data_dir = os.path.join(project_root, 'data/Miryang/uniform_format_data')  # for local
+    save_dir = os.path.join(project_root, f'data/{dataset_name}/processed_data_night')
+    log_save_dir = os.path.join(project_root, f'data_preprocessing_night/{dataset_name}/processed_info')
+
+    # 디렉토리 삭제
+    remove_directory_if_exists(save_dir)
+    remove_directory_if_exists(log_save_dir)
+
+    os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(log_save_dir, exist_ok=True)
+    
+    hourly_csv_data_dir = os.path.join(project_root, f'data/{dataset_name}/uniform_format_data')  # for local
     hourly_csv_list = [os.path.join(hourly_csv_data_dir, _) for _ in os.listdir(hourly_csv_data_dir) if _.endswith('.csv')]
     
     for file_path in hourly_csv_list:
@@ -132,22 +152,19 @@ if __name__ == '__main__':
         df_hourly.interpolate(method='linear', limit=1, inplace=True)
         
         # Save the processed DataFrame
-        output_file_path = os.path.join(save_dir, os.path.basename(file_path))
+        max_active_power = df_hourly['Active_Power'].max(skipna=True)
+        output_file_path = os.path.join(save_dir, str(max_active_power)+"_"+os.path.basename(file_path))
         df_hourly.to_csv(output_file_path, index=False)
         
         print(f"Processed and saved: {output_file_path}")
     
     check_data.process_data_and_log(
-    folder_path=save_dir,
-    log_file_path=os.path.join(project_root, 'data_preprocessing_night/Miryang/processed_info/processed_data_info.txt')
+    folder_path=os.path.join(project_root, save_dir),
+    log_file_path=os.path.join(log_save_dir, 'processed_data_info.txt')
     )
     plot_correlation_each.plot_feature_vs_active_power(
             data_dir=save_dir, 
-            save_dir=os.path.join(project_root, 'data_preprocessing_night/Miryang/processed_info'), 
-            features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed'],
-            colors = ['blue', 'green', 'red', 'purple'],
-            titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
-          'Active Power [kW] vs Weather Temperature [℃]',
-          'Active Power [kW] vs Weather Relative Humidity [%]',
-          'Active Power [kW] vs Wind Speed [m/s]']
+            save_dir=log_save_dir, 
+            dataset_name=dataset_name
             )
+

@@ -8,6 +8,17 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(
 # 이제 상위 폴더의 상위 폴더 내부의 utils 폴더의 파일 import 가능
 from utils import plot_correlation_each, check_data
 
+import shutil
+import os
+
+# 디렉토리 삭제 함수
+def remove_directory_if_exists(dir_path):
+    if os.path.exists(dir_path) and os.path.isdir(dir_path):
+        shutil.rmtree(dir_path)
+        print(f"Deleted directory: {dir_path}")
+    else:
+        print(f"Directory not found or not a directory: {dir_path}")
+
 # Detect 2 consecutive NaN values in any column
 def detect_consecutive_nans(df, max_consecutive=2):
     """
@@ -62,17 +73,41 @@ def ensure_full_day_timestamps(df, timestamp_col='timestamp'):
     
     return df
 
+# Adjust daily data to retain only active daylight hours
+def adjust_daily_margin(group):
+    non_zero_power = group['Active_Power'] > 0
+    
+    if non_zero_power.any():
+        first_non_zero_idx = non_zero_power.idxmax()
+        last_non_zero_idx = non_zero_power[::-1].idxmax()
+        
+        start_time = group.loc[first_non_zero_idx, 'timestamp'] - pd.Timedelta(hours=1)
+        end_time = group.loc[last_non_zero_idx, 'timestamp'] + pd.Timedelta(hours=1)
+        
+        return group[(group['timestamp'] >= start_time) & (group['timestamp'] <= end_time)]
+    else:
+        return group
+
 if __name__ == '__main__':
     # Get the absolute path of the current file
     current_file_path = os.path.abspath(__file__)
     
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
+
+    dataset_name = 'GIST'
     
-    save_dir = os.path.join(project_root, 'data/GIST_dataset/processed_data')
+    save_dir = os.path.join(project_root, f'data/{dataset_name}/processed_data_night')
+    log_save_dir = os.path.join(project_root, f'data_preprocessing_night/{dataset_name}/processed_info')
+
+    # 디렉토리 삭제
+    remove_directory_if_exists(save_dir)
+    remove_directory_if_exists(log_save_dir)
+
     os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(log_save_dir, exist_ok=True)
     
-    hourly_csv_data_dir = os.path.join(project_root, 'data/GIST_dataset/uniform_format_data')  # for local
+    hourly_csv_data_dir = os.path.join(project_root, f'data/{dataset_name}/uniform_format_data')  # for local
     hourly_csv_list = [os.path.join(hourly_csv_data_dir, _) for _ in os.listdir(hourly_csv_data_dir) if _.endswith('.csv')]
     
     for file_path in hourly_csv_list:
@@ -85,6 +120,9 @@ if __name__ == '__main__':
         if file_name in ['C10_Renewable-E-Bldg.csv', 'C11_GAIA.csv', 'E03_GTI.csv', 'E12_DormB.csv', 'N01_Central-Library.csv', 'N02_LG-Library.csv', 'W11_Facility-Maintenance-Bldg.csv', 'W13_Centeral-Storage.csv']:
             print(file_name+ " 사이트 active power 음수를 양수로 변환")
             df_hourly['Active_Power'] = df_hourly['Active_Power'].abs()
+            df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
+        if file_name in ['N01_Central-Library.csv']:
+            df_hourly.loc[df_hourly['Active_Power'] >= 30, 'Active_Power'] = 29.9
             df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
     
         # Modify Active_Power based on the condition of Normalized_Active_Power
@@ -113,6 +151,9 @@ if __name__ == '__main__':
         # Detect and replace with NaN if there are 10 or more consecutive identical non-zero values in 'Active_Power'
         identical_values_mask = detect_consecutive_identical_values(df_hourly, 'Active_Power', min_consecutive=10)
         df_hourly.loc[identical_values_mask, 'Active_Power'] = pd.NA
+
+        # Group by date and apply the `adjust_daily_margin` function
+        df_hourly = df_hourly.groupby(df_hourly['timestamp'].dt.date, group_keys=False).apply(adjust_daily_margin)
         
         # Detect 2 consecutive NaN values in any column
         consecutive_nan_mask = detect_consecutive_nans(df_hourly, max_consecutive=2)
@@ -125,22 +166,18 @@ if __name__ == '__main__':
         df_hourly.interpolate(method='linear', limit=1, inplace=True)
         
         # Save the processed DataFrame
-        output_file_path = os.path.join(save_dir, os.path.basename(file_path))
+        max_active_power = df_hourly['Active_Power'].max(skipna=True)
+        output_file_path = os.path.join(save_dir, str(max_active_power)+"_"+os.path.basename(file_path))
         df_hourly.to_csv(output_file_path, index=False)
         
         print(f"Processed and saved: {output_file_path}")
     
     check_data.process_data_and_log(
-    folder_path=save_dir,
-    log_file_path=os.path.join(project_root, 'data_preprocessing_night/GIST/processed_info/processed_data_info.txt')
+    folder_path=os.path.join(project_root, save_dir),
+    log_file_path=os.path.join(log_save_dir, 'processed_data_info.txt')
     )
     plot_correlation_each.plot_feature_vs_active_power(
             data_dir=save_dir, 
-            save_dir=os.path.join(project_root, 'data_preprocessing_night/GIST/processed_info'), 
-            features = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius', 'Weather_Relative_Humidity', 'Wind_Speed'],
-            colors = ['blue', 'green', 'red', 'purple'],
-            titles = ['Active Power [kW] vs Global Horizontal Radiation [w/m²]',
-          'Active Power [kW] vs Weather Temperature [℃]',
-          'Active Power [kW] vs Weather Relative Humidity [%]',
-          'Active Power [kW] vs Wind Speed [m/s]']
+            save_dir=log_save_dir, 
+            dataset_name=dataset_name
             )
