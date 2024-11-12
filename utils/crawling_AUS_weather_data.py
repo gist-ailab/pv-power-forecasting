@@ -23,9 +23,10 @@ if location_name == "Alice_Springs":
     start_date = datetime(2008, 1, 1)
 elif location_name == "Yulara":
     location_code = 15635
-    start_date = datetime(2016, 1, 1)
+    # start_date = datetime(2016, 1, 1)
+    start_date = datetime(2024, 1, 1)
 
-end_date = datetime(2024, 10, 27)
+end_date = datetime(2024, 11, 11)
 current_date = start_date
 total_days = (end_date - start_date).days + 1
 
@@ -96,19 +97,18 @@ for _ in tqdm(range(total_days), desc="Progress", unit="day"):
 
     # Save accumulated data at the end of each year
     if current_date.year != year:
+        # with open(f'{location_name}_weather_data_{year}.csv', mode='w', newline='') as file:
         with open(f'{location_name}_weather_data_{year}.csv', mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(['timestamp', 'Weather_Relative_Humidity', 'Wind_Speed'])
             writer.writerows(yearly_data[year])
         del yearly_data[year]
-
-# Save data for the last year if not already saved
-if current_date.year - 1 in yearly_data:
-    last_year = current_date.year - 1
-    with open(f'{location_name}_weather_data_{last_year}.csv', mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['timestamp', 'Weather_Relative_Humidity', 'Wind_Speed'])
-        writer.writerows(yearly_data[last_year])
+    # Save data for the last year if not already saved
+    elif current_date.year in yearly_data:
+        with open(f'{location_name}_weather_data_{current_date.year}.csv', mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['timestamp', 'Weather_Relative_Humidity', 'Wind_Speed'])
+            writer.writerows(yearly_data[current_date.year])
 
 # Close the driver
 driver.quit()
