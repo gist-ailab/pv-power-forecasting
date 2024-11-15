@@ -8,13 +8,13 @@ sys.path.append(parent_dir)
 
 import matplotlib.pyplot as plt
 import numpy as np
-from data_provider.data_loader import SinMaxDataset
+from data_provider.data_loader import Dataset_SineMax
 
 seq_len, label_len, pred_len = 24, 0, 12  # 하루 단위 + 12시간 예측
 total_len = 10000  # 총 데이터 길이 (약 416일)
 
 # 데이터셋 초기화
-dataset = SinMaxDataset(seq_len, label_len, pred_len, total_len)
+dataset = Dataset_SineMax(seq_len, label_len, pred_len, total_len)
 
 # 1. 그래프 그리기
 # 그래프 그리기 (2~3일 출력)
