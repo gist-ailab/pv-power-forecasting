@@ -53,10 +53,10 @@ def upload_files_to_wandb(project_name, run_name, model_weights_path=None, confi
         run_and_exp_artifact.add_file(file_path)
     wandb.log_artifact(run_and_exp_artifact)
 
-    # 가장 최근 모델 가중치 파일 업로드 (model_latest.pth)
+    # best 모델 가중치 파일 업로드 (checkpoint.pth)
     if model_weights_path:
         model_artifact = wandb.Artifact(
-            name='latest_model_weights',
+            name='best_model_weights',
             type='model',
             description='Most recent model weights during training'
         )
