@@ -3057,6 +3057,60 @@ class Dataset_ETT_minute(Dataset):
         return self.scaler.inverse_transform(data)
 
 
+class SinMaxDataset(Dataset):
+    def __init__(self, seq_len, label_len, pred_len, total_len=10000):  # 총 길이를 더 길게 생성
+        self.seq_len = seq_len
+        self.label_len = label_len
+        self.pred_len = pred_len
+        self.total_len = total_len
+        
+        # 1시간 단위로 24시간 주기의 sine 파형 생성
+        time_steps = np.linspace(0, 2 * np.pi * (total_len / 24), total_len)  # 24시간 주기
+        self.y_data = np.maximum(0, np.sin(time_steps)).reshape(-1, 1)
+        
+        # time encoding과 site 정보를 위한 더미 데이터 생성
+        self.data_stamp = np.tile(np.arange(total_len).reshape(-1, 1), (1, 4))
+        self.site = np.zeros((total_len, 1))  # 단일 사이트
+
+        # 시퀀스 인덱스 생성
+        self.indices = self.create_sequences_indices()
+
+    def create_sequences_indices(self):
+        # 유효한 시퀀스 시작 인덱스 생성
+        max_start = self.total_len - self.seq_len - self.pred_len + 1
+        return list(range(max_start))
+
+    def __len__(self):
+        # 전체 유효한 시퀀스의 개수를 반환
+        return len(self.indices)
+
+    def __getitem__(self, index):
+        # 특정 인덱스에 해당하는 시퀀스를 반환
+        start_idx = self.indices[index]
+        s_begin = start_idx
+        s_end = s_begin + self.seq_len
+        r_begin = s_end - self.label_len
+        r_end = r_begin + self.label_len + self.pred_len
+
+        seq_x = self.y_data[s_begin:s_end]
+        seq_y = self.y_data[r_begin:r_end]
+        seq_x_mark = self.data_stamp[s_begin:s_end]
+        seq_y_mark = self.data_stamp[r_begin:r_end]
+        site = self.site[s_begin:s_end]
+        seq_x_ds = self.data_stamp[s_begin:s_end]
+        seq_y_ds = self.data_stamp[r_begin:r_end]
+
+        return (
+            torch.tensor(seq_x, dtype=torch.float32),
+            torch.tensor(seq_y, dtype=torch.float32),
+            torch.tensor(seq_x_mark, dtype=torch.float32),
+            torch.tensor(seq_y_mark, dtype=torch.float32),
+            torch.tensor(site, dtype=torch.float32),
+            torch.tensor(seq_x_ds, dtype=torch.float32),
+            torch.tensor(seq_y_ds, dtype=torch.float32),
+        )
+
+
 class Dataset_Custom(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                  features='S', data_path='ETTh1.csv',
