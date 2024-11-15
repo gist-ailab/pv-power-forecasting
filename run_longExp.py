@@ -6,7 +6,7 @@ from exp.exp_finetune import Exp_Finetune
 import random
 import numpy as np
 from utils.tools import StoreDictKeyPair 
-import wandb
+
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Autoformer & Transformer family for Time Series Forecasting')
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument('--patch_len', type=int, default=16, help='patch length')
     parser.add_argument('--stride', type=int, default=8, help='stride')
     parser.add_argument('--padding_patch', default='end', help='None: None; end: padding on the end')
-    parser.add_argument('--revin', type=int, default=1, help='RevIN; True 1 False 0')
+    parser.add_argument('--revin', type=int, default=0, help='RevIN; True 1 False 0')
     parser.add_argument('--affine', type=int, default=0, help='RevIN-affine; True 1 False 0')
     parser.add_argument('--subtract_last', type=int, default=0, help='0: subtract mean; 1: subtract last')
     parser.add_argument('--decomposition', type=int, default=0, help='decomposition; True 1 False 0')
