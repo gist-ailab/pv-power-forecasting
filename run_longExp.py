@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     # forecasting task
     parser.add_argument('--seq_len', type=int, default=336, help='input sequence length')
-    parser.add_argument('--label_len', type=int, default=48, help='start token length') # decoder 있는 모델에서 사용
+    parser.add_argument('--label_len', type=int, default=0, help='start token length') # decoder 있는 모델에서 사용
     parser.add_argument('--pred_len', type=int, default=16, help='prediction sequence length')
 
 
