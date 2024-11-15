@@ -3057,35 +3057,53 @@ class Dataset_ETT_minute(Dataset):
         return self.scaler.inverse_transform(data)
 
 
-class SinMaxDataset(Dataset):
-    def __init__(self, seq_len, label_len, pred_len, total_len=10000):  # 총 길이를 더 길게 생성
-        self.seq_len = seq_len
-        self.label_len = label_len
-        self.pred_len = pred_len
-        self.total_len = total_len
-        
-        # 1시간 단위로 24시간 주기의 sine 파형 생성
+class Dataset_SineMax(Dataset):
+    def __init__(self, root_path=None, flag='train', size=None,
+                 features='S', data_path='', scaler=None,
+                 target='Sine', scale=False, timeenc=0, freq='h'):
+        # 기본적인 정보 초기화
+        if size is None:
+            self.seq_len = 24
+            self.label_len = 12
+            self.pred_len = 12
+        else:
+            self.seq_len = size[0]
+            self.label_len = size[1]
+            self.pred_len = size[2]
+
+        self.features = features
+        self.target = target
+        self.scale = scale
+        self.timeenc = timeenc
+        self.freq = freq
+        self.flag = flag
+        self.scaler = scaler
+
+        # sine 파형 생성
+        total_len = 10000  # 충분히 긴 데이터 생성
         time_steps = np.linspace(0, 2 * np.pi * (total_len / 24), total_len)  # 24시간 주기
         self.y_data = np.maximum(0, np.sin(time_steps)).reshape(-1, 1)
-        
-        # time encoding과 site 정보를 위한 더미 데이터 생성
-        self.data_stamp = np.tile(np.arange(total_len).reshape(-1, 1), (1, 4))
+
+        # 정규화 (필요한 경우)
+        if self.scale and self.scaler is not None:
+            self.scaler.fit(self.y_data)  # y_data의 스케일 조정
+            self.y_data = self.scaler.transform(self.y_data)
+
+        # 더미 데이터 생성
+        self.data_stamp = np.tile(np.arange(total_len).reshape(-1, 1), (1, 4))  # time encoding
         self.site = np.zeros((total_len, 1))  # 단일 사이트
 
         # 시퀀스 인덱스 생성
         self.indices = self.create_sequences_indices()
 
     def create_sequences_indices(self):
-        # 유효한 시퀀스 시작 인덱스 생성
-        max_start = self.total_len - self.seq_len - self.pred_len + 1
+        max_start = len(self.y_data) - self.seq_len - self.pred_len + 1
         return list(range(max_start))
 
     def __len__(self):
-        # 전체 유효한 시퀀스의 개수를 반환
         return len(self.indices)
 
     def __getitem__(self, index):
-        # 특정 인덱스에 해당하는 시퀀스를 반환
         start_idx = self.indices[index]
         s_begin = start_idx
         s_end = s_begin + self.seq_len
@@ -3109,6 +3127,12 @@ class SinMaxDataset(Dataset):
             torch.tensor(seq_x_ds, dtype=torch.float32),
             torch.tensor(seq_y_ds, dtype=torch.float32),
         )
+
+    def inverse_transform(self, data):
+        if self.scaler is not None and self.scale:
+            return self.scaler.inverse_transform(data)
+        return data  # 스케일링이 적용되지 않았다면 그대로 반환
+    
 
 
 class Dataset_Custom(Dataset):
