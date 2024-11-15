@@ -43,9 +43,15 @@ def upload_files_to_wandb(project_name, run_name, model_weights_path=None, confi
     wandb.log_artifact(models_artifact)
 
     # run_longExp.py 파일 업로드
-    run_script_artifact = wandb.Artifact('run_script', type='code', description="Main training script for long experiments")
-    run_script_artifact.add_file('./run_longExp.py')
-    wandb.log_artifact(run_script_artifact)
+    run_and_exp_artifact = wandb.Artifact('run_and_exp_script', type='code', description="Main training script for long experiments")
+    run_and_exp_files = [
+        './run_longExp.py',
+        './exp/exp_main.py',
+        './exp/exp_finetune.py',
+    ]
+    for file_path in run_and_exp_files:
+        run_and_exp_artifact.add_file(file_path)
+    wandb.log_artifact(run_and_exp_artifact)
 
     # 가장 최근 모델 가중치 파일 업로드 (model_latest.pth)
     if model_weights_path:
