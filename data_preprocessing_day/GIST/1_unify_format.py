@@ -182,7 +182,7 @@ if __name__ == '__main__':
 
     dataset_name = 'GIST'
 
-    save_dir=os.path.join(project_root,  'data/{dataset_name}/uniform_format_data')
+    save_dir=os.path.join(project_root,  f'data/{dataset_name}/uniform_format_data')
     log_save_dir = os.path.join(project_root, f'data_preprocessing_night/{dataset_name}/raw_info')
 
     # 디렉토리 삭제

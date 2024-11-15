@@ -183,6 +183,17 @@ if __name__ == '__main__':
         
         # Interpolate NaN values (1 or fewer consecutive NaNs)
         df_hourly.interpolate(method='linear', limit=1, inplace=True)
+
+        # Replace NaN values in 'Active_Power' with 0
+        df_hourly['Active_Power'].fillna(0, inplace=True)
+
+        # Replace NaN values in other columns based on their position
+        for column in df_hourly.columns:
+            if column != 'Active_Power':
+                # Fill NaNs at the beginning of the series with the next valid value (backward fill)
+                df_hourly[column].fillna(method='bfill', inplace=True)
+                # Fill NaNs at the end of the series with the previous valid value (forward fill)
+                df_hourly[column].fillna(method='ffill', inplace=True)
         
         # Save the processed DataFrame
         max_active_power = df_hourly['Active_Power'].max(skipna=True)

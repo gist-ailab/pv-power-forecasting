@@ -1,11 +1,17 @@
 파일별 row 수 및 열별 결측치, 최소, 최대값:
 
-719.2826666666666_OEDI_California.csv: 46488개
+719.2826666666666_OEDI_California.csv: 44564개
 열별 결측치, 최소, 최대값:
- - timestamp: 결측치=0개, 최소값=2018-01-23 00:00:00, 최대값=2023-10-31 23:00:00
+ - timestamp: 결측치=0개, 최소값=2017-12-05 15:00:00, 최대값=2023-10-31 23:00:00
  - Active_Power: 결측치=0개, 최소값=0.0, 최대값=719.2826666666666
  - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=1141.1571458002634
  - Weather_Temperature_Celsius: 결측치=0개, 최소값=-4.777777777777779, 최대값=46.44444444444444
  - Wind_Speed: 결측치=0개, 최소값=0.44704, 최대값=13.813536
 
-총 데이터 수: 46488개
+총 데이터 수: 44564개
+
+전체 데이터프레임 열별 통계:
+Active_Power: Number of Data Points=44564, Max=719.28, Mean=174.39, STD=234.61
+Global_Horizontal_Radiation: Number of Data Points=44564, Max=1141.16, Mean=250.32, STD=334.23
+Weather_Temperature_Celsius: Number of Data Points=44564, Max=46.44, Mean=17.15, STD=8.52
+Wind_Speed: Number of Data Points=44564, Max=13.81, Mean=2.51, STD=1.78

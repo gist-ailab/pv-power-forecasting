@@ -1,12 +1,19 @@
 파일별 row 수 및 열별 결측치, 최소, 최대값:
 
-32988.674999999996_OEDI_Georgia.csv: 27336개
+32988.674999999996_OEDI_Georgia.csv: 15062개
 열별 결측치, 최소, 최대값:
- - timestamp: 결측치=0개, 최소값=2018-03-29 00:00:00, 최대값=2022-03-10 23:00:00
+ - timestamp: 결측치=0개, 최소값=2018-03-29 07:00:00, 최대값=2022-03-10 18:00:00
  - Active_Power: 결측치=0개, 최소값=0.0, 최대값=32988.675
  - Global_Horizontal_Radiation: 결측치=0개, 최소값=0.0, 최대값=1048.8575
  - Normalized_Active_Power: 결측치=0개, 최소값=0.0, 최대값=0.9996872659869748
- - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.516666666666666, 최대값=42.30833333333333
- - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=18.605000000000004
+ - Weather_Temperature_Celsius: 결측치=0개, 최소값=-7.183333333333335, 최대값=42.30833333333333
+ - Wind_Speed: 결측치=0개, 최소값=0.0, 최대값=11.81
 
-총 데이터 수: 27336개
+총 데이터 수: 15062개
+
+전체 데이터프레임 열별 통계:
+Active_Power: Number of Data Points=15062, Max=32988.68, Mean=11042.08, STD=9540.81
+Global_Horizontal_Radiation: Number of Data Points=15062, Max=1048.86, Mean=351.44, STD=283.99
+Normalized_Active_Power: Number of Data Points=15062, Max=1.00, Mean=0.34, STD=0.29
+Weather_Temperature_Celsius: Number of Data Points=15062, Max=42.31, Mean=23.10, STD=9.63
+Wind_Speed: Number of Data Points=15062, Max=11.81, Mean=1.40, STD=0.92

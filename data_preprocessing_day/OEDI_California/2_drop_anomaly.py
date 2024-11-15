@@ -167,7 +167,7 @@ if __name__ == '__main__':
     
     dataset_name = 'OEDI_California'
     
-    save_dir = os.path.join(project_root, f'data/{dataset_name}/processed_data_day')
+    save_dir = os.path.join(project_root, f'data/{dataset_name}/processed_data_day_each')
     log_save_dir = os.path.join(project_root, f'data_preprocessing_day/{dataset_name}/processed_info')
 
     # 디렉토리 삭제
@@ -236,6 +236,17 @@ if __name__ == '__main__':
         
         # Interpolate NaN values (1 or fewer consecutive NaNs)
         df_hourly.interpolate(method='linear', limit=1, inplace=True)
+
+        # Replace NaN values in 'Active_Power' with 0
+        df_hourly['Active_Power'].fillna(0, inplace=True)
+
+        # Replace NaN values in other columns based on their position
+        for column in df_hourly.columns:
+            if column != 'Active_Power':
+                # Fill NaNs at the beginning of the series with the next valid value (backward fill)
+                df_hourly[column].fillna(method='bfill', inplace=True)
+                # Fill NaNs at the end of the series with the previous valid value (forward fill)
+                df_hourly[column].fillna(method='ffill', inplace=True)
         
         # Save the processed DataFrame
         output_file_path = os.path.join(save_dir, os.path.basename(file_path))
@@ -244,7 +255,7 @@ if __name__ == '__main__':
         print(f"Processed and saved: {output_file_path}")
     aggregated_df = create_aggregated_df(save_dir, timestamp_col='timestamp', sum_col='Active_Power')
     max_active_power = aggregated_df['Active_Power'].max(skipna=True)
-    aggregated_output_path = os.path.join(project_root, f'data/{dataset_name}/processed_data/{max_active_power}_{dataset_name}.csv')
+    aggregated_output_path = os.path.join(project_root, f'data/{dataset_name}/processed_data_day/{max_active_power}_{dataset_name}.csv')
     print("aggregated output saved")
     aggregated_output_dir = os.path.dirname(aggregated_output_path)
     remove_directory_if_exists(aggregated_output_dir)

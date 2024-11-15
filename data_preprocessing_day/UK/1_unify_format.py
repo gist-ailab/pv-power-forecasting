@@ -115,13 +115,12 @@ if __name__ == '__main__':
     os.makedirs(save_dir, exist_ok=True)
     os.makedirs(log_save_dir, exist_ok=True)
 
-    active_power_path = os.path.join(project_root, f'data/{dataset_name}/2014-11-28 Cleansed and Processed/EXPORT HourlyData/EXPORT HourlyData - Customer Endpoints.csv')
+    active_power_path = os.path.join(project_root, f'data/{dataset_name}/EXPORT HourlyData - Customer Endpoints.csv')
     # active_power_path = os.path.join(project_root, '/ailab_mat/dataset/PV/UK_data/2014-11-28 Cleansed and Processed/EXPORT HourlyData/EXPORT HourlyData - Customer Endpoints.csv')
     weather_path = os.path.join(project_root, f'data/{dataset_name}/Weather_Data_2014-11-30.csv')
     # weather_path = os.path.join(project_root, '/ailab_mat/dataset/PV/UK_data/Weather_Data_2014-11-30.csv')
     site_list = ['YMCA', 'Maple Drive East', 'Forest Road']
     merged_data = merge_raw_data(active_power_path, weather_path, site_list)
-    active_power_path = os.path.join(project_root, f'data/{dataset_name}/2014-11-28 Cleansed and Processed/EXPORT HourlyData/EXPORT HourlyData - Customer Endpoints.csv')
 
     unit_changed_data = change_unit(merged_data, site_list)
     make_unifrom_csv_files(unit_changed_data, save_dir, site_list)
