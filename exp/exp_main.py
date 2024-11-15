@@ -364,7 +364,7 @@ class Exp_Main(Exp_Basic):
                     
                     # active_power_np = vali_data.inverse_transform(site[:, 0], output_np.copy())
                     # active_power_gt_np = vali_data.inverse_transform(site[:, 0], batch_y_np.copy())
-                    active_power_np = vali_data.inverse_transform( output_np.copy())
+                    active_power_np = vali_data.inverse_transform(output_np.copy())
                     active_power_gt_np = vali_data.inverse_transform(batch_y_np.copy())
                    
 
