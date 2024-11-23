@@ -155,7 +155,7 @@ class Exp_Main(Exp_Basic):
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
                 # encoder - decoder
-                mark = True if self.args.is_pretraining else False
+                pretrain_flag = True if self.args.is_pretraining else False
                 if self.args.use_amp:
                    
                     with torch.cuda.amp.autocast():
@@ -163,7 +163,7 @@ class Exp_Main(Exp_Basic):
                             if  'LSTM' in self.args.model:
                                 outputs = self.model(batch_x, dec_inp)
                             else:
-                                outputs = self.model(batch_x, mark)
+                                outputs = self.model(batch_x, pretrain_flag)
             
                         else:
                             if self.args.output_attention:
@@ -176,7 +176,7 @@ class Exp_Main(Exp_Basic):
                         if 'LSTM' in self.args.model:
                             outputs = self.model(batch_x, dec_inp)
                         else:
-                            outputs = self.model(batch_x, mark)
+                            outputs = self.model(batch_x, pretrain_flag)
             
                     else:
                         if self.args.output_attention:
@@ -328,11 +328,11 @@ class Exp_Main(Exp_Basic):
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
                 # encoder - decoder
-                mark = True if self.args.is_pretraining else False
+                pretrain_flag = True if self.args.is_pretraining else False
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
-                            outputs = self.model(batch_x, mark)
+                            outputs = self.model(batch_x, pretrain_flag)
                         else:
                             if self.args.output_attention:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -340,7 +340,7 @@ class Exp_Main(Exp_Basic):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
-                        outputs = self.model(batch_x, mark)
+                        outputs = self.model(batch_x, pretrain_flag)
                     else:
                         if self.args.output_attention:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -429,10 +429,10 @@ class Exp_Main(Exp_Basic):
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
                 
-                mark = True if self.args.is_pretraining else False
+                pretrain_flag = True if self.args.is_pretraining else False
                 # 모델 예측
                 if 'Linear' in self.args.model or 'TST' in self.args.model or 'LSTM' in self.args.model:
-                    outputs = self.model(batch_x, mark)
+                    outputs = self.model(batch_x, pretrain_flag)
                 else:
                     outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 
