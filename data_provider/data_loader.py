@@ -50,6 +50,7 @@ class Dataset_PV(Dataset):
         self.indices = self.create_sequences_indices()
 
         self.split_configs = {
+            # 사이트로 나누는 loc
             'DKASC_AliceSprings': {
                 'train': [57, 61, 70, 92, 59, 212, 213, 218, 56, 66, 52, 90, 72, 77, 60, 74, 67, 73, 214, 58, 68, 54, 79, 84],
                 'val': [64, 99, 71, 98, 93, 100, 97],
@@ -74,6 +75,23 @@ class Dataset_PV(Dataset):
                 'train': [1, 4, 7, 2, 6],
                 'val': [3],
                 'test': [5]
+            },
+            #### 날짜로 나누는 loc
+            'UK' : {
+                'train' : 0.7,
+                'val' : 0.2,
+                'test' : 0.1
+            },
+            'OEDI_California': { # 2017.12.05  2023.10.31
+                'train' : [2017, 2021],
+                'val' : [2021, 2022],
+                'test' : [2022, 2024]
+
+            },
+            'OEDI_Georgia' : {  # 2018.03.29  2022.03.10
+                'train' : [2018, 2020],
+                'val' : [2020, 2021],
+                'test' : [2021 2023]
             }
         }
 
@@ -106,15 +124,43 @@ class Dataset_PV(Dataset):
             site_id = int(mapped_name.split('_')[0])
             capacity = float(mapped_name.split('_')[1])
 
-            # 해당 flag의 사이트가 아니면 skip
-            if site_id not in self.split_configs[self.data][self.flag]:
-                continue
+            # 해당 flag에 속한 데이터가 아니면 skip
+            if ('UK' not in self.data) or ('OEDI' not in self.data):     
+                if site_id not in self.split_configs[self.data][self.flag]:
+                    continue
+
             self.site_files.setdefault(site_id, []).append(file_name)
             self.capacity_dict[site_id] = capacity
 
             file_path = os.path.join(self.root_path, file_name)  
             df_raw = pd.read_csv(file_path)
 
+
+            # 날짜 별로 나누는 site의 경우, 필요한 날짜만 추출
+            if ('OEDI' in self.data):
+                df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'])
+                data_mask = (df_raw['timestamp'] >= f'{self.split_configs[self.data][self.flag][0]}-01-01') & (df_raw['timestamp'] < f'{self.split_configs[self.data][self.flag][1]}-01-01')
+                df_raw = df_raw[data_mask]
+            
+            # UK의 경우 퍼센트 비율로 나누기
+            elif ('UK' in self.data):
+                start_date = df_raw['timestamp'].min()
+                end_date = df_raw['timestamp'].max()
+                date_range = end_date - start_date
+
+                train_end = start_date + date_range * self.split_configs[self.data]['train']
+                val_end = start_date + date_range * self.split_configs[self.data]['train'] + self.split_configs[self.data]['val']
+
+
+                if self.flag == 'train':
+                    date_mask = (df_raw['timestamp'] >= start_date) & (df_raw['timestamp'] < train_end)
+                elif self.flag == 'val':
+                    date_mask = (df_raw['timestamp'] >= train_end) & (df_raw['timestamp'] < val_end)
+                else:  # test
+                    date_mask = (df_raw['timestamp'] >= val_end) & (df_raw['timestamp'] <= end_date)
+                df_raw = df_raw[date_mask]
+
+            # scale 적용
             if self.scale:
                 self.scalers[site_id] = {}
                 if self.flag == 'train':
@@ -349,7 +395,7 @@ class Dataset_PV(Dataset):
     #             '33.7_W13_Centeral-Storage.csv'          : '15_33.7_W13_Centeral-Storage.csv',
     #             '164.1_Soccer-Field.csv'                 : '16_164.1_Soccer-Field.csv'
     #         },
-    #         'German': {
+    #         'Germany': {
     #             '4.75_DE_KN_industrial1_pv_1.csv'                  : '01_4.75_DE_KN_industrial1_pv_1.csv',
     #             '4.170000000000073_DE_KN_industrial1_pv_2.csv'     : '02_4.170000000000073_DE_KN_industrial1_pv_2.csv',
     #             '14.599999999998545_DE_KN_industrial2_pv.csv'      : '03_14.599999999998545_DE_KN_industrial2_pv.csv',
