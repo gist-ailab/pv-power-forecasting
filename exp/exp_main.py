@@ -355,28 +355,9 @@ class Exp_Main(Exp_Basic):
                 
                 if self.args.model != 'LSTM':
                     ### calculate metrics with only active power
-                    output_np = outputs.detach().cpu().numpy() 
-                    batch_y_np = batch_y.detach().cpu().numpy()
-                    # print('output_np', output_np)
-                    # print('batch_y', batch_y_np)
-                    
-                    # print(output_np.shape) (1024, 16, 1)
-                    
-                    # active_power_np = vali_data.inverse_transform(site[:, 0], output_np.copy())
-                    # active_power_gt_np = vali_data.inverse_transform(site[:, 0], batch_y_np.copy())
-                    active_power_np = vali_data.inverse_transform(output_np.copy())
-                    active_power_gt_np = vali_data.inverse_transform(batch_y_np.copy())
-                   
+                    pred = outputs
+                    gt = batch_y
 
-                    # # scaler적용 후, 다시 3d로 되돌리기
-                    # active_power_np = active_power_np.reshape(output_np.shape[0], output_np.shape[1], -1)
-                    # active_power_gt_np = active_power_gt_np.reshape(batch_y_np.shape[0], batch_y_np.shape[1], -1)
-
-
-                    pred = torch.from_numpy(active_power_np).to(self.device)
-                    gt = torch.from_numpy(active_power_gt_np).to(self.device)
-                    # print('pred', pred)
-                    # print('gt', gt)                
                 else:
                     # TODO: LSTM일 때, 코드 수정 필요
                     pred_np = vali_data.inverse_transform(outputs.detach().cpu().numpy())
@@ -445,13 +426,12 @@ class Exp_Main(Exp_Basic):
                 batch_y_np = batch_y.detach().cpu().numpy()
 
                 batch_x_np = batch_x.detach().cpu().numpy()
-                batch_x_ts_np = batch_x_ts.detach().cpu().numpy()
-                batch_y_ts_np = batch_y_ts.detach().cpu().numpy()
+                # batch_x_ts_np = batch_x_ts.detach().cpu().numpy()
+                # batch_y_ts_np = batch_y_ts.detach().cpu().numpy()
 
-                batch_x_np = test_data.inverse_transform(batch_x_np[:, :, -1].copy())
 
-                pred = test_data.inverse_transform(outputs_np.copy())
-                true = test_data.inverse_transform(batch_y_np.copy())
+                pred = test_data.inverse_transform(site[:, 0], outputs_np.copy())
+                true = test_data.inverse_transform(site[:, 0], batch_y_np.copy())
 
                 # MetricEvaluator에 각 배치의 예측값, 실제값 업데이트
                 evaluator.update(preds=outputs, targets=batch_y)#, site_index=site[:, 0])#, site_max_ap=test_data.site_ap_max[:, 0], site_ap_min=test_data.site_ap_min[:, 0])

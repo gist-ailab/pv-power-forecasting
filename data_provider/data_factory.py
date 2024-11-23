@@ -74,7 +74,7 @@ def data_provider(args, flag):
         return source_dataset, data_loader
     
     else:
-        data_set = create_dataset(Data, args.root_path, args.data)
+        data_set = create_dataset(Data, args.root_path[0], args.data[0])
         print(flag, data_set.__len__())
         data_loader = DataLoader(
             data_set,

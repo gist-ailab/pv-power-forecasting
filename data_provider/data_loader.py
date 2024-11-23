@@ -245,7 +245,7 @@ class Dataset_PV(Dataset):
             target_stats = pickle.load(f)
             self.capacity_dict[site_id] = target_stats['capacity']
 
-    def inverse_transform(self, data, locations):
+    def inverse_transform(self, locations, data):
         """
         용량 기반 역정규화 수행
         1. StandardScaler 역변환
@@ -263,9 +263,9 @@ class Dataset_PV(Dataset):
             batch_data = data[batch_idx].reshape(-1, n_channels)
             inverse_transformed = scaler.inverse_transform(batch_data)
             
-            # 2. 용량 기반 역정규화
-            if self.scale:
-                inverse_transformed = inverse_transformed * capacity
+            # # 2. 용량 기반 역정규화
+            # if self.scale:
+            #     inverse_transformed = inverse_transformed * capacity
             
             result[batch_idx] = inverse_transformed.reshape(seq_length, n_channels)
 
