@@ -71,7 +71,7 @@ def data_provider(args, flag, distributed=False):
         
         if distributed:
             sampler = torch.utils.data.distributed.DistributedSampler(
-                data_set,
+                source_dataset,
                 num_replicas=args.world_size,
                 rank=args.rank,
                 shuffle=shuffle_flag
