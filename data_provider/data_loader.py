@@ -45,21 +45,22 @@ class Dataset_PV(Dataset):
         self.site_data = {}
         self.capacity_dict = {}  # 사이트별 최대 출력량 저장
 
-        self.mapping_name = pd.read_csv('./dataset_name_mappings.csv')
-        self.load_preprocessed_data()
-        self.indices = self.create_sequences_indices()
+        self.mapping_name = pd.read_csv('./data_provider/dataset_name_mappings.csv')
 
         self.split_configs = {
             # 사이트로 나누는 loc
             'DKASC_AliceSprings': {
-                'train': [57, 61, 70, 92, 59, 212, 213, 218, 56, 66, 52, 90, 72, 77, 60, 74, 67, 73, 214, 58, 68, 54, 79, 84],
-                'val': [64, 99, 71, 98, 93, 100, 97],
-                'test': [63, 85, 55, 69]
+                # 'train': [57, 61, 70, 92, 59, 212, 213, 218, 56, 66, 52, 90, 72, 77, 60, 74, 67, 73, 214, 58, 68, 54, 79, 84],
+                # 'val': [64, 99, 71, 98, 93, 100, 97],
+                # 'test': [63, 85, 55, 69]
+                'train': [1, 4, 7, 9, 10, 13, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30, 31, 33, 34, 35, 36],
+                'val': [2, 5, 8, 11, 14],
+                'test': [3, 6, 12, 20, 28, 32]
             },
             'DKASC_Yulara': {
-                'train': [5, 8, 11],
-                'val': [6, 9],
-                'test': [7, 10]
+                'train': [1, 4, 7],
+                'val': [2, 5],
+                'test': [3, 6]
             },
             'GIST': {
                 'train': [1, 4, 7, 9, 10, 13, 15],
@@ -91,9 +92,11 @@ class Dataset_PV(Dataset):
             'OEDI_Georgia' : {  # 2018.03.29  2022.03.10
                 'train' : [2018, 2020],
                 'val' : [2020, 2021],
-                'test' : [2021 2023]
-            }
+                'test' : [2021, 2023]
+            },
         }
+        self.load_preprocessed_data()
+        self.indices = self.create_sequences_indices()
 
         # 데이터 선택해서 로드하기
         # csv로 이름 매핑
@@ -119,7 +122,7 @@ class Dataset_PV(Dataset):
                 continue
          
             # 이름 매핑
-            mapped_name = self.mapping_name[self.mapping_name['original_name'] == file_name]['mapped_name'].values[0]
+            mapped_name = self.mapping_name[self.mapping_name['original_name'] == file_name]['mapping_name'].values[0]
             # 이름 정보 추출
             site_id = int(mapped_name.split('_')[0])
             capacity = float(mapped_name.split('_')[1])
@@ -163,10 +166,10 @@ class Dataset_PV(Dataset):
             # scale 적용
             if self.scale:
                 self.scalers[site_id] = {}
-                if self.flag == 'train':
-                    self._fit_and_save_scalers(site_id, df_raw)
-                else:
-                    self._load_scalers(site_id, df_raw)
+                # if self.flag == 'train':
+                self._fit_and_save_scalers(site_id, df_raw)
+                # else:
+                    # self._load_scalers(site_id, df_raw)
                 self._apply_scalers_to_data(site_id, df_raw)
 
             df_x, df_y, time_feature, timestamp, site = self._process_file(df_raw, site_id)
@@ -286,11 +289,6 @@ class Dataset_PV(Dataset):
         return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, seq_x_ds, seq_y_ds
 
     def __len__(self):
-        if self.selected_site is not None:
-            # 선택된 사이트의 데이터만 고려
-            if not self.indices:
-                return 0
-            return len([idx for idx in self.indices if idx[0] == self.selected_site])
         return len(self.indices)
     
 

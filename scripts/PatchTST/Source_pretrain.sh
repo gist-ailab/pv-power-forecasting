@@ -15,7 +15,7 @@ label_len=0
 
 root_path_name=/PV/DKASC_AliceSprings/processed_data_night/,/PV/DKASC_Yulara/processed_data_night
 data_path_name='type=all'
-data_name=DKASC_Source
+data_name=Source
 random_seed=2024
 
 e_layers=10

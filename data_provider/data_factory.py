@@ -19,7 +19,8 @@ data_dict = {
 
 def data_provider(args, flag):
     ## flag : train, val, test
-    Data = data_dict[args.data]
+    Data = data_dict[args.data[0]]
+    # Data = data_dict[args.data]
     timeenc = 0 if args.embed != 'timeF' else 1
 
     if flag == 'test':
@@ -39,28 +40,27 @@ def data_provider(args, flag):
         batch_size = args.batch_size
         freq = args.freq
     
-    def create_dataset(Data, root_path):
+    def create_dataset(Data, root_path, data):
         return Data(
-            root_path,
+            root_path=root_path,
             data_path=args.data_path,
+            data=data,
             flag=flag,
             size=[args.seq_len, args.label_len, args.pred_len],
             features=args.features,
             target=args.target,
             timeenc=timeenc,
-            freq=freq,
-            scaler=args.scaler,
+            freq=freq
         )
     
-    if args.data == 'Source':
-        root_path_1, root_path_2 = args.root_path.split(',')
+    if args.data[0] == 'Source':
+        dataset_list = []
+        for data, root_path in zip(args.data[1:], args.root_path):
+            data = create_dataset(Data, root_path, data)
+            print(f"{flag} - {root_path} length: {data.__len__()}")
+            dataset_list.append(data)
+        source_dataset = ConcatDataset(dataset_list)
 
-        alice_springs = create_dataset(Data, root_path_1)
-        yulara = create_dataset(Data, root_path_2)
-        source_dataset = ConcatDataset([alice_springs, yulara])
-
-        print(f"{flag} - Alice Springs length: {alice_springs.__len__()}")
-        print(f"{flag} - Yulara length: {yulara.__len__()}")
         print(f"{flag} - Combined length: {source_dataset.__len__()}")
         
         data_loader = DataLoader(
@@ -69,12 +69,12 @@ def data_provider(args, flag):
             shuffle=shuffle_flag,
             num_workers=args.num_workers,
             drop_last=drop_last,
-            pin_memory=True
+            pin_memory=True 
         )
         return source_dataset, data_loader
     
     else:
-        data_set = create_dataset(Data, args.root_path)
+        data_set = create_dataset(Data, args.root_path, args.data)
         print(flag, data_set.__len__())
         data_loader = DataLoader(
             data_set,
