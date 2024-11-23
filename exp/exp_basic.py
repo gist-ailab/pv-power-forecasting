@@ -2,6 +2,8 @@ import os
 import torch
 import numpy as np
 import wandb
+import torch.distributed as dist
+
 
 class Exp_Basic(object):
     def __init__(self, args):

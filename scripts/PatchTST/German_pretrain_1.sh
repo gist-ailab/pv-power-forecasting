@@ -13,7 +13,7 @@ seq_len=256
 label_len=0
 export CUDA_VISIBLE_DEVICES=3
 # root_path_name=/home/intern/doyoon/innovation/PatchTST/data/Germany_Household_Data/preprocessed
-root_path_name=/ailab_mat/dataset/PV/Germany_Household_Data/preprocessed
+root_path_name="../data/Germany/processed_data_day/"
 data_path_name='type=all'
 data_name=German
 random_seed=2024
@@ -29,8 +29,8 @@ do
       --use_amp \
       --random_seed $random_seed \
       --is_pretraining 1 \
+      --individual 1 \
       --root_path $root_path_name \
-      --data_path $data_path_name \
       --model_id $model_id \
       --model $model_name \
       --data $data_name \
