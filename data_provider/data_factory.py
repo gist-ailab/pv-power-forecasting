@@ -1,6 +1,6 @@
 # from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
 #      Dataset_DKASC_AliceSprings, Dataset_DKASC_Yulara, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang, Dataset_Miryang_MinMax, Dataset_Miryang_Standard, Dataset_SineMax
-from data.provider.data_loader import Dataset_PV, Dataset_SineMax
+from data_provider.data_loader import Dataset_PV, Dataset_SineMax
 from torch.utils.data import DataLoader, ConcatDataset
 
 data_dict = {
