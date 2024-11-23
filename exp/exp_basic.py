@@ -6,6 +6,7 @@ import wandb
 class Exp_Basic(object):
     def __init__(self, args):
         self.args = args
+        self._init_distributed_mode(args)  # Initialize distributed training
         self.device = self._acquire_device()
         self.model = self._build_model().to(self.device)
 
@@ -36,6 +37,43 @@ class Exp_Basic(object):
             name=f'{run_name}',
             config=self.args)
         
+    def _init_distributed_mode(self, args):
+        # Initialize distributed training
+        if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
+            args.rank = int(os.environ['RANK'])
+            args.world_size = int(os.environ['WORLD_SIZE'])
+            args.local_rank = int(os.environ.get('LOCAL_RANK', 0))
+            print(f"Distributed training initialized: rank {args.rank}, world_size {args.world_size}, local_rank {args.local_rank}")
+        else:
+            print('Not using distributed mode')
+            args.distributed = False
+            args.rank = 0
+            args.world_size = 1
+            args.local_rank = 0
+            return
+
+        args.distributed = True
+
+        torch.cuda.set_device(args.local_rank)
+        args.dist_backend = 'nccl'
+        dist.init_process_group(backend=args.dist_backend, init_method='env://',
+                                world_size=args.world_size, rank=args.rank)
+        dist.barrier()
+        self._setup_for_distributed(args.rank == 0)
+
+    def _setup_for_distributed(self, is_master):
+        """
+        This function disables printing when not in master process
+        """
+        import builtins
+        builtin_print = builtins.print
+
+        def print(*args, **kwargs):
+            force = kwargs.pop('force', False)
+            if is_master or force:
+                builtin_print(*args, **kwargs)
+
+        builtins.print = print
 
     def _get_data(self):
         pass

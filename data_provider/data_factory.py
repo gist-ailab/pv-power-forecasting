@@ -2,6 +2,7 @@
 #      Dataset_DKASC_AliceSprings, Dataset_DKASC_Yulara, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang, Dataset_Miryang_MinMax, Dataset_Miryang_Standard, Dataset_SineMax
 from data_provider.data_loader import Dataset_PV, Dataset_SineMax
 from torch.utils.data import DataLoader, ConcatDataset
+import torch
 
 data_dict = {
     'Source' : Dataset_PV,
@@ -17,7 +18,7 @@ data_dict = {
 }
 
 
-def data_provider(args, flag):
+def data_provider(args, flag, distributed=False):
     ## flag : train, val, test
     Data = data_dict[args.data[0]]
     # Data = data_dict[args.data]
@@ -40,6 +41,11 @@ def data_provider(args, flag):
         batch_size = args.batch_size
         freq = args.freq
     
+    
+
+
+
+
     def create_dataset(Data, root_path, data):
         return Data(
             root_path=root_path,
@@ -63,24 +69,49 @@ def data_provider(args, flag):
 
         print(f"{flag} - Combined length: {source_dataset.__len__()}")
         
+        if distributed:
+            sampler = torch.utils.data.distributed.DistributedSampler(
+                data_set,
+                num_replicas=args.world_size,
+                rank=args.rank,
+                shuffle=shuffle_flag
+            )
+            shuffle_flag = False  # When using a sampler, DataLoader shuffle must be False
+        else:
+            sampler = None
+
+
         data_loader = DataLoader(
             source_dataset,
             batch_size=batch_size,
             shuffle=shuffle_flag,
             num_workers=args.num_workers,
             drop_last=drop_last,
-            pin_memory=True 
+            pin_memory=True,
+            sampler=sampler
         )
         return source_dataset, data_loader
     
     else:
         data_set = create_dataset(Data, args.root_path[0], args.data[0])
         print(flag, data_set.__len__())
+        if distributed:
+            sampler = torch.utils.data.distributed.DistributedSampler(
+                data_set,
+                num_replicas=args.world_size,
+                rank=args.rank,
+                shuffle=shuffle_flag
+            )
+            shuffle_flag = False  # When using a sampler, DataLoader shuffle must be False
+        else:
+            sampler = None
+
         data_loader = DataLoader(
             data_set,
             batch_size=batch_size,
             shuffle=shuffle_flag,
             num_workers=args.num_workers,
             drop_last=drop_last,
-            pin_memory=True,)
+            pin_memory=True,
+            sampler=None)
         return data_set, data_loader
