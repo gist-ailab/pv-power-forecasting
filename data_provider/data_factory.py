@@ -1,25 +1,19 @@
-from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
-     Dataset_DKASC_AliceSprings, Dataset_DKASC_Yulara, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang, Dataset_Miryang_MinMax, Dataset_Miryang_Standard, Dataset_SineMax
+# from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
+#      Dataset_DKASC_AliceSprings, Dataset_DKASC_Yulara, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang, Dataset_Miryang_MinMax, Dataset_Miryang_Standard, Dataset_SineMax
+from data.provider.data_loader import Dataset_PV, Dataset_SineMax
 from torch.utils.data import DataLoader, ConcatDataset
 
 data_dict = {
-    'DKASC_AliceSprings': Dataset_DKASC_AliceSprings,
-    'DKASC_Yulara': Dataset_DKASC_Yulara,
-    'DKASC_Source' : 'DKASC_Source',
-    'GIST': Dataset_GIST,
-    'Germany': Dataset_German,
-    'UK': Dataset_UK,
-    'OEDI_Georgia': Dataset_OEDI_Georgia,
-    'OEDI_California': Dataset_OEDI_California,
-    'Miryang': Dataset_Miryang,
-    'Miryang_MinMax': Dataset_Miryang_MinMax,
-    'Miryang_Standard': Dataset_Miryang_Standard,
-    'ETTh1': Dataset_ETT_hour,
-    'ETTh2': Dataset_ETT_hour,
-    'ETTm1': Dataset_ETT_minute,
-    'ETTm2': Dataset_ETT_minute,
+    'Source' : Dataset_PV,
     'SineMax': Dataset_SineMax,
-    'custom': Dataset_Custom,
+    'DKASC_AliceSprings': Dataset_PV,
+    'DKASC_Yulara': Dataset_PV,
+    'GIST': Dataset_PV,
+    'German': Dataset_PV,
+    'UK': Dataset_PV,
+    'OEDI_Georgia': Dataset_PV,
+    'OEDI_California': Dataset_PV,
+    'Miryang': Dataset_PV,
 }
 
 
@@ -38,15 +32,15 @@ def data_provider(args, flag):
         drop_last = False
         batch_size = 1
         freq = args.freq
-        Data = Dataset_DKASC_AliceSprings
+        # Data = Dataset_DKASC_AliceSprings
     else: # train, val
         shuffle_flag = True
         drop_last = True
         batch_size = args.batch_size
         freq = args.freq
     
-    def create_dataset(data_class, root_path):
-        return data_class(
+    def create_dataset(Data, root_path):
+        return Data(
             root_path,
             data_path=args.data_path,
             flag=flag,
@@ -58,11 +52,11 @@ def data_provider(args, flag):
             scaler=args.scaler,
         )
     
-    if args.data == 'DKASC_Source':
+    if args.data == 'Source':
         root_path_1, root_path_2 = args.root_path.split(',')
 
-        alice_springs = create_dataset(Dataset_DKASC_AliceSprings, root_path_1)
-        yulara = create_dataset(Dataset_DKASC_Yulara, root_path_2)
+        alice_springs = create_dataset(Data, root_path_1)
+        yulara = create_dataset(Data, root_path_2)
         source_dataset = ConcatDataset([alice_springs, yulara])
 
         print(f"{flag} - Alice Springs length: {alice_springs.__len__()}")
