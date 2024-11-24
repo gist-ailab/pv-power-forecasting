@@ -42,8 +42,8 @@ do
       --enc_in 5 \
       --e_layers $e_layers \
       --n_heads 8 \
-      --d_model 256 \
-      --d_ff 512 \
+      --d_model 512 \
+      --d_ff 1024 \
       --dropout 0.05\
       --fc_dropout 0.05\
       --head_dropout 0\

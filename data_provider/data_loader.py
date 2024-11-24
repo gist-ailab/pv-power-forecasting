@@ -247,9 +247,7 @@ class Dataset_PV(Dataset):
 
     def inverse_transform(self, locations, data):
         """
-        용량 기반 역정규화 수행
-        1. StandardScaler 역변환
-        2. 용량 기반 역정규화
+        StandardScaler 역변환만 수행
         """
         batch_size, seq_length, n_channels = data.shape
         result = np.empty_like(data)
@@ -257,16 +255,10 @@ class Dataset_PV(Dataset):
         for batch_idx in range(batch_size):
             site_id = locations[batch_idx].item() if torch.is_tensor(locations[batch_idx]) else locations[batch_idx]
             scaler = self.scalers[site_id][self.target]
-            capacity = self.capacity_dict[site_id]
-
-            # 1. StandardScaler 역변환
+            
+            # StandardScaler 역변환만 수행
             batch_data = data[batch_idx].reshape(-1, n_channels)
             inverse_transformed = scaler.inverse_transform(batch_data)
-            
-            # # 2. 용량 기반 역정규화
-            # if self.scale:
-            #     inverse_transformed = inverse_transformed * capacity
-            
             result[batch_idx] = inverse_transformed.reshape(seq_length, n_channels)
 
         return result

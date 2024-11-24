@@ -60,6 +60,7 @@ def data_provider(args, flag, distributed=False):
         )
     
     if args.data[0] == 'Source':
+        print(args.root_path)
         dataset_list = []
         for data, root_path in zip(args.data[1:], args.root_path):
             data = create_dataset(Data, root_path, data)
