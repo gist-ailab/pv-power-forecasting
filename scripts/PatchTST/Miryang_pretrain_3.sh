@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_German_Source_$model_name"_individual
+exp_id="${DATE}_Pretrain_Miryang_Source_$model_name"_individual
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -13,14 +13,14 @@ seq_len=256
 pred_len=16
 label_len=0
 
-root_path_name="/ailab_mat/dataset/PV/Germany/processed_data_day/"
-data_name=GIST
+root_path_name="/ailab_mat/dataset/PV/Miryang/processed_data_day/"
+data_name=Miryang
 random_seed=2024
 
-e_layers=6
+e_layers=8
 n_heads=8
 d_model=512
-d_ff=1024
+d_ff=2048
 
 export CUDA_VISIBLE_DEVICES=2
 for pred_len in 16 8 4 2 1
