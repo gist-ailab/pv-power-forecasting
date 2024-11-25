@@ -137,6 +137,7 @@ class Dataset_PV(Dataset):
 
             file_path = os.path.join(self.root_path, file_name)  
             df_raw = pd.read_csv(file_path)
+            df_raw.drop('Normalized_Active_Power', axis=1, inplace=True)
 
 
             # 날짜 별로 나누는 site의 경우, 필요한 날짜만 추출
@@ -227,7 +228,7 @@ class Dataset_PV(Dataset):
         for col in df_raw.columns:
             if col == 'timestamp':
                 continue
-            print(f"Applying scaler to {col}")
+            # print(f"Applying scaler to {col}")
             scaler = self.scalers[site_id][col]
             df_raw[col] = scaler.transform(df_raw[[col]])
                 
@@ -279,8 +280,8 @@ class Dataset_PV(Dataset):
         seq_x_ds = data['timestamp'][s_begin:s_end]
         seq_y_ds = data['timestamp'][r_begin:r_end]
 
-        print(f"Target range - Min: {seq_y.min():.2f}, Max: {seq_y.max():.2f}")
-        print(f"Input range - Min: {seq_x.min():.2f}, Max: {seq_x.max():.2f}")
+        # print(f"Target range - Min: {seq_y.min():.2f}, Max: {seq_y.max():.2f}")
+        # print(f"Input range - Min: {seq_x.min():.2f}, Max: {seq_x.max():.2f}")
         return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, seq_x_ds, seq_y_ds
 
     def __len__(self):
