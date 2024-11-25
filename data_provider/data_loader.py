@@ -120,6 +120,8 @@ class Dataset_PV(Dataset):
         for file_name in all_files:
             if not file_name.endswith('.csv'):
                 continue
+            if 'YMCA' in file_name:
+                continue
          
             # 이름 매핑
             mapped_name = self.mapping_name[self.mapping_name['original_name'] == file_name]['mapping_name'].values[0]
@@ -128,7 +130,7 @@ class Dataset_PV(Dataset):
             capacity = float(mapped_name.split('_')[1])
 
             # 해당 flag에 속한 데이터가 아니면 skip
-            if ('UK' not in self.data) or ('OEDI' not in self.data):     
+            if ('UK' not in self.data) and ('OEDI' not in self.data):     
                 if site_id not in self.split_configs[self.data][self.flag]:
                     continue
 
@@ -137,7 +139,8 @@ class Dataset_PV(Dataset):
 
             file_path = os.path.join(self.root_path, file_name)  
             df_raw = pd.read_csv(file_path)
-            df_raw.drop('Normalized_Active_Power', axis=1, inplace=True)
+            if 'Normalized_Active_Power' in df_raw.columns:
+                df_raw.drop('Normalized_Active_Power', axis=1, inplace=True)
 
 
             # 날짜 별로 나누는 site의 경우, 필요한 날짜만 추출
