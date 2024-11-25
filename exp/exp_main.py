@@ -69,9 +69,9 @@ class Exp_Main(Exp_Basic):
 
     def _select_optimizer(self, part=None):
         if part is None:
-            model_optim = optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
+            model_optim = optim.AdamW(self.model.parameters(), lr=self.args.learning_rate)
         else:
-            model_optim = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.learning_rate)
+            model_optim = optim.AdamW(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.learning_rate)
         return model_optim
 
     def _select_criterion(self):

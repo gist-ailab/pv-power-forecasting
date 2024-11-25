@@ -220,17 +220,18 @@ class Dataset_PV(Dataset):
             pickle.dump(target_stats, f)
 
 
-    def _apply_scalers_to_data(self, site_id, site_data):
+    def _apply_scalers_to_data(self, site_id, df_raw):
         """스케일러 적용"""
-        if site_id in site_data:
-            for data in site_data[site_id]:
-                for col in data['x'].columns:
-                    if col == 'timestamp':
-                        continue
-                    scaler = self.scalers[site_id][col]
-                    data['x'][col] = scaler.transform(data['x'][[col]])
-                    if col == self.target:
-                        data['y'][col] = scaler.transform(data['y'][[col]])
+        print(f"Before scaling - {self.target} range:", df_raw[self.target].min(), df_raw[self.target].max())
+        
+        for col in df_raw.columns:
+            if col == 'timestamp':
+                continue
+            print(f"Applying scaler to {col}")
+            scaler = self.scalers[site_id][col]
+            df_raw[col] = scaler.transform(df_raw[[col]])
+                
+        print(f"After scaling - {self.target} range:", df_raw[self.target].min(), df_raw[self.target].max())
 
     def _load_scalers(self, site_id, data):
         """표준화(StandardScaler) 로드"""
@@ -278,6 +279,8 @@ class Dataset_PV(Dataset):
         seq_x_ds = data['timestamp'][s_begin:s_end]
         seq_y_ds = data['timestamp'][r_begin:r_end]
 
+        print(f"Target range - Min: {seq_y.min():.2f}, Max: {seq_y.max():.2f}")
+        print(f"Input range - Min: {seq_x.min():.2f}, Max: {seq_x.max():.2f}")
         return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, seq_x_ds, seq_y_ds
 
     def __len__(self):
