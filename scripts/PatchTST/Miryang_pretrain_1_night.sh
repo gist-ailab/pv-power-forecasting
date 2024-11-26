@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_OEDI_California_Source_$model_name"_individual
+exp_id="${DATE}_Pretrain_Miryang_Source_night_$model_name"_individual
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -13,16 +13,16 @@ seq_len=256
 pred_len=16
 label_len=0
 
-root_path_name="/ailab_mat/dataset/PV/OEDI_California/processed_data_day/"
-data_name=OEDI_California
+root_path_name="/ailab_mat/dataset/PV/Miryang/processed_data_night/"
+data_name=Miryang
 random_seed=2024
 
-e_layers=6
+e_layers=4
 n_heads=8
-d_model=512
-d_ff=1024
+d_model=256
+d_ff=512
 
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=0
 for pred_len in 16 8 4 2 1
 do
     python -u run_longExp.py \
@@ -38,7 +38,7 @@ do
         --seq_len 256\
         --label_len $label_len \
         --pred_len $pred_len\
-        --enc_in 4 \
+        --enc_in 5 \
         --e_layers $e_layers \
         --n_heads $n_heads \
         --d_model $d_model \
