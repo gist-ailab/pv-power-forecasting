@@ -128,26 +128,27 @@ class MetricEvaluator:
         
         elif dataset_type == "Miryang":
             return [
+                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30)),
                 ("Small-Medium", lambda preds, targets: (targets >= 30) & (targets < 100)),
                 ("600kW", lambda preds, targets: (targets >= 600) & (targets < 700)),
                 ("900kW", lambda preds, targets: (targets >= 800) & (targets < 900))
             ]
         
-        elif dataset_type == "California":
+        elif dataset_type == "OEDI_California":
             return [
-                ("700kW"), lambda preds, targets: (targets >= 700) & (targets < 800)
+                ("700kW", lambda preds, targets: (targets >= 0) & (targets < 800))
             ]
-        elif dataset_type == "Georgia":
+        elif dataset_type == "OEDI_Georgia":
             return[
-                ("3mW"), lambda preds, targets: (targets >= 3000) & (targets < 4000)
+                ("3mW", lambda preds, targets: (targets >= 0) & (targets < 4000))
             ]
         elif dataset_type == "UK":
             return[
-                ("Small"), lambda preds, targets: (targets >= 0) & (targets < 30)
+                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30))
             ]
         elif dataset_type == "German":
             return[
-                ("Small"), lambda preds, targets: (targets >= 0) & (targets < 30)
+                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30))
             ]
         else:
             raise ValueError(f"Unknown dataset type: {dataset_type}")
