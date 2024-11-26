@@ -295,7 +295,7 @@ class Exp_Main(Exp_Basic):
         os.makedirs(folder_path, exist_ok=True)
         
         evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
-        
+        scale_groups = evaluator.generate_scale_groups_for_dataset(self.args.data[0])
         pred_list = []
         true_list = []
         input_list = []
@@ -332,25 +332,27 @@ class Exp_Main(Exp_Basic):
                 pred = test_data.inverse_transform(site[:, 0], outputs_np.copy())
                 true = test_data.inverse_transform(site[:, 0], batch_y_np.copy())
                 
-                evaluator.update(preds=outputs, targets=batch_y)
+                evaluator.update(preds=outputs_np, targets=batch_y_np)
                 
                 pred_list.append(pred)
                 true_list.append(true)
                 input_list.append(batch_x_np)
                 
-                if i % 3 == 0:
-                    self.plot_predictions(i, batch_x_np[0], true[0], pred[0], folder_path)
+                # if i % 3 == 0:
+                #     self.plot_predictions(i, batch_x_np[0], true[0], pred[0], folder_path)
         
-        rmse, nrmse_range, nrmse_mean, mae, nmae, mape, r2 = evaluator.calculate_metrics()
-        
-        print('\nMetrics:')
-        print(f'RMSE: {rmse:.4f}')
-        print(f'NRMSE (Range): {nrmse_range:.4f}')
-        print(f'NRMSE (Mean): {nrmse_mean:.4f}')
-        print(f'MAE: {mae:.4f}')
-        print(f'NMAE: {nmae:.4f}')
-        print(f'MAPE: {mape:.4f}')
-        print(f'R2: {r2:.4f}')   
+        results = evaluator.evaluate(scale_groups)
+        for scale_name, metrics in results:
+            rmse, nrmse_range, nrmse_mean, mae, nmae, mape, mbe, r2 = metrics
+            print(f'Scale: {scale_name}')
+            print(f'RMSE: {rmse:.4f}')
+            print(f'NRMSE (Range): {nrmse_range:.4f}')
+            print(f'NRMSE (Mean): {nrmse_mean:.4f}')
+            print(f'MAE: {mae:.4f}')
+            print(f'NMAE: {nmae:.4f}')
+            print(f'MAPE: {mape:.4f}')
+            print(f'MBE: {mbe:.4f}')
+            print(f'R2: {r2:.4f}')   
 
 
     def plot_predictions(self, i, input_sequence, ground_truth, predictions, save_path):
