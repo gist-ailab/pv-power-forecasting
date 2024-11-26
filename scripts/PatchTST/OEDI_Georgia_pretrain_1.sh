@@ -22,8 +22,8 @@ n_heads=8
 d_model=256
 d_ff=512
 
-export CUDA_VISIBLE_DEVICES=5
-for pred_len in 16 8 4 2 1
+export CUDA_VISIBLE_DEVICES=4
+for pred_len in 16
 do
     python -u run_longExp.py \
         --gpu 0 \

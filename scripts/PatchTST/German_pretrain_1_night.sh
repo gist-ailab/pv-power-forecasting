@@ -14,7 +14,7 @@ pred_len=16
 label_len=0
 
 root_path_name="/ailab_mat/dataset/PV/Germany/processed_data_night/"
-data_name=GIST
+data_name=German
 random_seed=2024
 
 e_layers=4

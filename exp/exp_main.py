@@ -77,8 +77,9 @@ class Exp_Main(Exp_Basic):
     def _select_criterion(self):
         return nn.MSELoss()
 
-    def train(self, setting, resume):
-        self._set_wandb(setting)
+    def train(self, checkpoints, resume):
+        
+        self._set_wandb(checkpoints)
         
         config = {
             "model": self.args.model,
@@ -104,7 +105,7 @@ class Exp_Main(Exp_Basic):
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
 
-        path = os.path.join(self.args.checkpoints, setting) if 'checkpoint.pth' not in self.args.checkpoints else self.args.checkpoints
+        path = os.path.join(self.args.checkpoints) if 'checkpoint.pth' not in self.args.checkpoints else self.args.checkpoints
         os.makedirs(path, exist_ok=True)
 
         train_steps = len(train_loader)
@@ -124,7 +125,7 @@ class Exp_Main(Exp_Basic):
         )
 
         if resume:
-            latest_model_path = os.path.join(path, 'model_latest.pth')
+            latest_model_path = os.path.join(self.args.checkpoints, 'model_latest.pth')
             self.model.load_state_dict(torch.load(latest_model_path))
             print(f'Model loaded from {latest_model_path}')
 
@@ -282,17 +283,23 @@ class Exp_Main(Exp_Basic):
         self.model.train()
         return np.average(total_loss)
 
-    def test(self, setting, model_path=None, test=0):
+    def test(self, model_path=None, test=0):
         test_data, test_loader = self._get_data(flag='test')
         
-        if test:
-            if model_path is not None:
-                self.model.load_state_dict(torch.load(model_path))
-            else:
-                self.model.load_state_dict(torch.load(os.path.join('./checkpoints/', setting, 'checkpoint.pth')))
-        
-        folder_path = os.path.join('./test_results/', setting)
+        folder_path = os.path.join('./test_results/', model_path)
         os.makedirs(folder_path, exist_ok=True)
+
+        if 'checkpoint.pth' not in model_path:
+            model_path = os.path.join(self.args.checkpoints, 'checkpoint.pth')
+        
+        # if test:
+        #     if model_path is not None:
+        
+        self.model.load_state_dict(torch.load(model_path))
+            # else:
+            #     self.model.load_state_dict(torch.load(os.path.join('./checkpoints/', setting, 'checkpoint.pth')))
+        
+        
         
         evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
         scale_groups = evaluator.generate_scale_groups_for_dataset(self.args.data[0])
@@ -312,7 +319,7 @@ class Exp_Main(Exp_Basic):
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
                 pretrain_flag = True if self.args.is_pretraining else False
-                
+              
                 if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
                     outputs = self.model(batch_x, pretrain_flag)
                 else:
@@ -331,15 +338,31 @@ class Exp_Main(Exp_Basic):
                 
                 pred = test_data.inverse_transform(site[:, 0], outputs_np.copy())
                 true = test_data.inverse_transform(site[:, 0], batch_y_np.copy())
-                
-                evaluator.update(preds=outputs_np, targets=batch_y_np)
+                # print(pred.max(), pred.min(), flush=True)
+                # print(true.max(), true.min(), flush=True)
+                evaluator.update(preds=pred, targets=true)
                 
                 pred_list.append(pred)
                 true_list.append(true)
                 input_list.append(batch_x_np)
+
+                if i % 10 == 0:
+                    self.plot_predictions(i, batch_x_np[0, 0], true[0], pred[0], folder_path)
+
                 
-                # if i % 3 == 0:
-                #     self.plot_predictions(i, batch_x_np[0], true[0], pred[0], folder_path)
+                # # 구분선과 함께 출력
+                # print("\n" + "="*50)
+                # print(f"Batch {i} - Prediction Range: [{pred.min():.4f}, {pred.max():.4f}]", flush=True)
+                # print(f"Batch {i} - True Range: [{true.min():.4f}, {true.max():.4f}]", flush=True)
+                # print("="*50 + "\n")
+                
+                # # wandb에도 로깅
+                # wandb.log({
+                #     f"test/batch_{i}/pred_max": pred.max(),
+                #     f"test/batch_{i}/pred_min": pred.min(),
+                #     f"test/batch_{i}/true_max": true.max(),
+                #     f"test/batch_{i}/true_min": true.min()
+                # })
         
         results = evaluator.evaluate(scale_groups)
         for scale_name, metrics in results:

@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_OEDI_UK_Source_$model_name"_individual_infer
+exp_id="${DATE}_Pretrain_UK_Source_$model_name"_individual_infer
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -30,7 +30,7 @@ do
         --individual 1 \
         --random_seed $random_seed \
         --is_inference 1 \
-        --checkpoints 
+        --checkpoints /home/seongho_bak/Projects/PatchTST/checkpoints/24112705_PatchTST_[UK]_ftMS_sl256_ll0_pl16_dm256_nh8_el4_dl1_df512_fc1_ebtimeF_dtTrue_Exp_0/checkpoint.pth\
         --root_path $root_path_name \
         --model_id $model_id \
         --model $model_name \
@@ -54,5 +54,5 @@ do
         --patience 20\
         --embed 'timeF' \
         --distributed \
-        --itr 1 --batch_size 256 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers.log
+        --itr 1 --batch_size 112 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers.log
 done

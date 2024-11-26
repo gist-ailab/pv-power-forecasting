@@ -164,7 +164,7 @@ if __name__ == '__main__':
 
             exp = Exp(args)  # set experiments
             print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-            exp.train(setting, args.resume)
+            exp.train(args.checkpoints, args.resume)
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
             exp.test(setting)
@@ -196,7 +196,7 @@ if __name__ == '__main__':
 
         exp = Exp(args)  # set experiments
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-        exp.test(setting, args.checkpoints, test=1)
+        exp.test(args.checkpoints, test=1)
         torch.cuda.empty_cache()
     
     elif args.is_fully_finetune or args.is_linear_probe:
@@ -225,10 +225,10 @@ if __name__ == '__main__':
             
             if args.is_fully_finetune:
                 print('>>>>>>>start fully finetuning : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-                exp.fully_finetune(setting, args.resume)
+                exp.fully_finetune(args.checkpoints, args.resume)
 
             elif args.is_linear_probe:
                 print('>>>>>>>start linear probing : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-                exp.linear_probe(setting, args.resume)       
+                exp.linear_probe(args.checkpoints, args.resume)       
 
             torch.cuda.empty_cache()

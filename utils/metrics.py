@@ -50,7 +50,13 @@ class MetricEvaluator:
         nmae = (mae / targets_mean) * 100  # 평균 기준 nMAE
 
         # MAPE 계산
-        mape = np.mean(np.abs((preds - targets) / targets)) * 100
+        epsilon = 1e-10
+        mask = np.abs(targets) > epsilon
+        if np.any(mask):
+            mape = np.mean(np.abs((preds[mask] - targets[mask]) / targets[mask])) * 100
+        else:
+            mape = np.nan
+        
         
         biases = [pred - act for pred, act in zip(preds, targets)]
         mbe = sum(biases) / len(biases)
@@ -144,11 +150,17 @@ class MetricEvaluator:
             ]
         elif dataset_type == "UK":
             return[
-                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30))
+                ('Not Specified', lambda preds, targets: (targets <= 0)),
+                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30)),
+                ("Small-Medium", lambda preds, targets: (targets >= 30) & (targets < 100)),
+                ("Large", lambda preds, targets: targets >= 100)
+
             ]
         elif dataset_type == "German":
             return[
-                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30))
+                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30)),
+                ("Small-Medium", lambda preds, targets: (targets >= 30) & (targets < 100)),
+                ("Large", lambda preds, targets: targets >= 100)
             ]
         else:
             raise ValueError(f"Unknown dataset type: {dataset_type}")
