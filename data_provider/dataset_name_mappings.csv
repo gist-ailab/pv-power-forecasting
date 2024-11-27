@@ -67,13 +67,6 @@ German,8.197000000000116_DE_KN_residential1_pv.csv,06_8.197000000000116_DE_KN_re
 German,3.845999999999549_DE_KN_residential3_pv.csv,07_3.845999999999549_DE_KN_residential3_pv.csv
 German,8.784999999999854_DE_KN_residential4_pv.csv,08_8.784999999999854_DE_KN_residential4_pv.csv
 German,7.64600000000064_DE_KN_residential6_pv.csv,09_7.64600000000064_DE_KN_residential6_pv.csv
-Miryang,350.131_C_99kW.csv.csv,01_350.131_C_99kW.csv
-Miryang,4578995.49_G_50kW.csv.csv,02_4578995.49_G_50kW.csv
-Miryang,58.964_F_64kW.csv.csv,03_58.964_F_64kW.csv
-Miryang,533.6_B_658kW.csv.csv,04_533.6_B_658kW.csv
-Miryang,62.415_E_69kW.csv.csv,05_62.415_E_69kW.csv
-Miryang,75.57_D_89kW.csv.csv,06_75.57_D_89kW.csv
-Miryang,826.165_A_999kW.csv.csv,07_826.165_A_999kW.csv
 OEDI_Georgia,32988.674999999996_OEDI_Georgia.csv,01_32988.674999999996_OEDI_Georgia.csv
 OEDI_California,719.2826666666666_OEDI_California.csv,01_719.2826666666666_OEDI_California.csv
 UK,2.668_Forest Road.csv,01_2.668_Forest Road.csv
@@ -122,3 +115,15 @@ DKASC_Yulara,36.68936411539717_9-Site_SD-PV2-DB-SD-2A.csv,04_36.68936411539717_9
 DKASC_Yulara,44.16863854726167_6-Site_SD-PV2-DB-SD-3A.csv,05_44.16863854726167_6-Site_SD-PV2-DB-SD-3A.csv
 DKASC_Yulara,897.5805969238291_5-Site_DG-PV1-DB-DG-M1A.csv,06_897.5805969238291_5-Site_DG-PV1-DB-DG-M1A.csv
 DKASC_Yulara,97.79799715677892_8-Site_CA-PV1-DB-CA-1A.csv,07_97.79799715677892_8-Site_CA-PV1-DB-CA-1A.csv
+Miryang,350.131_C_99kW.csv.csv,01_350.131_C_99kW.csv
+Miryang,4578995.49_G_50kW.csv.csv,02_4578995.49_G_50kW.csv
+Miryang,58.964_F_64kW.csv.csv,03_58.964_F_64kW.csv
+Miryang,533.6_B_658kW.csv.csv,04_533.6_B_658kW.csv
+Miryang,62.415_E_69kW.csv.csv,05_62.415_E_69kW.csv
+Miryang,75.57_D_89kW.csv.csv,06_75.57_D_89kW.csv
+Miryang,826.165_A_999kW.csv.csv,07_826.165_A_999kW.csv
+
+
+
+
+

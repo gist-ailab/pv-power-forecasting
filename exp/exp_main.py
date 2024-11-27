@@ -78,7 +78,7 @@ class Exp_Main(Exp_Basic):
         return nn.MSELoss()
 
     def train(self, checkpoints, resume):
-        
+        self.args.checkpoints = os.path.join('checkpoints', checkpoints)
         self._set_wandb(checkpoints)
         
         config = {
@@ -291,7 +291,7 @@ class Exp_Main(Exp_Basic):
 
         if 'checkpoint.pth' not in model_path:
             model_path = os.path.join(self.args.checkpoints, 'checkpoint.pth')
-        
+        model_path = os.path.join('checkpoints', model_path)
         # if test:
         #     if model_path is not None:
         
@@ -346,7 +346,7 @@ class Exp_Main(Exp_Basic):
                 true_list.append(true)
                 input_list.append(batch_x_np)
 
-                if i % 10 == 0:
+                if i % 2 == 0:
                     self.plot_predictions(i, batch_x_np[0, 0], true[0], pred[0], folder_path)
 
                 

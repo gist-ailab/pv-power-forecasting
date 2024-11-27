@@ -76,7 +76,7 @@ class Model(nn.Module):
                                   pretrain_head=pretrain_head, head_type=head_type, individual=individual, revin=revin, affine=affine,
                                   subtract_last=subtract_last, verbose=verbose, **kwargs)
     
-    self.relu = nn.ReLU()
+        self.relu = nn.ReLU()
     
     def forward(self, x, pretrain_flag):           # x: [Batch, Input length, Channel]
         if self.decomposition:
