@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 
 
 class Dataset_PV(Dataset):
-    def __init__(self, root_path, data, flag='train', features='S', data_path=None, target='Active_Power', scale=True, 
+    def __init__(self, root_path, data, flag='train', features='S', data_path=None, target='Active_Power', scaler=True, 
                  timeenc=0, freq='h', size=None):
         
         # size [seq_len, label_len, pred_len]
@@ -38,7 +38,7 @@ class Dataset_PV(Dataset):
         self.features = features
         self.data_path = data_path
         self.target = target
-        self.scale = scale
+        self.scaler = scaler
         self.timeenc = timeenc
         self.freq = freq
         
@@ -49,11 +49,13 @@ class Dataset_PV(Dataset):
         self.mapping_name = pd.read_csv('./data_provider/dataset_name_mappings.csv')
 
         self.split_configs = {
+            'Source': {
+                'train': [1, 4, 7, 9, 10, 13, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30, 31, 33, 34, 35, 36, 37, 40, 43],
+                'val': [2, 5, 8, 11, 14, 38, 41],
+                'test': [3, 6, 12, 20, 28, 32, 39, 42]
+            },
             # 사이트로 나누는 loc
             'DKASC_AliceSprings': {
-                # 'train': [57, 61, 70, 92, 59, 212, 213, 218, 56, 66, 52, 90, 72, 77, 60, 74, 67, 73, 214, 58, 68, 54, 79, 84],
-                # 'val': [64, 99, 71, 98, 93, 100, 97],
-                # 'test': [63, 85, 55, 69]
                 'train': [1, 4, 7, 9, 10, 13, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30, 31, 33, 34, 35, 36],
                 'val': [2, 5, 8, 11, 14],
                 'test': [3, 6, 12, 20, 28, 32]
@@ -176,7 +178,7 @@ class Dataset_PV(Dataset):
                 df_raw = df_raw[date_mask]
 
             # scale 적용
-            if self.scale:
+            if self.scaler:
                 self.scalers[site_id] = {}
                 # if self.flag == 'train':
                 self._fit_and_save_scalers(site_id, df_raw)

@@ -20,7 +20,7 @@ random_seed=2024
 e_layers=10
 n_heads=8
 d_model=1024
-d_ff=4096
+d_ff=2048
 
 export CUDA_VISIBLE_DEVICES=2
 for pred_len in 16 8 4 2 1

@@ -3,14 +3,23 @@ import torch
 import numpy as np
 import wandb
 import torch.distributed as dist
+import torch.nn as nn
 
 
 class Exp_Basic(object):
     def __init__(self, args):
         self.args = args
         self._init_distributed_mode(args)  # Initialize distributed training
-        self.device = self._acquire_device()
-        self.model = self._build_model().to(self.device)
+        self.device = torch.device(f'cuda:{args.local_rank}' if torch.cuda.is_available() else 'cpu')
+        model = self._build_model()
+        model = model.to(self.device)
+        if args.distributed:
+            model = nn.parallel.DistributedDataParallel(
+                model,
+                device_ids=[args.local_rank],
+                output_device=args.local_rank
+            )
+        self.model = model
 
     def _build_model(self):
         raise NotImplementedError

@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_GIST_$model_name"_individual
+exp_id="${DATE}_Pretrain_Source_$model_name"_individual
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -13,20 +13,26 @@ seq_len=256
 pred_len=16
 label_len=0
 
-root_path_name="/ailab_mat/dataset/PV/GIST/processed_data_day/"
-data_name=GIST
+root_path_name="/ailab_mat/dataset/PV/Source/processed_data_day/"
+data_name=Source
 random_seed=2024
 
-e_layers=6
+
+e_layers=10
 n_heads=8
 d_model=512
-d_ff=1024
+d_ff=2048
 
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=1,3,7,0,2,6
+export WORLD_SIZE=6  # 총 프로세스 수
+export MASTER_ADDR='localhost'
+export MASTER_PORT='12355'  # 임의의 빈 포트
 export SCRIPT_NAME=$(basename "$0" .sh)
+
+
 for pred_len in 16 8 4 2 1
 do
-    python -u run_longExp.py \
+    torchrun --nproc_per_node=$WORLD_SIZE --master_port=$MASTER_PORT run_longExp.py \
         --checkpoints "${SCRIPT_NAME}_${seq_len}_${pred_len}" \
         --gpu 0 \
         --individual 1 \

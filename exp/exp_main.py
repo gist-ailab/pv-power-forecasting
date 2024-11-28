@@ -53,14 +53,17 @@ class Exp_Main(Exp_Basic):
         
         model = model_dict[self.args.model].Model(self.args).float()
         
+        # 먼저 모델을 GPU로 이동
+        model = model.to(self.device)
+        
         if self.args.distributed:
+        # 그 다음 DistributedDataParallel 설정
             model = nn.parallel.DistributedDataParallel(
-                model, device_ids=[self.args.local_rank],
+                model,
+                device_ids=[self.args.local_rank],
                 output_device=self.args.local_rank
             )
-        elif self.args.use_multi_gpu and self.args.use_gpu:
-            model = nn.DataParallel(model, device_ids=self.args.device_ids)
-            
+        
         return model
 
     def _get_data(self, flag):
@@ -79,27 +82,28 @@ class Exp_Main(Exp_Basic):
 
     def train(self, checkpoints, resume):
         self.args.checkpoints = os.path.join('checkpoints', checkpoints)
-        self._set_wandb(checkpoints)
-        
-        config = {
-            "model": self.args.model,
-            "num_parameters": sum(p.numel() for p in self.model.parameters()),
-            "batch_size": self.args.batch_size,
-            "num_workers": self.args.num_workers,
-            "learning_rate": self.args.learning_rate,
-            "loss_function": self.args.loss,
-            "dataset": self.args.data,
-            "epochs": self.args.train_epochs,
-            "input_seqeunce_length": self.args.seq_len,
-            "prediction_sequence_length": self.args.pred_len,
-            "patch_length": self.args.patch_len,
-            "stride": self.args.stride,
-        }
-        upload_files_to_wandb(
-            project_name=self.project_name,
-            run_name=self.run_name,
-            config=config
-        )     
+        # wandb 관련 작업은 rank 0에서만 실행
+        if self.args.local_rank == 0:
+            self._set_wandb(checkpoints)
+            config = {
+                "model": self.args.model,
+                "num_parameters": sum(p.numel() for p in self.model.parameters()),
+                "batch_size": self.args.batch_size,
+                "num_workers": self.args.num_workers,
+                "learning_rate": self.args.learning_rate,
+                "loss_function": self.args.loss,
+                "dataset": self.args.data,
+                "epochs": self.args.train_epochs,
+                "input_seqeunce_length": self.args.seq_len,
+                "prediction_sequence_length": self.args.pred_len,
+                "patch_length": self.args.patch_len,
+                "stride": self.args.stride,
+            }
+            upload_files_to_wandb(
+                project_name=self.project_name,
+                run_name=self.run_name,
+                config=config
+            )        
         
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
@@ -185,7 +189,7 @@ class Exp_Main(Exp_Basic):
                 
                 train_losses.append(loss.item())
 
-                if (i + 1) % 100 == 0:
+                if self.args.local_rank == 0 and (i + 1) % 100 == 0:
                     wandb.log({
                         "iteration": (epoch * len(train_loader)) + i + 1,
                         "train_loss_iteration": loss.item()
@@ -200,21 +204,22 @@ class Exp_Main(Exp_Basic):
                 if self.args.lradj == 'TST':
                     adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=False)
                     scheduler.step()
-            
-            print(f"Epoch: {epoch + 1} | cost time: {time.time() - epoch_time}")
+            if self.args.local_rank == 0:
+                print(f"Epoch: {epoch + 1} | cost time: {time.time() - epoch_time}")
             
             train_loss = np.average(train_losses)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             test_loss = self.vali(test_data, test_loader, criterion)
             
-            print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
+            if self.args.local_rank == 0:
+                print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
 
-            wandb.log({
-                "epoch": epoch + 1,
-                "train_loss": train_loss,
-                "validation_loss": vali_loss,
-                "test_loss": test_loss,
-            })
+                wandb.log({
+                    "epoch": epoch + 1,
+                    "train_loss": train_loss,
+                    "validation_loss": vali_loss,
+                    "test_loss": test_loss,
+                })
             
             early_stopping(vali_loss, self.model, path)
             if early_stopping.early_stop:
@@ -226,12 +231,13 @@ class Exp_Main(Exp_Basic):
             else:
                 print(f'Learning rate updated to {scheduler.get_last_lr()[0]}')
         
-        best_model_path = os.path.join(path, 'checkpoint.pth')
-        upload_files_to_wandb(
-            project_name=self.project_name,
-            run_name=self.run_name,
-            model_weights_path=best_model_path
-        )
+        if self.args.local_rank == 0:
+            best_model_path = os.path.join(path, 'checkpoint.pth')
+            upload_files_to_wandb(
+                project_name=self.project_name,
+                run_name=self.run_name,
+                model_weights_path=best_model_path
+            )
 
         final_model_artifact = wandb.Artifact('final_model_weights', type='model')
         final_model_artifact.add_file(best_model_path)
@@ -291,7 +297,8 @@ class Exp_Main(Exp_Basic):
 
         if 'checkpoint.pth' not in model_path:
             model_path = os.path.join(self.args.checkpoints, 'checkpoint.pth')
-        model_path = os.path.join('checkpoints', model_path)
+        if '/checkpoints/' in model_path:
+            model_path = os.path.join('checkpoints', model_path)
         # if test:
         #     if model_path is not None:
         
@@ -349,6 +356,7 @@ class Exp_Main(Exp_Basic):
                 if i % 2 == 0:
                     self.plot_predictions(i, batch_x_np[0, 0], true[0], pred[0], folder_path)
 
+
                 
                 # # 구분선과 함께 출력
                 # print("\n" + "="*50)
@@ -399,7 +407,7 @@ class Exp_Main(Exp_Basic):
 
         plt.figure(figsize=(14, 8))  # 더 큰 크기로 설정하여 가독성 향상
 
-        # 입력 시퀀스의 마지막 5개 데이터만 플롯 (점선과 작은 점 추가, 투명도 적용)
+        # 입력 시퀀스의 마지막 5개 데이터만 플롯 (점선과 작은 점 추���, 투명도 적용)
         plt.plot(input_index[-10:], input_sequence.squeeze()[-10:], label='Input Sequence', color='royalblue', linestyle='--', alpha=0.7)
         plt.scatter(input_index[-10:], input_sequence.squeeze()[-10:], color='royalblue', s=10, alpha=0.6)
 

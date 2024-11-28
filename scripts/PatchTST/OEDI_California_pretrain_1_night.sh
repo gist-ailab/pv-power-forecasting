@@ -26,7 +26,7 @@ export CUDA_VISIBLE_DEVICES=2
 export SCRIPT_NAME=$(basename "$0" .sh)
 for pred_len in 16 8 4 2 1
 do
-    python -u run_longExp.py \
+    python -u run_longExp.py 
         --checkpoints "${SCRIPT_NAME}_${seq_len}_${pred_len}" \
         --gpu 0 \
         --individual 1 \

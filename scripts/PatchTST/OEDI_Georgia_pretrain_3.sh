@@ -17,11 +17,12 @@ root_path_name="/ailab_mat/dataset/PV/OEDI_Georgia/processed_data_day/"
 data_name=OEDI_Georgia
 random_seed=2024
 
+
 e_layers=8
 n_heads=8
 d_model=512
 d_ff=2048
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=0
 for pred_len in 16 8 4 2 1
 do
     python -u run_longExp.py \

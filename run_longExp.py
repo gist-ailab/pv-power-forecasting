@@ -27,14 +27,14 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default='PatchTST',
                         help='model name, options: [Autoformer, Informer, Transformer, DLinear, NLinear, Linear, PatchTST, PatchCDTST, Naive_repeat, Arima]')
     # data loader
-    parser.add_argument('--data', type=str, nargs='+', default='DKASC', help='dataset type. ex: DKASC, GIST')
-    parser.add_argument('--root_path', type=str, nargs='+', default='./data/DKASC_AliceSprings/converted', help='root path of the source domain data file')
+    parser.add_argument('--data', type=str, default='DKASC', help='dataset type. ex: DKASC, GIST')
+    parser.add_argument('--root_path', type=str, default='./data/DKASC_AliceSprings/converted', help='root path of the source domain data file')
     parser.add_argument('--data_path', type=json.loads, default='{"type":"all"}', 
                         help='In Debuggig {"type": "debug", "train":"79-Site_DKA-M6_A-Phase.csv", "val":"100-Site_DKA-M1_A-Phase.csv", "test":"85-Site_DKA-M7_A-Phase.csv"}')
     
     # parser.add_argument('--root_path', type=str, default='./data/GIST_dataset/', help='root path of the source domain data file')
     # parser.add_argument('--data_path', type=str, default='GIST_sisuldong.csv', help='source domain data file')
-    parser.add_argument('--scaler', type=str, default='StandardScaler', help='StandardScaler, MinMaxScaler')
+    parser.add_argument('--scaler', type=bool, default=False, help='StandardScaler, MinMaxScaler')
     parser.add_argument('--features', type=str, default='MS',
                         help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
     parser.add_argument('--target', type=str, default='Active_Power', help='target feature in S or MS task')
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--patch_len', type=int, default=16, help='patch length')
     parser.add_argument('--stride', type=int, default=8, help='stride')
     parser.add_argument('--padding_patch', default='end', help='None: None; end: padding on the end')
-    parser.add_argument('--revin', type=int, default=0, help='RevIN; True 1 False 0')
+    parser.add_argument('--revin', type=int, default=1, help='RevIN; True 1 False 0')
     parser.add_argument('--affine', type=int, default=0, help='RevIN-affine; True 1 False 0')
     parser.add_argument('--subtract_last', type=int, default=0, help='0: subtract mean; 1: subtract last')
     parser.add_argument('--decomposition', type=int, default=0, help='decomposition; True 1 False 0')
@@ -136,8 +136,9 @@ if __name__ == '__main__':
         args.device_ids = [int(id_) for id_ in device_ids]
         args.gpu = args.device_ids[0]
 
-    print('Args in experiment:')
-    print(args)
+    if args.local_rank == 0:
+        print('Args in experiment:')
+        print(args)
     
     Exp = Exp_Main
     
@@ -163,14 +164,17 @@ if __name__ == '__main__':
                 args.des,ii)
 
             exp = Exp(args)  # set experiments
-            print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+            if args.local_rank == 0:
+                print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
             exp.train(args.checkpoints, args.resume)
 
-            print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+            if args.local_rank == 0:
+                print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
             exp.test(setting)
 
             if args.do_predict:
-                print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+                if args.local_rank == 0:
+                    print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
                 exp.predict(setting, True)
 
             torch.cuda.empty_cache()
@@ -195,7 +199,8 @@ if __name__ == '__main__':
                                                                                                     args.des, ii)    
 
         exp = Exp(args)  # set experiments
-        print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+        if args.local_rank == 0:
+            print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
         exp.test(args.checkpoints, test=1)
         torch.cuda.empty_cache()
     
@@ -224,11 +229,13 @@ if __name__ == '__main__':
             exp = Exp_Finetune(args)
             
             if args.is_fully_finetune:
-                print('>>>>>>>start fully finetuning : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+                if args.local_rank == 0:
+                    print('>>>>>>>start fully finetuning : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
                 exp.fully_finetune(args.checkpoints, args.resume)
 
             elif args.is_linear_probe:
-                print('>>>>>>>start linear probing : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+                if args.local_rank == 0:
+                    print('>>>>>>>start linear probing : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
                 exp.linear_probe(args.checkpoints, args.resume)       
 
             torch.cuda.empty_cache()

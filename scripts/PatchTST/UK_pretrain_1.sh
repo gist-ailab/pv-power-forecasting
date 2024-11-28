@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_OEDI_UK_Source_$model_name"_individual
+exp_id="${DATE}_Pretrain_OEDI_UK_$model_name"_individual
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -22,10 +22,12 @@ n_heads=8
 d_model=256
 d_ff=512
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=3
+export SCRIPT_NAME=$(basename "$0" .sh)
 for pred_len in 16 8 4 2 1
 do
     python -u run_longExp.py \
+        --checkpoints "${SCRIPT_NAME}_${seq_len}_${pred_len}" \
         --gpu 0 \
         --individual 1 \
         --random_seed $random_seed \
@@ -38,7 +40,7 @@ do
         --seq_len 256\
         --label_len $label_len \
         --pred_len $pred_len\
-        --enc_in 4 \
+        --enc_in 5\
         --e_layers $e_layers \
         --n_heads $n_heads \
         --d_model $d_model \

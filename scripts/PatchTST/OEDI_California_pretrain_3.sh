@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_OEDI_California_Source_$model_name"_individual
+exp_id="${DATE}_Pretrain_OEDI_California_$model_name"_individual
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -17,15 +17,17 @@ root_path_name="/ailab_mat/dataset/PV/OEDI_California/processed_data_day/"
 data_name=OEDI_California
 random_seed=2024
 
+
 e_layers=8
 n_heads=8
 d_model=512
 d_ff=2048
-
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=1
+export SCRIPT_NAME=$(basename "$0" .sh)
 for pred_len in 16 8 4 2 1
 do
     python -u run_longExp.py \
+        --checkpoints "${SCRIPT_NAME}_${seq_len}_${pred_len}" \
         --gpu 0 \
         --individual 1 \
         --random_seed $random_seed \

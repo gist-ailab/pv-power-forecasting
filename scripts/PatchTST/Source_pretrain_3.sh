@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_DKASC_Source_$model_name"_individual
+exp_id="${DATE}_Pretrain_Source_$model_name"_individual
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -13,19 +13,22 @@ seq_len=256
 pred_len=16
 label_len=0
 
-root_path_name="/home/pv/code/data/DKASC_AliceSprings/processed_data_day/ /home/pv/code/data//DKASC_Yulara/processed_data_day"
-data_name="Source DKASC_AliceSprings DKASC_Yulara"
+root_path_name="/ailab_mat/dataset/PV/Source/processed_data_day/"
+data_name=Source
 random_seed=2024
+
 
 e_layers=8
 n_heads=8
 d_model=512
 d_ff=2048
 
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=4
+export SCRIPT_NAME=$(basename "$0" .sh)
 for pred_len in 16 8 4 2 1
 do
     python -u run_longExp.py \
+        --checkpoints "${SCRIPT_NAME}_${seq_len}_${pred_len}" \
         --gpu 0 \
         --individual 1 \
         --random_seed $random_seed \
