@@ -63,6 +63,28 @@ class Exp_Freeze(Exp_Basic):
                 device_ids=[self.args.local_rank],
                 output_device=self.args.local_rank
             )
+
+        if self.args.resume:
+            model = self.load_model(model, self.args.checkpoints)
+
+        if self.args.num_freeze_layers > 0:
+            model = self.load_model(model, self.args.checkpoints)
+            
+            # Define the layers to freeze
+            freeze_layers = ['W_pos', 'W_P.weight', 'W_P.bias']
+            freeze_layers += [f'model.backbone.encoder.layers.{i}' for i in range(self.args.num_freeze_layers)]
+            
+            # Freeze the specified layers
+            for name, param in model.named_parameters():
+                # freeze_layers에 해당하는 레이어 이름이 포함된 파라미터는 requires_grad=False로 설정
+                if any(layer in name for layer in freeze_layers):
+                    param.requires_grad = False
+
+            # Check which layers are frozen
+            for name, param in model.named_parameters():
+                if not param.requires_grad:
+                    print(f"Layer {name} is frozen.")
+                    print(f"sdp_attn (scaled dot-product attention) layer is like a constant, so it is already frozen.")
         
         return model
 
@@ -79,8 +101,14 @@ class Exp_Freeze(Exp_Basic):
 
     def _select_criterion(self):
         return nn.MSELoss()
+    
+    def load_model(self, model, checkpoints_path):
+        latest_model_path = os.path.join(checkpoints_path, 'model_latest.pth')
+        model.load_state_dict(torch.load(latest_model_path))
+        print(f'Model loaded from {latest_model_path}')
+        return model
 
-    def train(self, checkpoints, resume):
+    def train(self, checkpoints):
         self.args.checkpoints = os.path.join('checkpoints', checkpoints)
         # wandb 관련 작업은 rank 0에서만 실행
         if self.args.local_rank == 0:
@@ -98,6 +126,7 @@ class Exp_Freeze(Exp_Basic):
                 "prediction_sequence_length": self.args.pred_len,
                 "patch_length": self.args.patch_len,
                 "stride": self.args.stride,
+                "num_freeze_layers": self.args.num_freeze_layers,
             }
             upload_files_to_wandb(
                 project_name=self.project_name,
@@ -127,11 +156,6 @@ class Exp_Freeze(Exp_Basic):
             epochs=self.args.train_epochs,
             max_lr=self.args.learning_rate
         )
-
-        if resume:
-            latest_model_path = os.path.join(self.args.checkpoints, 'model_latest.pth')
-            self.model.load_state_dict(torch.load(latest_model_path))
-            print(f'Model loaded from {latest_model_path}')
 
         for epoch in range(self.args.train_epochs):
             iter_count = 0

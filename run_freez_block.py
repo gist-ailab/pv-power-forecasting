@@ -18,8 +18,10 @@ if __name__ == '__main__':
 
     # basic config
     parser.add_argument('--is_pretraining', type=int, default=0, help='status')
-    parser.add_argument('--is_fully_finetune', type=int, default=0, help='status')
-    parser.add_argument('--is_linear_probe', type=int, default=0, help='status')
+    parser.add_argument('--is_fully_finetune', type=int, default=0, help='status')  # 확인 후, 삭제하고 num_freeze_layer만 남길 것
+    parser.add_argument('--is_linear_probe', type=int, default=0, help='status')    # 확인 후, 삭제하고 num_freeze_layer만 남길 것
+    parser.add_argument('--num_freeze_layers', type=int, default=0,
+                        help='num of transformer freeze layer. 0: finetune all layers or do not transfer learning')
 
     parser.add_argument('--is_inference', type=int, default=0, help='status')
 
@@ -48,9 +50,8 @@ if __name__ == '__main__':
     parser.add_argument('--label_len', type=int, default=0, help='start token length') # decoder 있는 모델에서 사용
     parser.add_argument('--pred_len', type=int, default=16, help='prediction sequence length')
 
-
     # DLinear
-    #parser.add_argument('--individual', action='store_true', default=False, help='DLinear: a linear layer for each variate(channel) individually')
+    # parser.add_argument('--individual', action='store_true', default=False, help='DLinear: a linear layer for each variate(channel) individually')
 
     # PatchTST
     parser.add_argument('--fc_dropout', type=float, default=0.05, help='fully connected dropout')
@@ -162,12 +163,14 @@ if __name__ == '__main__':
                 args.factor,
                 args.embed,
                 args.distil,
-                args.des,ii)
+                args.des,
+                args.num_freeze_layers,
+                ii)
 
             exp = Exp(args)  # set experiments
             if args.local_rank == 0:
                 print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-            exp.train(args.checkpoints, args.resume)
+            exp.train(args.checkpoints)
 
             if args.local_rank == 0:
                 print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
