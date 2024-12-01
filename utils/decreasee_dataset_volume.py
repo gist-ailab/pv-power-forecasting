@@ -16,10 +16,10 @@ csv_files = glob(os.path.join(directory, '*.csv'))
 processed_data = []
 
 # Set the reduction factor (e.g., 1/8 or 1/16)
-reduction_factor = 8  # Change to 16 for 1/16
+reduction_factor = 16  # Change to 16 for 1/16
 
 # Loop through each CSV file
-for file in tqdm(csv_files, desc='Processing files'):
+for file in tqdm(csv_files, desc=f'Reduction divided by {reduction_factor} processing'):
     # Load the data
     data = pd.read_csv(file)
     
