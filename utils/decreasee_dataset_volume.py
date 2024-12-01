@@ -44,6 +44,3 @@ for file in tqdm(csv_files, desc='Processing files'):
         os.makedirs(output_dir)
 
     reduced_data.to_csv(output_path, index=False)
-
-# Display information about the reduced dataset
-print(reduced_data.info())
