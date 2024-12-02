@@ -201,7 +201,6 @@ if __name__ == '__main__':
     # weather_data = os.path.join(project_root, 'data/GIST_dataset/GIST_weather_data.csv')
     weather_data = os.path.join(project_root, f'data/{dataset_name}/GIST_weather_data.csv')
 
-    
     if not os.path.exists(weather_data):
         create_combined_weather_csv(weather_data, project_root)
 
@@ -226,8 +225,8 @@ if __name__ == '__main__':
         '학사과정': 'E11_DormA',
         '다산빌딩': 'C09_Dasan',
         '시설관리동': 'W11_Facility-Maintenance-Bldg',
-        '대학C동': 'N06_College-Bldg',
-        '동물실험동': 'E02_Animal-Recource-Center',
+        # '대학C동': 'N06_College-Bldg',
+        # '동물실험동': 'E02_Animal-Recource-Center',
         '중앙도서관': 'N01_Central-Library',
         'LG도서관': 'N02_LG-Library',
         '신재생에너지동': 'C10_Renewable-E-Bldg',
@@ -245,8 +244,8 @@ if __name__ == '__main__':
                                weather_data=weather_data,
                                save_dir=save_dir)
     check_data.process_data_and_log(
-    folder_path=os.path.join(project_root, save_dir),
-    log_file_path=os.path.join(log_save_dir, 'raw_data_info.txt')
+        folder_path=os.path.join(project_root, save_dir),
+        log_file_path=os.path.join(log_save_dir, 'raw_data_info.txt')
     )
     plot_correlation_each.plot_feature_vs_active_power(
             data_dir=save_dir, 
