@@ -58,7 +58,7 @@ def combine_into_each_site(file_list, index_of_site,
         daily_pv_data = daily_pv_data[columns_to_keep]
 
         # 결측치 처리:'-' 또는 빈 값을 NaN으로 변환
-        daily_pv_data = daily_pv_data.applymap(lambda x: np.nan if x in ['-', '', ' '] else x)
+        daily_pv_data = daily_pv_data.map(lambda x: np.nan if x in ['-', '', ' '] else x)
 
         # get date
         pv_date = file.split('_')[-2]
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    dataset_name = 'GIST'
+    dataset_name = 'GIST_dataset'
 
     save_dir=os.path.join(project_root,  f'data/{dataset_name}/uniform_format_data')
     log_save_dir = os.path.join(project_root, f'data_preprocessing_night/{dataset_name}/raw_info')
