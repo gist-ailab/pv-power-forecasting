@@ -18,16 +18,15 @@ data_name=Source
 random_seed=2024
 
 
-e_layers=8
+e_layers=6
 n_heads=16
 d_model=512
 d_ff=2048
-patch_len=64
 
-export CUDA_VISIBLE_DEVICES=5,6,7
-export WORLD_SIZE=3  # 총 프로세스 수
+export CUDA_VISIBLE_DEVICES=1
+export WORLD_SIZE=1  # 총 프로세스 수
 export MASTER_ADDR='localhost'
-export MASTER_PORT='12358'  # 임의의 빈 포트
+export MASTER_PORT='12356'  # 임의의 빈 포트
 export SCRIPT_NAME=$(basename "$0" .sh)
 
 
@@ -55,12 +54,12 @@ do
         --dropout 0.05\
         --fc_dropout 0.05\
         --head_dropout 0\
-        --patch_len $patch_len\
+        --patch_len 16\
         --stride 8\
         --des 'Exp' \
         --train_epochs 100\
         --patience 20\
         --embed 'timeF' \
         --distributed \
-        --itr 1 --batch_size 256 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$n_heads'_'$patch_len.log
+        --itr 1 --batch_size 256 --learning_rate 0.0001 >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$e_layers'_'$n_heads.log
 done

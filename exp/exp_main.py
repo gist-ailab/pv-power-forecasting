@@ -297,19 +297,20 @@ class Exp_Main(Exp_Basic):
 
         if 'checkpoint.pth' not in model_path:
             model_path = os.path.join(self.args.checkpoints, 'checkpoint.pth')
-        if '/checkpoints/' in model_path:
-            model_path = os.path.join('checkpoints', model_path)
+        if '/checkpoints/' not in model_path:
+            model_path = os.path.join('./checkpoints', model_path)
+           
         # if test:
         #     if model_path is not None:
         
-        self.model.load_state_dict(torch.load(model_path))
+        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
             # else:
             #     self.model.load_state_dict(torch.load(os.path.join('./checkpoints/', setting, 'checkpoint.pth')))
         
         
         
         evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
-        scale_groups = evaluator.generate_scale_groups_for_dataset(self.args.data[0])
+        scale_groups = evaluator.generate_scale_groups_for_dataset(self.args.data)
         pred_list = []
         true_list = []
         input_list = []
@@ -343,18 +344,18 @@ class Exp_Main(Exp_Basic):
                 outputs_np = outputs.detach().cpu().numpy()
                 batch_y_np = batch_y.detach().cpu().numpy()
                 
-                pred = test_data.inverse_transform(site[:, 0], outputs_np.copy())
-                true = test_data.inverse_transform(site[:, 0], batch_y_np.copy())
+                # pred = test_data.inverse_transform(site[:, 0], outputs_np.copy())
+                # true = test_data.inverse_transform(site[:, 0], batch_y_np.copy())
                 # print(pred.max(), pred.min(), flush=True)
                 # print(true.max(), true.min(), flush=True)
-                evaluator.update(preds=pred, targets=true)
+                evaluator.update(preds=outputs_np, targets=batch_y_np)
                 
-                pred_list.append(pred)
-                true_list.append(true)
+                pred_list.append(outputs_np)
+                true_list.append(batch_y_np)
                 input_list.append(batch_x_np)
 
                 if i % 2 == 0:
-                    self.plot_predictions(i, batch_x_np[0, 0], true[0], pred[0], folder_path)
+                    self.plot_predictions(i, batch_x_np[0, 0], batch_y_np[0], outputs_np[0], folder_path)
 
 
                 

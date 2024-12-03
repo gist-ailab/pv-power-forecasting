@@ -83,10 +83,15 @@ class MetricEvaluator:
             if np.any(mask):
                 masked_preds = preds[mask]
                 masked_targets = targets[mask]
+                rmse = np.sqrt(np.mean((masked_preds - masked_targets) ** 2))
+                mae = np.mean(np.abs(masked_preds - masked_targets))
+                mbe = np.mean(masked_preds - masked_targets)
+                r2 = r2_score(masked_targets, masked_preds)
 
+                scale_metrics = (rmse, None, None, mae, None, None, mbe, r2)
            
-                metrics = self.calculate_metrics(masked_preds, masked_targets)
-                results.append((scale_name, metrics))
+                # metrics = self.calculate_metrics(masked_preds, masked_targets)
+                results.append((scale_name, scale_metrics))
             else:
                 print(f"No data for scale {scale_name}")
         # 결과를 파일에 기록
@@ -110,12 +115,8 @@ class MetricEvaluator:
 
 
     def generate_scale_groups_for_dataset(self, dataset_type):
-        if dataset_type == "Alice_Springs":
-            return [
-                ("Small", lambda preds, targets: targets < 30)
-            ]
 
-        elif dataset_type == "Yulara":
+        if dataset_type == "Source":
             return [
                 ("Small", lambda preds, targets: (targets >= 0) & (targets < 30)),
                 ("Small-Medium", lambda preds, targets: (targets >= 30) & (targets < 100)),
