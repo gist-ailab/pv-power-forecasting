@@ -139,7 +139,7 @@ class Exp_Main(Exp_Basic):
             epoch_time = time.time()
             
             self.model.train()
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts) in enumerate(train_loader):
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, installation, batch_x_ts, batch_y_ts) in enumerate(train_loader):
                 iter_count += 1
                 model_optim.zero_grad()
                 
@@ -251,7 +251,7 @@ class Exp_Main(Exp_Basic):
         self.model.eval()
         
         with torch.no_grad():
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts) in enumerate(vali_loader):
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, installation, batch_x_ts, batch_y_ts) in enumerate(vali_loader):
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
@@ -317,12 +317,12 @@ class Exp_Main(Exp_Basic):
         
         self.model.eval()
         with torch.no_grad():
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts) in enumerate(test_loader):
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, installation, batch_x_ts, batch_y_ts) in enumerate(test_loader):
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
-                site = site.to(self.device)
+                installation = installation.to(self.device)
                 
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
