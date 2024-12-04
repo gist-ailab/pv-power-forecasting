@@ -103,44 +103,44 @@ class MetricEvaluator:
         # Installation별로 지표 계산 (nRMSE, nMAE, MAPE)
         unique_installations = np.unique(self.installations_list)
         installation_results = []
-        all_nrmse = []
-        all_nmae = []
+        # all_nrmse = []
+        # all_nmae = []
         all_mape = []
+        epsilon = 1e-10
+        mask = np.abs(targets) > epsilon
+        if np.any(mask):
+            mape = np.mean(np.abs((preds[mask] - targets[mask]) / targets[mask])) * 100
+        else:
+            mape = np.nan
+        all_mape.append(mape)
+        installation_results.append((installation, nrmse, nmae, mape))
 
-        for installation in unique_installations:
-            installation_mask = (installations == installation)
-            installation_preds = preds[installation_mask]
-            installation_targets = targets[installation_mask]
+        # for installation in unique_installations:
+        #     installation_mask = (installations == installation)
+        #     installation_preds = preds[installation_mask]
+        #     installation_targets = targets[installation_mask]
             
-            if len(installation_targets) > 0:
+        #     if len(installation_targets) > 0:
                 # # nRMSE 계산
                 # rmse = np.sqrt(np.mean((installation_preds - installation_targets) ** 2))
                 # target_mean = np.mean(installation_targets)
                 # nrmse_mean = (rmse / target_mean) * 100  # 평균 기준 nRMSE
 
                 # nRMSE (최대 기준)
-                targets_max = np.max(installation_targets)
-                nrmse = (rmse / (targets_max)) * 100  # (최대-최소) 기준 nRMSE
-                all_nrmse.append(nrmse)
+                # targets_max = np.max(installation_targets)
+                # nrmse = (rmse / (targets_max)) * 100  # (최대-최소) 기준 nRMSE
+                # all_nrmse.append(nrmse)
                 
                 # nMAE 계산
-                targets_mean = np.mean(installation_targets)
-                mae = np.mean(np.abs(installation_preds - installation_targets))
-                nmae = (mae / targets_mean) * 100  # 평균 기준 nMAE
-                all_nmae.append(nmae)
+                # targets_mean = np.mean(installation_targets)
+                # mae = np.mean(np.abs(installation_preds - installation_targets))
+                # nmae = (mae / targets_mean) * 100  # 평균 기준 nMAE
+                # all_nmae.append(nmae)
                 # MAPE 계산
-                epsilon = 1e-10
-                mask = np.abs(installation_targets) > epsilon
-                if np.any(mask):
-                    mape = np.mean(np.abs((installation_preds[mask] - installation_targets[mask]) / installation_targets[mask])) * 100
-                else:
-                    mape = np.nan
-                all_mape.append(mape)
-                installation_results.append((installation, nrmse, nmae, mape))
         
-        avg_nrmse = np.mean(all_nrmse)
-        avg_nmae = np.mean(all_nmae)
-        avg_mape = np.mean(x for x in all_mape if not np.isnan(x))
+        # avg_nrmse = np.mean(all_nrmse)
+        # avg_nmae = np.mean(all_nmae)
+        # avg_mape = np.mean(x for x in all_mape if not np.isnan(x))
 
 
         # 결과를 파일에 기록
