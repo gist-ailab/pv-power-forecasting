@@ -19,15 +19,15 @@ random_seed=2024
 
 
 e_layers=8
-n_heads=8
+n_heads=16
 d_model=512
 d_ff=2048
-patch_len=64
+patch_len=32
 
-export CUDA_VISIBLE_DEVICES=0
-export WORLD_SIZE=1 # 총 프로세스 수
+export CUDA_VISIBLE_DEVICES=2,3,4
+export WORLD_SIZE=3  # 총 프로세스 수
 export MASTER_ADDR='localhost'
-export MASTER_PORT='12360'  # 임의의 빈 포트
+export MASTER_PORT='12357'  # 임의의 빈 포트
 export SCRIPT_NAME=$(basename "$0" _infer.sh)
 
 

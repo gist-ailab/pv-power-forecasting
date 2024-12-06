@@ -373,16 +373,14 @@ class Exp_Main(Exp_Basic):
                 #     f"test/batch_{i}/true_min": true.min()
                 # })
         
-        results = evaluator.evaluate(scale_groups)
+        results = evaluator.evaluate_scale_metrics(scale_groups)
+        results_installation_mape = evaluator.evaluate_installation_metrics()
         for scale_name, metrics in results:
-            rmse, nrmse_range, nrmse_mean, mae, nmae, mape, mbe, r2 = metrics
+            rmse, mae, mbe, r2 = metrics
             print(f'Scale: {scale_name}')
             print(f'RMSE: {rmse:.4f}')
-            print(f'NRMSE (Range): {nrmse_range:.4f}')
-            print(f'NRMSE (Mean): {nrmse_mean:.4f}')
             print(f'MAE: {mae:.4f}')
-            print(f'NMAE: {nmae:.4f}')
-            print(f'MAPE: {mape:.4f}')
+            print(f'MAPE: {results_installation_mape:.4f}')
             print(f'MBE: {mbe:.4f}')
             print(f'R2: {r2:.4f}')   
 

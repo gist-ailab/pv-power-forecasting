@@ -25,13 +25,13 @@ class MetricEvaluator:
         self.installations_list = []
 
 
-    def update(self, preds, targets, installations):
+    def update(self, preds, targets):#, installations):
         """
         매 배치마다 전체 예측값과 실제값을 누적하여 사용
         """
         self.preds_list.append(preds)
         self.targets_list.append(targets)
-        self.installations_list.append(installations)
+        # self.installations_list.append(installations)
 
     def calculate_metrics(self, preds, targets):
         """
@@ -69,7 +69,7 @@ class MetricEvaluator:
         return (rmse, nrmse_range, nrmse_mean, mae, nmae, mape, mbe, r2)
 
 
-    def evaluate(self, scale_groups, installations):
+    def evaluate_scale_metrics(self, scale_groups):
         """
         전체 데이터에 대한 지표를 %단위는 Installation, 나머지는 규모별로 계산하여 파일에 기록
         scale_groups: list of tuples [(scale_name, mask), ...]
@@ -99,10 +99,27 @@ class MetricEvaluator:
                 results.append((scale_name, scale_metrics))
             else:
                 print(f"No data for scale {scale_name}")
+
+        with open(self.file_path, "w") as file:
+            file.write("=" * 50 + "\n")
+            file.write("Scale-Specific Evaluation Metrics\n")
+            file.write("=" * 50 + "\n")
+            for scale_name, (rmse, mae, mbe, r2) in results:
+                file.write(f"Scale: {scale_name}\n")
+                file.write(f"RMSE: {rmse:.4f} kW\n")                
+                file.write(f"MAE: {mae:.4f} kW\n")
+                file.write(f"MBE: {mbe:.4f} kW\n")
+                file.write(f"R2 Score: {r2:.4f}\n")
+                file.write("=" * 50 + "\n")
         
+        return results
+
+    def evaluate_installation_metrics(self):
+        preds = np.array(self.preds_list)
+        targets = np.array(self.targets_list)
         # Installation별로 지표 계산 (nRMSE, nMAE, MAPE)
-        unique_installations = np.unique(self.installations_list)
-        installation_results = []
+        # unique_installations = np.unique(self.installations_list)
+        # installation_results = []
         # all_nrmse = []
         # all_nmae = []
         # all_mape = []
@@ -112,39 +129,10 @@ class MetricEvaluator:
             mape = np.mean(np.abs((preds[mask] - targets[mask]) / targets[mask])) * 100
         else:
             mape = np.nan
-        # all_mape.append(mape)
-        # installation_results.append((mape))
-
-        # for installation in unique_installations:
-        #     installation_mask = (installations == installation)
-        #     installation_preds = preds[installation_mask]
-        #     installation_targets = targets[installation_mask]
-            
-        #     if len(installation_targets) > 0:
-                # # nRMSE 계산
-                # rmse = np.sqrt(np.mean((installation_preds - installation_targets) ** 2))
-                # target_mean = np.mean(installation_targets)
-                # nrmse_mean = (rmse / target_mean) * 100  # 평균 기준 nRMSE
-
-                # nRMSE (최대 기준)
-                # targets_max = np.max(installation_targets)
-                # nrmse = (rmse / (targets_max)) * 100  # (최대-최소) 기준 nRMSE
-                # all_nrmse.append(nrmse)
-                
-                # nMAE 계산
-                # targets_mean = np.mean(installation_targets)
-                # mae = np.mean(np.abs(installation_preds - installation_targets))
-                # nmae = (mae / targets_mean) * 100  # 평균 기준 nMAE
-                # all_nmae.append(nmae)
-                # MAPE 계산
-        
-        # avg_nrmse = np.mean(all_nrmse)
-        # avg_nmae = np.mean(all_nmae)
-        # avg_mape = np.mean(x for x in all_mape if not np.isnan(x))
 
 
         # 결과를 파일에 기록
-        with open(self.file_path, "w") as file:
+        with open(self.file_path, "a") as file:
             file.write("=" * 50 + "\n")
             file.write("Installation-Specific Evaluation Metrics\n")
             file.write("=" * 50 + "\n")
@@ -161,18 +149,8 @@ class MetricEvaluator:
             #     file.write(f"MAPE: {mape:.4f}%\n")
             
 
-            file.write("=" * 50 + "\n")
-            file.write("Scale-Specific Evaluation Metrics\n")
-            file.write("=" * 50 + "\n")
-            for scale_name, (rmse, mae, mbe, r2) in results:
-                file.write(f"Scale: {scale_name}\n")
-                file.write(f"RMSE: {rmse:.4f} kW\n")                
-                file.write(f"MAE: {mae:.4f} kW\n")
-                file.write(f"MBE: {mbe:.4f} kW\n")
-                file.write(f"R2 Score: {r2:.4f}\n")
-                file.write("=" * 50 + "\n")
 
-        return results
+        return mape
 
 
 

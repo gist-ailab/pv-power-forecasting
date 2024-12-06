@@ -187,7 +187,9 @@ class Dataset_PV(Dataset):
                 self._apply_scalers_to_data(installation_id, df_raw)
 
             df_x, df_y, time_feature, timestamp, installation_id = self._process_file(df_raw, installation_id)
-            
+            if isinstance(installation_id, np.ndarray):
+                installation_id = int(installation_id)  # 또는 str(installation_id)
+
             self.installation_data.setdefault(installation_id, []).append({
                     'x': df_x,
                     'y': df_y,
