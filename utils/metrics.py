@@ -105,15 +105,15 @@ class MetricEvaluator:
         installation_results = []
         # all_nrmse = []
         # all_nmae = []
-        all_mape = []
+        # all_mape = []
         epsilon = 1e-10
         mask = np.abs(targets) > epsilon
         if np.any(mask):
             mape = np.mean(np.abs((preds[mask] - targets[mask]) / targets[mask])) * 100
         else:
             mape = np.nan
-        all_mape.append(mape)
-        installation_results.append((installation, nrmse, nmae, mape))
+        # all_mape.append(mape)
+        # installation_results.append((mape))
 
         # for installation in unique_installations:
         #     installation_mask = (installations == installation)
@@ -149,16 +149,16 @@ class MetricEvaluator:
             file.write("Installation-Specific Evaluation Metrics\n")
             file.write("=" * 50 + "\n")
 
-            file.write("Average Metrics\n")
-            file.write(f"Average nRMSE: {avg_nrmse:.4f}%\n")
-            file.write(f"Average nMAE: {avg_nmae:.4f}%\n")
-            file.write(f"Average MAPE: {avg_mape:.4f}%\n")
+            file.write("Metrics\n")
+            # file.write(f"nRMSE: {nrmse:.4f}%\n")
+            # file.write(f"nMAE: {nmae:.4f}%\n")
+            file.write(f"MAPE: {mape:.4f}%\n")
 
-            for installation, nrmse, nmae, mape in installation_results:
-                file.write(f"Installation: {installation}\n")
-                file.write(f"nRMSE (Max): {nrmse:.4f}%\n")
-                file.write(f"nMAE: {nmae:.4f}%\n")
-                file.write(f"MAPE: {mape:.4f}%\n")
+            # for installation, nrmse, nmae, mape in installation_results:
+            #     file.write(f"Installation: {installation}\n")
+            #     file.write(f"nRMSE (Max): {nrmse:.4f}%\n")
+            #     file.write(f"nMAE: {nmae:.4f}%\n")
+            #     file.write(f"MAPE: {mape:.4f}%\n")
             
 
             file.write("=" * 50 + "\n")
