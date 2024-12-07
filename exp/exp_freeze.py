@@ -101,6 +101,19 @@ class Exp_Freeze(Exp_Basic):
 
     def _select_criterion(self):
         return nn.MSELoss()
+
+    def masked_loss(self, predictions, targets, mask_value=-9999, loss_fn=torch.nn.MSELoss()):
+        """
+        Custom loss function to ignore specific mask_value during loss calculation.
+        :param predictions: Model predictions [batch_size, seq_len, num_features]
+        :param targets: Ground truth values [batch_size, seq_len, num_features]
+        :param mask_value: Value to ignore in loss calculation
+        :param loss_fn: Base loss function (e.g., MSELoss, MAELoss)
+        """
+        mask = (targets != mask_value)  # True for valid data
+        valid_predictions = predictions[mask]
+        valid_targets = targets[mask]
+        return loss_fn(valid_predictions, valid_targets)
     
     def load_model(self, model, checkpoints_path):
         latest_model_path = os.path.join(checkpoints_path, 'model_latest.pth')
@@ -206,7 +219,8 @@ class Exp_Freeze(Exp_Basic):
                     f_dim = -1 if self.args.features == 'MS' else 0
                     outputs = outputs[:, -self.args.pred_len:, f_dim:]
                     batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                    loss = criterion(outputs, batch_y)
+                    # loss = criterion(outputs, batch_y)
+                    loss = self.masked_loss(outputs, batch_y, mask_value=-9999, loss_fn=criterion)  ### BSH
                     
                     loss.backward()
                     model_optim.step()
@@ -320,9 +334,9 @@ class Exp_Freeze(Exp_Basic):
         os.makedirs(folder_path, exist_ok=True)
 
         if 'checkpoint.pth' not in model_path:
-            model_path = os.path.join(self.args.checkpoints, 'checkpoint.pth')
-        if '/checkpoints/' in model_path:
-            model_path = os.path.join('checkpoints', model_path)
+            model_path = os.path.join(self.args.checkpoints, 'checkpoints/checkpoint.pth')
+        # if '/checkpoints/' in model_path:
+        #     model_path = os.path.join('checkpoints', model_path)
         # if test:
         #     if model_path is not None:
         
@@ -333,7 +347,8 @@ class Exp_Freeze(Exp_Basic):
         
         
         evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
-        scale_groups = evaluator.generate_scale_groups_for_dataset(self.args.data[0])
+        # scale_groups = evaluator.generate_scale_groups_for_dataset(self.args.data[0])
+        scale_groups = evaluator.generate_scale_groups_for_dataset(self.args.data)
         pred_list = []
         true_list = []
         input_list = []
