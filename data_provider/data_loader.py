@@ -43,7 +43,7 @@ class Dataset_PV(Dataset):
         self.freq = freq
         
         self.scalers = {}
-        self.site_data = {}
+        self.installation_data = {}
         self.capacity_dict = {}  # 사이트별 최대 출력량 저장
 
         self.mapping_name = pd.read_csv('./data_provider/dataset_name_mappings.csv')
@@ -115,7 +115,7 @@ class Dataset_PV(Dataset):
 
         """파일 목록을 가져오기"""
         all_files = os.listdir(self.root_path)
-        self.site_files = {}
+        self.installation_files = {}
         
         # 데이터셋에 대한 이름 매핑 가져오기
         
@@ -129,16 +129,16 @@ class Dataset_PV(Dataset):
             # 이름 매핑
             mapped_name = self.mapping_name[self.mapping_name['original_name'] == file_name]['mapping_name'].values[0]
             # 이름 정보 추출
-            site_id = int(mapped_name.split('_')[0])
+            installation_id = int(mapped_name.split('_')[0])
             capacity = float(mapped_name.split('_')[1])
 
             # 해당 flag에 속한 데이터가 아니면 skip
             if ('UK' not in self.data) and ('OEDI' not in self.data):     
-                if site_id not in self.split_configs[self.data][self.flag]:
+                if installation_id not in self.split_configs[self.data][self.flag]:
                     continue
 
-            self.site_files.setdefault(site_id, []).append(file_name)
-            self.capacity_dict[site_id] = capacity
+            self.installation_files.setdefault(installation_id, []).append(file_name)
+            self.capacity_dict[installation_id] = capacity
 
             file_path = os.path.join(self.root_path, file_name)  
             df_raw = pd.read_csv(file_path)
@@ -179,21 +179,23 @@ class Dataset_PV(Dataset):
 
             # scale 적용
             if self.scaler:
-                self.scalers[site_id] = {}
+                self.scalers[installation_id] = {}
                 # if self.flag == 'train':
-                self._fit_and_save_scalers(site_id, df_raw)
+                self._fit_and_save_scalers(installation_id, df_raw)
                 # else:
-                    # self._load_scalers(site_id, df_raw)
-                self._apply_scalers_to_data(site_id, df_raw)
+                    # self._load_scalers(installation_id, df_raw)
+                self._apply_scalers_to_data(installation_id, df_raw)
 
-            df_x, df_y, time_feature, timestamp, site = self._process_file(df_raw, site_id)
-            
-            self.site_data.setdefault(site_id, []).append({
+            df_x, df_y, time_feature, timestamp, installation_id = self._process_file(df_raw, installation_id)
+            if isinstance(installation_id, np.ndarray):
+                installation_id = int(installation_id)  # 또는 str(installation_id)
+
+            self.installation_data.setdefault(installation_id, []).append({
                     'x': df_x,
                     'y': df_y,
                     'data_stamp': time_feature,
                     'timestamp': timestamp,
-                    'site_id': site_id,
+                    'installation_id': installation_id,
                     'capacity': capacity,
                     'original_name': file_name,
                     'mapped_name': mapped_name
@@ -201,17 +203,17 @@ class Dataset_PV(Dataset):
             
     def create_sequences_indices(self):
         indices = []
-        for site_id, data_list in self.site_data.items():
+        for installation_id, data_list in self.installation_data.items():
             for data in data_list:
                 x_len = len(data['x'])
                 max_start = x_len - self.seq_len - self.pred_len + 1
-                indices.extend([(site_id, data, i) for i in range(max_start)])
+                indices.extend([(installation_id, data, i) for i in range(max_start)])
         return indices
 
           
-    def _fit_and_save_scalers(self, site_id, data):
+    def _fit_and_save_scalers(self, installation_id, data):
         """표준화(StandardScaler) 적용 및 저장"""
-        os.makedirs(os.path.join(self.root_path, f'scalers/{site_id}'), exist_ok=True)
+        os.makedirs(os.path.join(self.root_path, f'scalers/{installation_id}'), exist_ok=True)
         
         for col in data.columns:
             if col == 'timestamp':
@@ -219,22 +221,22 @@ class Dataset_PV(Dataset):
                 
             scaler = StandardScaler()
             scaler.fit(data[[col]])
-            self.scalers[site_id][col] = scaler
+            self.scalers[installation_id][col] = scaler
 
-            with open(os.path.join(self.root_path, f'scalers/{site_id}/{col}_scaler.pkl'), 'wb') as f:
+            with open(os.path.join(self.root_path, f'scalers/{installation_id}/{col}_scaler.pkl'), 'wb') as f:
                 pickle.dump(scaler, f)
 
         # Save statistics for the target variable
         target_stats = {
             'mean': data[self.target].mean(),
             'std': data[self.target].std(),
-            'capacity': self.capacity_dict[site_id]
+            'capacity': self.capacity_dict[installation_id]
         }
-        with open(os.path.join(self.root_path, f'scalers/{site_id}/{self.target}_stats_train.pkl'), 'wb') as f:
+        with open(os.path.join(self.root_path, f'scalers/{installation_id}/{self.target}_stats_train.pkl'), 'wb') as f:
             pickle.dump(target_stats, f)
 
 
-    def _apply_scalers_to_data(self, site_id, df_raw):
+    def _apply_scalers_to_data(self, installation_id, df_raw):
         """스케일러 적용"""
         print(f"Before scaling - {self.target} range:", df_raw[self.target].min(), df_raw[self.target].max())
         
@@ -242,23 +244,23 @@ class Dataset_PV(Dataset):
             if col == 'timestamp':
                 continue
             # print(f"Applying scaler to {col}")
-            scaler = self.scalers[site_id][col]
+            scaler = self.scalers[installation_id][col]
             df_raw[col] = scaler.transform(df_raw[[col]])
                 
         print(f"After scaling - {self.target} range:", df_raw[self.target].min(), df_raw[self.target].max())
 
-    def _load_scalers(self, site_id, data):
+    def _load_scalers(self, installation_id, data):
         """표준화(StandardScaler) 로드"""
         for col in data.columns:
             if col == 'timestamp':
                 continue
 
-            with open(os.path.join(self.root_path, f'scalers/{site_id}/{col}_scaler.pkl'), 'rb') as f:
-                self.scalers[site_id][col] = pickle.load(f)
+            with open(os.path.join(self.root_path, f'scalers/{installation_id}/{col}_scaler.pkl'), 'rb') as f:
+                self.scalers[installation_id][col] = pickle.load(f)
         
-        with open(os.path.join(self.root_path, f'scalers/{site_id}/{self.target}_stats_train.pkl'), 'rb') as f:
+        with open(os.path.join(self.root_path, f'scalers/{installation_id}/{self.target}_stats_train.pkl'), 'rb') as f:
             target_stats = pickle.load(f)
-            self.capacity_dict[site_id] = target_stats['capacity']
+            self.capacity_dict[installation_id] = target_stats['capacity']
 
     def inverse_transform(self, locations, data):
         """
@@ -268,8 +270,8 @@ class Dataset_PV(Dataset):
         result = np.empty_like(data)
 
         for batch_idx in range(batch_size):
-            site_id = locations[batch_idx].item() if torch.is_tensor(locations[batch_idx]) else locations[batch_idx]
-            scaler = self.scalers[site_id][self.target]
+            installation_id = locations[batch_idx].item() if torch.is_tensor(locations[batch_idx]) else locations[batch_idx]
+            scaler = self.scalers[installation_id][self.target]
             
             # StandardScaler 역변환만 수행
             batch_data = data[batch_idx].reshape(-1, n_channels)
@@ -279,7 +281,7 @@ class Dataset_PV(Dataset):
         return result
 
     def __getitem__(self, index):
-        site_id, data, start_idx = self.indices[index]
+        installation_id, data, start_idx = self.indices[index]
         s_begin = start_idx
         s_end = s_begin + self.seq_len
         r_begin = s_end - self.label_len
@@ -289,19 +291,19 @@ class Dataset_PV(Dataset):
         seq_y = data['y'].iloc[r_begin:r_end].values
         seq_x_mark = data['data_stamp'][s_begin:s_end]
         seq_y_mark = data['data_stamp'][r_begin:r_end]
-        site = np.array([site_id]).repeat(s_end - s_begin).reshape(-1, 1)
+        installation = np.array([installation_id]).repeat(s_end - s_begin).reshape(-1, 1)
         seq_x_ds = data['timestamp'][s_begin:s_end]
         seq_y_ds = data['timestamp'][r_begin:r_end]
 
         # print(f"Target range - Min: {seq_y.min():.2f}, Max: {seq_y.max():.2f}")
         # print(f"Input range - Min: {seq_x.min():.2f}, Max: {seq_x.max():.2f}")
-        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, seq_x_ds, seq_y_ds
+        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, installation, seq_x_ds, seq_y_ds
 
     def __len__(self):
         return len(self.indices)
     
 
-    def _process_file(self, df_raw, site_id):
+    def _process_file(self, df_raw, installation_id):
         """시간 인코딩 및 데이터 처리"""
         data_stamp = pd.DataFrame()
         data_stamp['date'] = pd.to_datetime(df_raw.timestamp)
@@ -328,9 +330,9 @@ class Dataset_PV(Dataset):
             df_x = df_raw[[self.target]]
 
         df_y = df_raw[[self.target]]
-        site = np.array([site_id]) * len(df_x)
+        installation  = np.array([installation_id]) * len(df_x)
 
-        return df_x, df_y, time_feature, timestamp, site
+        return df_x, df_y, time_feature, timestamp, installation
     
     # def _get_name_mapping(self):
     #     """데이터셋별 파일 이름 매핑 반환 => inverse transform site 식별 위함"""

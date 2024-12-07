@@ -161,6 +161,7 @@
  - Normalized_Active_Power: 결측치=0개, 최소값=0.0, 최대값=1.0
 
 총 데이터 수: 297745개
+data취득 system에 문제가 있는 동물실험동(E02)와 대학C동(N06)을 제외하면 259,408개
 
 전체 데이터프레임 열별 통계:
 Active_Power: Number of Data Points=297745, Max=220.10, Mean=18.52, STD=23.20

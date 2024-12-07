@@ -22,13 +22,16 @@ class MetricEvaluator:
         self.file_path = file_path
         self.preds_list = []
         self.targets_list = []
+        self.installations_list = []
 
-    def update(self, preds, targets):
+
+    def update(self, preds, targets):#, installations):
         """
         매 배치마다 전체 예측값과 실제값을 누적하여 사용
         """
         self.preds_list.append(preds)
         self.targets_list.append(targets)
+        # self.installations_list.append(installations)
 
     def calculate_metrics(self, preds, targets):
         """
@@ -65,9 +68,10 @@ class MetricEvaluator:
 
         return (rmse, nrmse_range, nrmse_mean, mae, nmae, mape, mbe, r2)
 
-    def evaluate(self, scale_groups):
+
+    def evaluate_scale_metrics(self, scale_groups):
         """
-        전체 데이터에 대한 지표를 규모별로 계산하여 파일에 기록
+        전체 데이터에 대한 지표를 %단위는 Installation, 나머지는 규모별로 계산하여 파일에 기록
         scale_groups: list of tuples [(scale_name, mask), ...]
         mask는 numpy 배열로 preds와 targets의 특정 요소를 필터링하는 조건을 나타냅니다.
         """
@@ -75,6 +79,7 @@ class MetricEvaluator:
         targets = np.array(self.targets_list)
 
         results = []
+        # 규모별 지표 계산 (RMSE, MAE, MBE, R2 )
         for scale_name, scale_func in scale_groups:
             
             mask = scale_func(preds, targets)
@@ -83,39 +88,75 @@ class MetricEvaluator:
             if np.any(mask):
                 masked_preds = preds[mask]
                 masked_targets = targets[mask]
+                rmse = np.sqrt(np.mean((masked_preds - masked_targets) ** 2))
+                mae = np.mean(np.abs(masked_preds - masked_targets))
+                mbe = np.mean(masked_preds - masked_targets)
+                r2 = r2_score(masked_targets, masked_preds)
 
+                scale_metrics = (rmse, mae, mbe, r2)
            
-                metrics = self.calculate_metrics(masked_preds, masked_targets)
-                results.append((scale_name, metrics))
+                # metrics = self.calculate_metrics(masked_preds, masked_targets)
+                results.append((scale_name, scale_metrics))
             else:
                 print(f"No data for scale {scale_name}")
-        # 결과를 파일에 기록
+
         with open(self.file_path, "w") as file:
+            file.write("=" * 50 + "\n")
             file.write("Scale-Specific Evaluation Metrics\n")
             file.write("=" * 50 + "\n")
-            for scale_name, (rmse, nrmse_range, nrmse_mean, mae, nmae, mape, mbe, r2) in results:
+            for scale_name, (rmse, mae, mbe, r2) in results:
                 file.write(f"Scale: {scale_name}\n")
-                file.write(f"RMSE: {rmse:.4f} kW\n")
-                file.write(f"nRMSE (Range): {nrmse_range:.4f}%\n")
-                file.write(f"nRMSE (Mean): {nrmse_mean:.4f}%\n")
+                file.write(f"RMSE: {rmse:.4f} kW\n")                
                 file.write(f"MAE: {mae:.4f} kW\n")
-                file.write(f"nMAE: {nmae:.4f}%\n")
-                file.write(f"MAPE: {mape:.4f}%\n")
                 file.write(f"MBE: {mbe:.4f} kW\n")
                 file.write(f"R2 Score: {r2:.4f}\n")
                 file.write("=" * 50 + "\n")
-
+        
         return results
+
+    def evaluate_installation_metrics(self):
+        preds = np.array(self.preds_list)
+        targets = np.array(self.targets_list)
+        # Installation별로 지표 계산 (nRMSE, nMAE, MAPE)
+        # unique_installations = np.unique(self.installations_list)
+        # installation_results = []
+        # all_nrmse = []
+        # all_nmae = []
+        # all_mape = []
+        epsilon = 1e-10
+        mask = np.abs(targets) > epsilon
+        if np.any(mask):
+            mape = np.mean(np.abs((preds[mask] - targets[mask]) / targets[mask])) * 100
+        else:
+            mape = np.nan
+
+
+        # 결과를 파일에 기록
+        with open(self.file_path, "a") as file:
+            file.write("=" * 50 + "\n")
+            file.write("Installation-Specific Evaluation Metrics\n")
+            file.write("=" * 50 + "\n")
+
+            file.write("Metrics\n")
+            # file.write(f"nRMSE: {nrmse:.4f}%\n")
+            # file.write(f"nMAE: {nmae:.4f}%\n")
+            file.write(f"MAPE: {mape:.4f}%\n")
+
+            # for installation, nrmse, nmae, mape in installation_results:
+            #     file.write(f"Installation: {installation}\n")
+            #     file.write(f"nRMSE (Max): {nrmse:.4f}%\n")
+            #     file.write(f"nMAE: {nmae:.4f}%\n")
+            #     file.write(f"MAPE: {mape:.4f}%\n")
+            
+
+
+        return mape
 
 
 
     def generate_scale_groups_for_dataset(self, dataset_type):
-        if dataset_type == "Alice_Springs":
-            return [
-                ("Small", lambda preds, targets: targets < 30)
-            ]
 
-        elif dataset_type == "Yulara":
+        if dataset_type == "Source":
             return [
                 ("Small", lambda preds, targets: (targets >= 0) & (targets < 30)),
                 ("Small-Medium", lambda preds, targets: (targets >= 30) & (targets < 100)),
@@ -166,38 +207,3 @@ class MetricEvaluator:
             raise ValueError(f"Unknown dataset type: {dataset_type}")
     
 
-# def Yulara_small(preds, targets):
-#     return (targets >= 0) & (targets < 30)
-
-# def Yulara_small_medium(preds, targets):
-#     return (targets >= 30) & (targets < 100)
-
-# def Yulara_100kW(preds, targets):
-#     return (targets >= 100) & (targets < 200)
-
-# def Yulara_200kW(preds, targets):
-#     return (targets >= 200) & (targets < 300)
-
-# def Yulara_1mW(preds, targets):
-#     return targets >= 1000
-
-# def GIST_small(preds, targets):
-#     return (targets >= 0) & (targets < 30)
-
-# def GIST_small_medium(preds, targets):
-#     return (targets >= 30) & (targets < 100)
-
-# def GIST_100kW(preds, targets):
-#     return (targets >= 100) & (targets < 200)
-
-# def GIST_200kW(preds, targets):
-#     return (targets >= 200) & (targets < 300)
-
-# def Miryang_small_medium(preds, targets):
-#     return (targets >= 30) & (targets < 100)
-
-# def Miryang_600kW(preds, targets):
-#     return (targets >= 600) & (targets < 700)
-
-# def Miryang_900kW(preds, targets):
-#     return (targets >= 800) & (targets < 900)

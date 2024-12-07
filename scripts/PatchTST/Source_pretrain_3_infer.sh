@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_Source_$model_name"_individual
+exp_id="${DATE}_Pretrain_Source3_$model_name"_individual_infer
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -28,7 +28,7 @@ export CUDA_VISIBLE_DEVICES=5,6,7
 export WORLD_SIZE=3  # 총 프로세스 수
 export MASTER_ADDR='localhost'
 export MASTER_PORT='12358'  # 임의의 빈 포트
-export SCRIPT_NAME=$(basename "$0" .sh)
+export SCRIPT_NAME=$(basename "$0" _infer.sh)
 
 
 for pred_len in 16 8 4 2 1
@@ -38,7 +38,7 @@ do
         --gpu 0 \
         --individual 1 \
         --random_seed $random_seed \
-        --is_pretraining 1 \
+        --is_inference 1 \
         --root_path $root_path_name \
         --model_id $model_id \
         --model $model_name \
