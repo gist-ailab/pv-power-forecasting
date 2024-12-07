@@ -73,7 +73,7 @@ def ensure_full_day_timestamps(df, timestamp_col='timestamp'):
     # Create a full range of timestamps for each unique date in the DataFrame
     min_date = df[timestamp_col].min().floor('D')
     max_date = df[timestamp_col].max().ceil('D') - pd.Timedelta(hours=1)
-    full_timestamps = pd.date_range(start=min_date, end=max_date, freq='H')
+    full_timestamps = pd.date_range(start=min_date, end=max_date, freq='h')
     
     # Find missing timestamps
     missing_timestamps = full_timestamps.difference(df[timestamp_col])
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     # Get the root directory (assuming the root is two levels up from the current file)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
-    dataset_name = 'GIST'
+    dataset_name = 'GIST_dataset'
     
     save_dir = os.path.join(project_root, f'data/{dataset_name}/processed_data_day')
     log_save_dir = os.path.join(project_root, f'data_preprocessing_day/{dataset_name}/processed_info')
@@ -158,16 +158,16 @@ if __name__ == '__main__':
         df_hourly = ensure_full_day_timestamps(df_hourly, 'timestamp')
         
         # Apply the conditions to replace values with NaN
-        df_hourly.loc[df_hourly['Global_Horizontal_Radiation'] > 2000, 'Global_Horizontal_Radiation'] = pd.NA
-        df_hourly.loc[df_hourly['Weather_Temperature_Celsius'] < -10, 'Weather_Temperature_Celsius'] = pd.NA
-        df_hourly.loc[df_hourly['Wind_Speed'] < 0, 'Wind_Speed'] = pd.NA
-        df_hourly.loc[(df_hourly['Weather_Relative_Humidity'] < 0) | (df_hourly['Weather_Relative_Humidity'] > 100), 'Weather_Relative_Humidity'] = pd.NA
-        df_hourly.loc[(df_hourly['Normalized_Active_Power'] <= 0.05) & (df_hourly['Global_Horizontal_Radiation'] > 200), 'Active_Power'] = pd.NA
-        df_hourly.loc[(df_hourly['Normalized_Active_Power'] > 0.1) & (df_hourly['Global_Horizontal_Radiation'] < 10), 'Active_Power'] = pd.NA
+        df_hourly.loc[df_hourly['Global_Horizontal_Radiation'] > 2000, 'Global_Horizontal_Radiation'] = -9999
+        df_hourly.loc[df_hourly['Weather_Temperature_Celsius'] < -10, 'Weather_Temperature_Celsius'] = -9999
+        df_hourly.loc[df_hourly['Wind_Speed'] < 0, 'Wind_Speed'] = -9999
+        df_hourly.loc[(df_hourly['Weather_Relative_Humidity'] < 0) | (df_hourly['Weather_Relative_Humidity'] > 100), 'Weather_Relative_Humidity'] = -9999
+        df_hourly.loc[(df_hourly['Normalized_Active_Power'] <= 0.05) & (df_hourly['Global_Horizontal_Radiation'] > 200), 'Active_Power'] = -9999
+        df_hourly.loc[(df_hourly['Normalized_Active_Power'] > 0.1) & (df_hourly['Global_Horizontal_Radiation'] < 10), 'Active_Power'] = -9999
 
         # Detect and replace with NaN if there are 10 or more consecutive identical non-zero values in 'Active_Power'
         identical_values_mask = detect_consecutive_identical_values(df_hourly, 'Active_Power', min_consecutive=10)
-        df_hourly.loc[identical_values_mask, 'Active_Power'] = pd.NA
+        df_hourly.loc[identical_values_mask, 'Active_Power'] = -9999
 
         # Group by date and apply the `adjust_daily_margin` function
         df_hourly = df_hourly.groupby(df_hourly['timestamp'].dt.date, group_keys=False).apply(adjust_daily_margin)
@@ -181,10 +181,10 @@ if __name__ == '__main__':
         
         # Interpolate NaN values (1 or fewer consecutive NaNs)
         df_hourly.interpolate(method='linear', limit=1, inplace=True)
-
+        
         # Replace NaN values in 'Active_Power' with 0
         df_hourly['Active_Power'].fillna(0, inplace=True)
-
+        
         # Replace NaN values in other columns based on their position
         for column in df_hourly.columns:
             if column != 'Active_Power':
