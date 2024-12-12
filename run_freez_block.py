@@ -37,7 +37,7 @@ if __name__ == '__main__':
     
     # parser.add_argument('--root_path', type=str, default='./data/GIST_dataset/', help='root path of the source domain data file')
     # parser.add_argument('--data_path', type=str, default='GIST_sisuldong.csv', help='source domain data file')
-    parser.add_argument('--scaler', type=bool, default=False, help='StandardScaler, MinMaxScaler')
+    parser.add_argument('--scaler', type=bool, default=True, help='StandardScaler, MinMaxScaler')
     parser.add_argument('--features', type=str, default='MS',
                         help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
     parser.add_argument('--target', type=str, default='Active_Power', help='target feature in S or MS task')

@@ -85,7 +85,7 @@ class MetricEvaluator:
             mask = scale_func(preds, targets)
             if isinstance(mask, torch.Tensor):
                 mask = mask.numpy()
-            if np.any(mask):
+            if np.any(mask):    # mask 안에 True 값(혹은 1)이 하나라도 존재하는지 검사
                 masked_preds = preds[mask]
                 masked_targets = targets[mask]
                 rmse = np.sqrt(np.mean((masked_preds - masked_targets) ** 2))

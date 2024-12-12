@@ -66,9 +66,9 @@ class Dataset_PV(Dataset):
                 'test': [3, 6]
             },
             'GIST': {
-                'train': [1, 4, 7, 9, 10, 13, 15],
-                'val': [2, 5, 8, 11, 14],
-                'test': [3, 6, 12, 16]
+                'train': [1, 3, 4, 5, 6, 7, 8, 9, 11, 13],
+                'val': [2, 12],
+                'test': [10, 14]
             },
             'German': {
                 'train': [1, 4, 7, 8, 9],
@@ -99,7 +99,10 @@ class Dataset_PV(Dataset):
             },
         }
         self.load_preprocessed_data()
+        print("After load_preprocessed_data in __init__:", self.scalers)
         self.indices = self.create_sequences_indices()
+
+        self.capacity_dict = {}  # Installation별 최대 용량 저장
 
         # 데이터 선택해서 로드하기
         # csv로 이름 매핑
@@ -118,11 +121,10 @@ class Dataset_PV(Dataset):
         self.installation_files = {}
         
         # 데이터셋에 대한 이름 매핑 가져오기
-        
-        
         for file_name in all_files:
             if not file_name.endswith('.csv'):
                 continue
+            # Do not use YMCA data
             if 'YMCA' in file_name:
                 continue
          
@@ -139,7 +141,9 @@ class Dataset_PV(Dataset):
 
             self.installation_files.setdefault(installation_id, []).append(file_name)
             self.capacity_dict[installation_id] = capacity
+            # self.scalers[installation_id] = {}
 
+            # 데이터 로드 및 전처리
             file_path = os.path.join(self.root_path, file_name)  
             df_raw = pd.read_csv(file_path)
             if 'Normalized_Active_Power' in df_raw.columns:
@@ -149,7 +153,8 @@ class Dataset_PV(Dataset):
             # 날짜 별로 나누는 site의 경우, 필요한 날짜만 추출
             if ('OEDI' in self.data):
                 df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'])
-                data_mask = (df_raw['timestamp'] >= f'{self.split_configs[self.data][self.flag][0]}-01-01') & (df_raw['timestamp'] < f'{self.split_configs[self.data][self.flag][1]}-01-01')
+                data_mask = (df_raw['timestamp'] >= f'{self.split_configs[self.data][self.flag][0]}-01-01') & \
+                            (df_raw['timestamp'] < f'{self.split_configs[self.data][self.flag][1]}-01-01')
                 df_raw = df_raw[data_mask]
             
             # UK의 경우 퍼센트 비율로 나누기
@@ -177,18 +182,58 @@ class Dataset_PV(Dataset):
                     date_mask = (df_raw['timestamp'] >= val_end) & (df_raw['timestamp'] <= end_date)
                 df_raw = df_raw[date_mask]
 
+            # sclaer dict 초기화
+            # self.scalers[installation_id] = {}
+
             # scale 적용
+            # if self.scaler:
+            #     self.scalers[installation_id] = {}
+            #     if self.flag == 'train':
+            #         # train에서 스케일러 학습
+            #         for col in df_raw.columns:
+            #             if col == 'timestamp':
+            #                 continue
+            #             scaler = StandardScaler()
+            #             scaler.fit(df_raw[[col]])
+            #             self.scalers[installation_id][col] = scaler
+                
+            #     # 스케일러 적용
+            #     self._apply_scalers_to_data(installation_id, df_raw)
+
+
             if self.scaler:
                 self.scalers[installation_id] = {}
-                # if self.flag == 'train':
-                self._fit_and_save_scalers(installation_id, df_raw)
-                # else:
-                    # self._load_scalers(installation_id, df_raw)
+                scaler_path = os.path.join(self.root_path, f'scalers/{installation_id}')
+                
+                if os.path.exists(scaler_path):
+                    self._load_scalers(installation_id, df_raw)
+                else:
+                    print(f"Warning: No saved scalers found for installation {installation_id}. Fitting new scalers.")
+                    self._fit_and_save_scalers(installation_id, df_raw)
+                self._verify_scalers(installation_id)
                 self._apply_scalers_to_data(installation_id, df_raw)
 
-            df_x, df_y, time_feature, timestamp, installation_id = self._process_file(df_raw, installation_id)
-            if isinstance(installation_id, np.ndarray):
-                installation_id = int(installation_id)  # 또는 str(installation_id)
+
+
+            # if self.scaler:
+            #     if self.flag == 'train':
+            #         self._fit_and_save_scalers(installation_id, df_raw)
+            #         self._verify_scalers(installation_id)  # 스케일러 검증
+            #     else:
+            #         self._load_scalers(installation_id, df_raw)
+            #     self._apply_scalers_to_data(installation_id, df_raw)
+
+
+            if installation_id == 10:
+                print(installation_id)
+
+
+            # 데이터 처리 및 저장
+            # df_x, df_y, time_feature, timestamp, installation_id = self._process_file(df_raw, installation_id)
+            df_x, df_y, time_feature, timestamp = self._process_file(df_raw)
+
+            # if isinstance(installation_id, np.ndarray):
+            #     installation_id = int(installation_id[0])  # 또는 str(installation_id)
 
             self.installation_data.setdefault(installation_id, []).append({
                     'x': df_x,
@@ -223,6 +268,10 @@ class Dataset_PV(Dataset):
             scaler.fit(data[[col]])
             self.scalers[installation_id][col] = scaler
 
+            # print(f"\nInstallation {installation_id}, Column {col}")
+            # print(f"Scaler mean: {scaler.mean_[0]:.4f}")
+            # print(f"Scaler scale: {scaler.scale_[0]:.4f}")
+
             with open(os.path.join(self.root_path, f'scalers/{installation_id}/{col}_scaler.pkl'), 'wb') as f:
                 pickle.dump(scaler, f)
 
@@ -239,15 +288,36 @@ class Dataset_PV(Dataset):
     def _apply_scalers_to_data(self, installation_id, df_raw):
         """스케일러 적용"""
         print(f"Before scaling - {self.target} range:", df_raw[self.target].min(), df_raw[self.target].max())
+        df_scaled = df_raw.copy()
         
+        print(f"\nBefore scaling - {self.target} range:", df_raw[self.target].min(), df_raw[self.target].max())
+        # print(f"\nInstallation {installation_id}, Column {col}")
+        # print(f"Mean: {df_raw[self.target].mean():.4f}")
+        # print(f"Std: {df_raw[self.target].std():.4f}")
+        # print(f"Min: {df_raw[self.target].min():.4f}")
+        # print(f"Max: {df_raw[self.target].max():.4f}")
+
         for col in df_raw.columns:
             if col == 'timestamp':
                 continue
             # print(f"Applying scaler to {col}")
             scaler = self.scalers[installation_id][col]
-            df_raw[col] = scaler.transform(df_raw[[col]])
-                
-        print(f"After scaling - {self.target} range:", df_raw[self.target].min(), df_raw[self.target].max())
+            df_scaled[col] = scaler.transform(df_scaled[[col]])
+
+        # print(f"After scaling - {self.target} stats:")
+        # print(f"Mean: {df_raw[self.target].mean():.4f}")
+        # print(f"Std: {df_raw[self.target].std():.4f}")
+        # print(f"Min: {df_raw[self.target].min():.4f}")
+        # print(f"Max: {df_raw[self.target].max():.4f}")
+            
+        print(f"After scaling - {self.target} range:", df_scaled[self.target].min(), df_scaled[self.target].max())
+
+            # Active Power에 대해서만 스케일링 검증 수행
+        self.validate_scaling(
+            installation_id,
+            df_raw[self.target].values,
+            df_scaled[self.target].values
+        )
 
     def _load_scalers(self, installation_id, data):
         """표준화(StandardScaler) 로드"""
@@ -261,6 +331,44 @@ class Dataset_PV(Dataset):
         with open(os.path.join(self.root_path, f'scalers/{installation_id}/{self.target}_stats_train.pkl'), 'rb') as f:
             target_stats = pickle.load(f)
             self.capacity_dict[installation_id] = target_stats['capacity']
+
+
+    def _verify_scalers(self, installation_id):
+        """저장된 스케일러 검증"""
+        scaler_path = os.path.join(self.root_path, f'scalers/{installation_id}')
+        if os.path.exists(scaler_path):
+            for file in os.listdir(scaler_path):
+                if file.endswith('_scaler.pkl'):
+                    col_name = file.replace('_scaler.pkl', '')
+                    file_path = os.path.join(scaler_path, file)
+                    with open(os.path.join(scaler_path, file), 'rb') as f:
+                        scaler = pickle.load(f)
+                    print(f"\nInstallation {installation_id}, Column {col_name}")
+                    print(f"Loaded scaler mean: {scaler.mean_[0]:.4f}")
+                    print(f"Loaded scaler scale: {scaler.scale_[0]:.4f}")
+                    print(f"Loading scaler for {col_name} from {file_path}")
+
+
+    def validate_scaling(self, installation_id, original_data, scaled_data):
+        # 기본 통계량 비교
+        print(f"Original stats for {installation_id}:")
+        print(f"Mean: {original_data.mean():.4f}")
+        print(f"Std: {original_data.std():.4f}")
+        
+        print(f"Scaled stats for {installation_id}:")
+        print(f"Mean: {scaled_data.mean():.4f}")
+        print(f"Std: {scaled_data.std():.4f}")
+        
+        # 스케일러 역변환 테스트
+        reconstructed = self.inverse_transform(
+            np.array([installation_id]), 
+            scaled_data.reshape(1, -1, 1)
+        )
+        
+        # 원본과 비교
+        error = np.mean(np.abs(original_data - reconstructed.squeeze()))
+        print(f"Mean reconstruction error: {error:.4e}")
+
 
     def inverse_transform(self, locations, data):
         """
@@ -303,7 +411,8 @@ class Dataset_PV(Dataset):
         return len(self.indices)
     
 
-    def _process_file(self, df_raw, installation_id):
+    # def _process_file(self, df_raw, installation_id):
+    def _process_file(self, df_raw):
         """시간 인코딩 및 데이터 처리"""
         data_stamp = pd.DataFrame()
         data_stamp['date'] = pd.to_datetime(df_raw.timestamp)
@@ -330,9 +439,10 @@ class Dataset_PV(Dataset):
             df_x = df_raw[[self.target]]
 
         df_y = df_raw[[self.target]]
-        installation  = np.array([installation_id]) * len(df_x)
+        # installation  = np.array([installation_id]) * len(df_x)
 
-        return df_x, df_y, time_feature, timestamp, installation
+        # return df_x, df_y, time_feature, timestamp, installation
+        return df_x, df_y, time_feature, timestamp
     
     # def _get_name_mapping(self):
     #     """데이터셋별 파일 이름 매핑 반환 => inverse transform site 식별 위함"""
