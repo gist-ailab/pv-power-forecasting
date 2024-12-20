@@ -18,8 +18,6 @@ if __name__ == '__main__':
 
     # basic config
     parser.add_argument('--is_pretraining', type=int, default=0, help='status')
-    parser.add_argument('--is_fully_finetune', type=int, default=0, help='status')  # 확인 후, 삭제하고 num_freeze_layer만 남길 것
-    parser.add_argument('--is_linear_probe', type=int, default=0, help='status')    # 확인 후, 삭제하고 num_freeze_layer만 남길 것
     parser.add_argument('--num_freeze_layers', type=int, default=0,
                         help='num of transformer freeze layer. 0: finetune all layers or do not transfer learning')
 
@@ -37,12 +35,11 @@ if __name__ == '__main__':
     
     # parser.add_argument('--root_path', type=str, default='./data/GIST_dataset/', help='root path of the source domain data file')
     # parser.add_argument('--data_path', type=str, default='GIST_sisuldong.csv', help='source domain data file')
-    parser.add_argument('--scaler', type=bool, default=True, help='StandardScaler, MinMaxScaler')
+    parser.add_argument('--scaler', type=bool, default=True, help='StandardScaler')
     parser.add_argument('--features', type=str, default='MS',
                         help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
-    parser.add_argument('--target', type=str, default='Active_Power', help='target feature in S or MS task')
     parser.add_argument('--freq', type=str, default='h',
-                        help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
+                        help='freq for time 2 encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
 
     # forecasting task
@@ -99,7 +96,7 @@ if __name__ == '__main__':
     parser.add_argument('--itr', type=int, default=1, help='experiments times')
     parser.add_argument('--train_epochs', type=int, default=200, help='train epochs')
     parser.add_argument('--batch_size', type=int, default=128, help='batch size of train input data')
-    parser.add_argument('--patience', type=int, default=7, help='early stopping patience')
+    parser.add_argument('--patience', type=int, default=10, help='early stopping patience')
     parser.add_argument('--learning_rate', type=float, default=0.0001, help='optimizer learning rate')
     parser.add_argument('--des', type=str, default='test', help='exp description')
     parser.add_argument('--loss', type=str, default='mse', help='loss function')
@@ -121,6 +118,7 @@ if __name__ == '__main__':
     parser.add_argument('--dist_url', default='env://', help='url used to set up distributed training')
     parser.add_argument('--dist_on_itp', action='store_true', help='Use distributed training on internal cluster')
     parser.add_argument('--distributed', action='store_true', help='Use distributed training', default=False)
+    parser.add_argument('--wandb', action='store_true', help='Use wandb')
     args = parser.parse_args()
    
 
@@ -147,7 +145,7 @@ if __name__ == '__main__':
     if (args.is_pretraining) and (not args.is_inference):
         for ii in range(args.itr):
             # setting record of experiments
-            setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_{}'.format(
+            setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
                 args.model_id,
                 args.model,
                 args.data,
@@ -165,6 +163,7 @@ if __name__ == '__main__':
                 args.distil,
                 args.des,
                 args.num_freeze_layers,
+                args.wandb
                 ii)
 
             exp = Exp(args)  # set experiments
@@ -185,22 +184,25 @@ if __name__ == '__main__':
 
     elif args.is_inference:
         ii = 0
-        setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_{}'.format(args.model_id,
-                                                                                                    args.model,
-                                                                                                    args.data,
-                                                                                                    args.features,
-                                                                                                    args.seq_len,
-                                                                                                    args.label_len,
-                                                                                                    args.pred_len,
-                                                                                                    args.d_model,
-                                                                                                    args.n_heads,
-                                                                                                    args.e_layers,
-                                                                                                    args.d_layers,
-                                                                                                    args.d_ff,
-                                                                                                    args.factor,
-                                                                                                    args.embed,
-                                                                                                    args.distil,
-                                                                                                    args.des, ii)    
+        setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
+            args.model_id,
+            args.model,
+            args.data,
+            args.features,
+            args.seq_len,
+            args.label_len,
+            args.pred_len,
+            args.d_model,
+            args.n_heads,
+            args.e_layers,
+            args.d_layers,
+            args.d_ff,
+            args.factor,
+            args.embed,
+            args.distil,
+            args.des,
+            args.wandb,
+            ii)    
 
         exp = Exp(args)  # set experiments
         if args.local_rank == 0:
@@ -208,11 +210,11 @@ if __name__ == '__main__':
         exp.test(args.checkpoints, test=1)
         torch.cuda.empty_cache()
     
-    elif args.is_fully_finetune or args.is_linear_probe:
+    elif args.num_freeze_layers > 0:    # freeze block 개수 조절을 통해 finetuning 및 linear probing 수행
         for ii in range(args.itr):
             # setting record of experiments
-            setting = '{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_{}'.format(
-                'fully_finetune' if args.is_fully_finetune else 'linear_probe',
+            setting = '{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
+                args.num_freeze_layers,
                 args.model_id,
                 args.model,
                 args.data,
@@ -228,7 +230,9 @@ if __name__ == '__main__':
                 args.factor,
                 args.embed,
                 args.distil,
-                args.des,ii)
+                args.des,
+                args.wandb,
+                ii)
 
             exp = Exp_Finetune(args)
             
