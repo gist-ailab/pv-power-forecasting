@@ -17,1179 +17,320 @@ from datetime import datetime
 
 warnings.filterwarnings('ignore')
 
+class Dataset_DKASC(Dataset):
+    def __init__(self,
+                 root_path, data_path=None,
+                 split_configs=None, flag='train',
+                 size=None, timeenc=0,
+                 freq='h', scaler=True,
+                ):
+        """
+        이 예시는 installation 단위로 데이터가 나뉘어 있고,
+        split_configs로 train, val, test 설정을 받아 데이터를 분할합니다.
 
-class Dataset_PV(Dataset):
-    def __init__(self, root_path, data, flag='train', features='S', data_path=None, target='Active_Power', scaler=True, 
-                 timeenc=0, freq='h', size=None):
-        
-        # size [seq_len, label_len, pred_len]
-        if size == None:
-            self.seq_len = 24 * 4 * 4
-            self.label_len = 24 * 4
-            self.pred_len = 24 * 4
+        Args:
+            root_path (str): 데이터 파일들이 저장된 경로.
+            data_path (str, optional): 추가적인 데이터 경로. 단일 PV array 데이터를 가져오는 경우 사용.
+            data (pd.DataFrame, optional): 외부에서 전달받은 데이터.
+            flag (str): 'train', 'val', 'test' 중 하나.
+            size (tuple, optional): seq_len, label_len, pred_len의 길이를 포함.
+            timeenc (int): 시간 인코딩 방법.
+            freq (str): 시간 데이터 빈도.
+            scaler (bool): 스케일링 여부.
+            split_configs (dict): train, val, test 설정.
+        """
+
+        if size is None:
+            raise ValueError("size cannot be None. Please specify seq_len, label_len, and pred_len explicitly.")
         else:
-            self.seq_len = size[0]
-            self.label_len = size[1]
-            self.pred_len = size[2]
+            self.seq_len, self.label_len, self.pred_len = size
+
+        assert flag in ['train', 'val', 'test'], "flag must be 'train', 'val', or 'test'."
 
         self.root_path = root_path
-        self.data = data # 데이터 선택
+        self.data_path = None
         self.flag = flag
-        self.features = features
-        self.data_path = data_path
-        self.target = target
-        self.scaler = scaler
         self.timeenc = timeenc
         self.freq = freq
-        
-        self.scalers = {}
-        self.installation_data = {}
-        self.capacity_dict = {}  # 사이트별 최대 출력량 저장
+        self.scaler = scaler
+        self.split_configs = split_configs
+        self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
+                               'Weather_Relative_Humidity', 'Wind_Speed', 'Active_Power']
 
         self.mapping_name = pd.read_csv('./data_provider/dataset_name_mappings.csv')
+        self.inst_list = self.split_configs[flag]
 
-        self.split_configs = {
-            'Source': {
-                'train': [1, 4, 7, 9, 10, 13, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30, 31, 33, 34, 35, 36, 37, 40, 43],
-                'val': [2, 5, 8, 11, 14, 38, 41],
-                'test': [3, 6, 12, 20, 28, 32, 39, 42]
-            },
-            # 사이트로 나누는 loc
-            'DKASC_AliceSprings': {
-                'train': [1, 4, 7, 9, 10, 13, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30, 31, 33, 34, 35, 36],
-                'val': [2, 5, 8, 11, 14],
-                'test': [3, 6, 12, 20, 28, 32]
-            },
-            'DKASC_Yulara': {
-                'train': [1, 4, 7],
-                'val': [2, 5],
-                'test': [3, 6]
-            },
-            'GIST': {
-                'train': [1, 3, 4, 5, 6, 7, 8, 9, 11, 13],
-                'val': [2, 12],
-                'test': [10, 14]
-            },
-            'German': {
-                'train': [1, 4, 7, 8, 9],
-                'val': [2, 5],
-                'test': [3, 6]
-            },
-            'Miryang': {
-                'train': [1, 4, 7, 2, 6],
-                'val': [3],
-                'test': [5]
-            },
-            #### 날짜로 나누는 loc
-            'UK' : {
-                'train' : 0.7,
-                'val' : 0.2,
-                'test' : 0.1
-            },
-            'OEDI_California': { # 2017.12.05  2023.10.31
-                'train' : [2017, 2021],
-                'val' : [2021, 2022],
-                'test' : [2022, 2024]
+        # 스케일러 저장 경로
+        self.scaler_dir = os.path.join(root_path, 'scalers')
+        os.makedirs(self.scaler_dir, exist_ok=True)
 
-            },
-            'OEDI_Georgia' : {  # 2018.03.29  2022.03.10
-                'train' : [2018, 2020],
-                'val' : [2020, 2021],
-                'test' : [2021, 2023]
-            },
-        }
-        self.load_preprocessed_data()
-        print("After load_preprocessed_data in __init__:", self.scalers)
-        self.indices = self.create_sequences_indices()
+        # 데이터를 저장할 리스트
+        self.data_x_list = []
+        self.data_y_list = []
+        self.data_stamp_list = []
+        self.inst_id_list = []
 
-        self.capacity_dict = {}  # Installation별 최대 용량 저장
+        # 데이터 준비 및 indices 생성
+        self._prepare_data()
+        self.indices = self._create_indices()
 
-        # 데이터 선택해서 로드하기
-        # csv로 이름 매핑
-        # 이름에서 정보 추출하기
+    def _prepare_data(self):
+        for inst_id in self.inst_list:
+            # 매핑된 파일 이름 가져오기
+            # TODO: 여기에서 'self.mapping_name'을 사용하여 file_name을 가져오도록 한다.
+            file_name = self.mapping_name[self.mapping_name['index'] == inst_id]['file_name'].values[0]
+            csv_path = os.path.join(self.root_path, file_name)
+            df_raw = pd.read_csv(csv_path)
+            df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
 
-        # train, val, test 분할
-        
-        # 스케일러 적용
-        # 나머지 프로세싱
-        # getitem, len 정의
+            # 필요한 컬럼만
+            df_raw = df_raw[['timestamp'] + self.input_channels]
 
-    def load_preprocessed_data(self):
+            # 시간 피처 생성
+            df_stamp = pd.DataFrame()
+            df_stamp['timestamp'] = df_raw['timestamp']
+            if self.timeenc == 0:
+                df_stamp['month'] = df_stamp['timestamp'].dt.month
+                df_stamp['day'] = df_stamp['timestamp'].dt.day
+                df_stamp['weekday'] = df_stamp['timestamp'].dt.weekday
+                df_stamp['hour'] = df_stamp['timestamp'].dt.hour
+                data_stamp = df_stamp[['month', 'day', 'weekday', 'hour']].values
+            else:
+                data_stamp = time_features(df_stamp['timestamp'], freq=self.freq).transpose(1, 0)
 
-        """파일 목록을 가져오기"""
-        all_files = os.listdir(self.root_path)
-        self.installation_files = {}
-        
-        # 데이터셋에 대한 이름 매핑 가져오기
-        for file_name in all_files:
-            if not file_name.endswith('.csv'):
-                continue
-            # Do not use YMCA data
-            if 'YMCA' in file_name:
-                continue
-         
-            # 이름 매핑
-            mapped_name = self.mapping_name[self.mapping_name['original_name'] == file_name]['mapping_name'].values[0]
-            # 이름 정보 추출
-            installation_id = int(mapped_name.split('_')[0])
-            capacity = float(mapped_name.split('_')[1])
+            df_data = df_raw[self.input_channels]
 
-            # 해당 flag에 속한 데이터가 아니면 skip
-            if ('UK' not in self.data) and ('OEDI' not in self.data):     
-                if installation_id not in self.split_configs[self.data][self.flag]:
-                    continue
-
-            self.installation_files.setdefault(installation_id, []).append(file_name)
-            self.capacity_dict[installation_id] = capacity
-            # self.scalers[installation_id] = {}
-
-            # 데이터 로드 및 전처리
-            file_path = os.path.join(self.root_path, file_name)  
-            df_raw = pd.read_csv(file_path)
-            if 'Normalized_Active_Power' in df_raw.columns:
-                df_raw.drop('Normalized_Active_Power', axis=1, inplace=True)
-
-
-            # 날짜 별로 나누는 site의 경우, 필요한 날짜만 추출
-            if ('OEDI' in self.data):
-                df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'])
-                data_mask = (df_raw['timestamp'] >= f'{self.split_configs[self.data][self.flag][0]}-01-01') & \
-                            (df_raw['timestamp'] < f'{self.split_configs[self.data][self.flag][1]}-01-01')
-                df_raw = df_raw[data_mask]
-            
-            # UK의 경우 퍼센트 비율로 나누기
-            elif ('UK' in self.data):
-                # timestamp 열을 datetime으로 변환
-                df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'])
-                
-                start_date = df_raw['timestamp'].min()
-                end_date = df_raw['timestamp'].max()
-
-                # start_date와 end_date가 이미 datetime 객체이므로 strptime 불필요
-                date_range = end_date - start_date
-
-                train_duration = date_range * self.split_configs[self.data]['train']
-                val_duration = date_range * self.split_configs[self.data]['val']
-               
-                train_end = start_date + pd.Timedelta(seconds=train_duration.total_seconds())
-                val_end = train_end + pd.Timedelta(seconds=val_duration.total_seconds())
-
-                if self.flag == 'train':
-                    date_mask = (df_raw['timestamp'] >= start_date) & (df_raw['timestamp'] < train_end)
-                elif self.flag == 'val':
-                    date_mask = (df_raw['timestamp'] >= train_end) & (df_raw['timestamp'] < val_end)
-                else:  # test
-                    date_mask = (df_raw['timestamp'] >= val_end) & (df_raw['timestamp'] <= end_date)
-                df_raw = df_raw[date_mask]
-
-            # sclaer dict 초기화
-            # self.scalers[installation_id] = {}
-
-            # scale 적용
-            # if self.scaler:
-            #     self.scalers[installation_id] = {}
-            #     if self.flag == 'train':
-            #         # train에서 스케일러 학습
-            #         for col in df_raw.columns:
-            #             if col == 'timestamp':
-            #                 continue
-            #             scaler = StandardScaler()
-            #             scaler.fit(df_raw[[col]])
-            #             self.scalers[installation_id][col] = scaler
-                
-            #     # 스케일러 적용
-            #     self._apply_scalers_to_data(installation_id, df_raw)
-
+            scaler_path = os.path.join(self.scaler_dir, f"{file_name}_scaler.pkl")
 
             if self.scaler:
-                self.scalers[installation_id] = {}
-                scaler_path = os.path.join(self.root_path, f'scalers/{installation_id}')
-                
-                if os.path.exists(scaler_path):
-                    self._load_scalers(installation_id, df_raw)
+                # 스케일러 fit & transform 로직
+                if not os.path.exists(scaler_path):
+                    scaler_dict = {}
+                    for ch in self.input_channels:
+                        scaler = StandardScaler()
+                        scaler.fit(df_data[[ch]])
+                        scaler_dict[ch] = scaler
+                    with open(scaler_path, 'wb') as f:
+                        pickle.dump(scaler_dict, f)
                 else:
-                    print(f"Warning: No saved scalers found for installation {installation_id}. Fitting new scalers.")
-                    self._fit_and_save_scalers(installation_id, df_raw)
-                self._verify_scalers(installation_id)
-                self._apply_scalers_to_data(installation_id, df_raw)
+                    with open(scaler_path, 'rb') as f:
+                        scaler_dict = pickle.load(f)
 
+                transformed_data = [scaler_dict[ch].transform(df_data[[ch]]) for ch in self.input_channels]
+                data = np.hstack(transformed_data)
+            else:
+                data = df_data.values
 
+            self.data_x_list.append(data)
+            self.data_y_list.append(data)
+            self.data_stamp_list.append(data_stamp)
+            self.inst_id_list.append(inst_id)
 
-            # if self.scaler:
-            #     if self.flag == 'train':
-            #         self._fit_and_save_scalers(installation_id, df_raw)
-            #         self._verify_scalers(installation_id)  # 스케일러 검증
-            #     else:
-            #         self._load_scalers(installation_id, df_raw)
-            #     self._apply_scalers_to_data(installation_id, df_raw)
-
-
-            if installation_id == 10:
-                print(installation_id)
-
-
-            # 데이터 처리 및 저장
-            # df_x, df_y, time_feature, timestamp, installation_id = self._process_file(df_raw, installation_id)
-            df_x, df_y, time_feature, timestamp = self._process_file(df_raw)
-
-            # if isinstance(installation_id, np.ndarray):
-            #     installation_id = int(installation_id[0])  # 또는 str(installation_id)
-
-            self.installation_data.setdefault(installation_id, []).append({
-                    'x': df_x,
-                    'y': df_y,
-                    'data_stamp': time_feature,
-                    'timestamp': timestamp,
-                    'installation_id': installation_id,
-                    'capacity': capacity,
-                    'original_name': file_name,
-                    'mapped_name': mapped_name
-                })
-            
-    def create_sequences_indices(self):
+    def _create_indices(self):
         indices = []
-        for installation_id, data_list in self.installation_data.items():
-            for data in data_list:
-                x_len = len(data['x'])
-                max_start = x_len - self.seq_len - self.pred_len + 1
-                indices.extend([(installation_id, data, i) for i in range(max_start)])
+        for inst_idx, data_x in enumerate(self.data_x_list):
+            total_len = len(data_x)
+            max_start = total_len - self.seq_len - self.pred_len + 1
+            for s in range(max_start):
+                indices.append((inst_idx, s))
         return indices
 
-          
-    def _fit_and_save_scalers(self, installation_id, data):
-        """표준화(StandardScaler) 적용 및 저장"""
-        os.makedirs(os.path.join(self.root_path, f'scalers/{installation_id}'), exist_ok=True)
-        
-        for col in data.columns:
-            if col == 'timestamp':
-                continue
-                
-            scaler = StandardScaler()
-            scaler.fit(data[[col]])
-            self.scalers[installation_id][col] = scaler
-
-            # print(f"\nInstallation {installation_id}, Column {col}")
-            # print(f"Scaler mean: {scaler.mean_[0]:.4f}")
-            # print(f"Scaler scale: {scaler.scale_[0]:.4f}")
-
-            with open(os.path.join(self.root_path, f'scalers/{installation_id}/{col}_scaler.pkl'), 'wb') as f:
-                pickle.dump(scaler, f)
-
-        # Save statistics for the target variable
-        target_stats = {
-            'mean': data[self.target].mean(),
-            'std': data[self.target].std(),
-            'capacity': self.capacity_dict[installation_id]
-        }
-        with open(os.path.join(self.root_path, f'scalers/{installation_id}/{self.target}_stats_train.pkl'), 'wb') as f:
-            pickle.dump(target_stats, f)
-
-
-    def _apply_scalers_to_data(self, installation_id, df_raw):
-        """스케일러 적용"""
-        print(f"Before scaling - {self.target} range:", df_raw[self.target].min(), df_raw[self.target].max())
-        df_scaled = df_raw.copy()
-        
-        print(f"\nBefore scaling - {self.target} range:", df_raw[self.target].min(), df_raw[self.target].max())
-        # print(f"\nInstallation {installation_id}, Column {col}")
-        # print(f"Mean: {df_raw[self.target].mean():.4f}")
-        # print(f"Std: {df_raw[self.target].std():.4f}")
-        # print(f"Min: {df_raw[self.target].min():.4f}")
-        # print(f"Max: {df_raw[self.target].max():.4f}")
-
-        for col in df_raw.columns:
-            if col == 'timestamp':
-                continue
-            # print(f"Applying scaler to {col}")
-            scaler = self.scalers[installation_id][col]
-            df_scaled[col] = scaler.transform(df_scaled[[col]])
-
-        # print(f"After scaling - {self.target} stats:")
-        # print(f"Mean: {df_raw[self.target].mean():.4f}")
-        # print(f"Std: {df_raw[self.target].std():.4f}")
-        # print(f"Min: {df_raw[self.target].min():.4f}")
-        # print(f"Max: {df_raw[self.target].max():.4f}")
-            
-        print(f"After scaling - {self.target} range:", df_scaled[self.target].min(), df_scaled[self.target].max())
-
-            # Active Power에 대해서만 스케일링 검증 수행
-        self.validate_scaling(
-            installation_id,
-            df_raw[self.target].values,
-            df_scaled[self.target].values
-        )
-
-    def _load_scalers(self, installation_id, data):
-        """표준화(StandardScaler) 로드"""
-        for col in data.columns:
-            if col == 'timestamp':
-                continue
-
-            with open(os.path.join(self.root_path, f'scalers/{installation_id}/{col}_scaler.pkl'), 'rb') as f:
-                self.scalers[installation_id][col] = pickle.load(f)
-        
-        with open(os.path.join(self.root_path, f'scalers/{installation_id}/{self.target}_stats_train.pkl'), 'rb') as f:
-            target_stats = pickle.load(f)
-            self.capacity_dict[installation_id] = target_stats['capacity']
-
-
-    def _verify_scalers(self, installation_id):
-        """저장된 스케일러 검증"""
-        scaler_path = os.path.join(self.root_path, f'scalers/{installation_id}')
-        if os.path.exists(scaler_path):
-            for file in os.listdir(scaler_path):
-                if file.endswith('_scaler.pkl'):
-                    col_name = file.replace('_scaler.pkl', '')
-                    file_path = os.path.join(scaler_path, file)
-                    with open(os.path.join(scaler_path, file), 'rb') as f:
-                        scaler = pickle.load(f)
-                    print(f"\nInstallation {installation_id}, Column {col_name}")
-                    print(f"Loaded scaler mean: {scaler.mean_[0]:.4f}")
-                    print(f"Loaded scaler scale: {scaler.scale_[0]:.4f}")
-                    print(f"Loading scaler for {col_name} from {file_path}")
-
-
-    def validate_scaling(self, installation_id, original_data, scaled_data):
-        # 기본 통계량 비교
-        print(f"Original stats for {installation_id}:")
-        print(f"Mean: {original_data.mean():.4f}")
-        print(f"Std: {original_data.std():.4f}")
-        
-        print(f"Scaled stats for {installation_id}:")
-        print(f"Mean: {scaled_data.mean():.4f}")
-        print(f"Std: {scaled_data.std():.4f}")
-        
-        # 스케일러 역변환 테스트
-        reconstructed = self.inverse_transform(
-            np.array([installation_id]), 
-            scaled_data.reshape(1, -1, 1)
-        )
-        
-        # 원본과 비교
-        error = np.mean(np.abs(original_data - reconstructed.squeeze()))
-        print(f"Mean reconstruction error: {error:.4e}")
-
-
-    def inverse_transform(self, locations, data):
-        """
-        StandardScaler 역변환만 수행
-        """
-        batch_size, seq_length, n_channels = data.shape
-        result = np.empty_like(data)
-
-        for batch_idx in range(batch_size):
-            installation_id = locations[batch_idx].item() if torch.is_tensor(locations[batch_idx]) else locations[batch_idx]
-            scaler = self.scalers[installation_id][self.target]
-            
-            # StandardScaler 역변환만 수행
-            batch_data = data[batch_idx].reshape(-1, n_channels)
-            inverse_transformed = scaler.inverse_transform(batch_data)
-            result[batch_idx] = inverse_transformed.reshape(seq_length, n_channels)
-
-        return result
-
     def __getitem__(self, index):
-        installation_id, data, start_idx = self.indices[index]
-        s_begin = start_idx
+        inst_idx, s_begin = self.indices[index]
+        data_x = self.data_x_list[inst_idx]
+        data_y = self.data_y_list[inst_idx]
+        data_stamp = self.data_stamp_list[inst_idx]
+
         s_end = s_begin + self.seq_len
         r_begin = s_end - self.label_len
         r_end = r_begin + self.label_len + self.pred_len
 
-        seq_x = data['x'].iloc[s_begin:s_end].values
-        seq_y = data['y'].iloc[r_begin:r_end].values
-        seq_x_mark = data['data_stamp'][s_begin:s_end]
-        seq_y_mark = data['data_stamp'][r_begin:r_end]
-        installation = np.array([installation_id]).repeat(s_end - s_begin).reshape(-1, 1)
-        seq_x_ds = data['timestamp'][s_begin:s_end]
-        seq_y_ds = data['timestamp'][r_begin:r_end]
+        seq_x = data_x[s_begin:s_end]
+        seq_y = data_y[r_begin:r_end]
+        seq_x_mark = data_stamp[s_begin:s_end]
+        seq_y_mark = data_stamp[r_begin:r_end]
 
-        # print(f"Target range - Min: {seq_y.min():.2f}, Max: {seq_y.max():.2f}")
-        # print(f"Input range - Min: {seq_x.min():.2f}, Max: {seq_x.max():.2f}")
-        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, installation, seq_x_ds, seq_y_ds
+        return seq_x, seq_y, seq_x_mark, seq_y_mark
 
     def __len__(self):
         return len(self.indices)
-    
 
-    # def _process_file(self, df_raw, installation_id):
-    def _process_file(self, df_raw):
-        """시간 인코딩 및 데이터 처리"""
-        data_stamp = pd.DataFrame()
-        data_stamp['date'] = pd.to_datetime(df_raw.timestamp)
-        data_stamp['year'] = data_stamp.date.apply(lambda row: row.year, 1)
-        data_stamp['month'] = data_stamp.date.apply(lambda row: row.month, 1)
-        data_stamp['day'] = data_stamp.date.apply(lambda row: row.day, 1)
-        data_stamp['weekday'] = data_stamp.date.apply(lambda row: row.weekday(), 1)
-        data_stamp['hour'] = data_stamp.date.apply(lambda row: row.hour, 1)
+    def inverse_transform(self, data, inst_id):
+        scaler_path = os.path.join(self.scaler_dir, f"{inst_id}_scaler.pkl")
+        if not os.path.exists(scaler_path):
+            raise FileNotFoundError(f"Scaler for installation {inst_id} not found.")
+        with open(scaler_path, 'rb') as f:
+            scaler_dict = pickle.load(f)
 
-        if self.timeenc == 0:
-            time_feature = data_stamp[['month', 'day', 'weekday', 'hour']].values
-        else:
-            time_feature = time_features(pd.to_datetime(df_raw['timestamp'].values), freq=self.freq).T
-
-        timestamp = data_stamp[['year', 'month', 'day', 'weekday', 'hour']].values
-
-        cols = df_raw.columns.tolist()
-        cols.remove('timestamp')
-        cols.remove(self.target)
-
-        if self.features == 'M' or self.features == 'MS':
-            df_x = df_raw[cols + [self.target]]
-        elif self.features == 'S':
-            df_x = df_raw[[self.target]]
-
-        df_y = df_raw[[self.target]]
-        # installation  = np.array([installation_id]) * len(df_x)
-
-        # return df_x, df_y, time_feature, timestamp, installation
-        return df_x, df_y, time_feature, timestamp
-    
-    # def _get_name_mapping(self):
-    #     """데이터셋별 파일 이름 매핑 반환 => inverse transform site 식별 위함"""
-        
-    #     mappings = {
-    #         'DKASC_AliceSprings': {
-    #             '1.8048249483108585_100-Site_DKA-M1_A-Phase.csv'    : '01_1.8048249483108585_100-Site_DKA-M1_A-Phase.csv',
-    #             '5.489253242810574_57-Site_DKA-M16_A-Phase.csv'     : '02_5.489253242810574_57-Site_DKA-M16_A-Phase.csv',
-    #             '4.0456333955129_99-Site_DKA-M4_C-Phase.csv'        : '03_4.0456333955129_99-Site_DKA-M4_C-Phase.csv',
-    #             '5.5049305359522505_56-Site_DKA-M20_A-Phase.csv'    : '04_5.5049305359522505_56-Site_DKA-M20_A-Phase.csv',
-    #             '4.606877764066067_70-Site_DKA-M5_A-Phase.csv'      : '05_4.606877764066067_70-Site_DKA-M5_A-Phase.csv',
-    #             '5.5889055331548_59-Site_DKA-M19_C-Phase.csv'       : '06_5.5889055331548_59-Site_DKA-M19_C-Phase.csv',
-    #             '4.681516726811734_106-Site_DKA-M5_C-Phase.csv'     : '07_4.681516726811734_106-Site_DKA-M5_C-Phase.csv',
-    #             '5.588966925938926_55-Site_DKA-M20_B-Phase.csv'     : '08_5.588966925938926_55-Site_DKA-M20_B-Phase.csv',
-    #             '4.713372310002634_74-Site_DKA-M18_C-Phase.csv'     : '09_4.713372310002634_74-Site_DKA-M18_C-Phase.csv',
-    #             '5.641808271408075_60-Site_DKA-M18_A-Phase.csv'     : '10_5.641808271408075_60-Site_DKA-M18_A-Phase.csv',
-    #             '4.722724914550775_84-Site_DKA-M5_B-Phase.csv'      : '11_4.722724914550775_84-Site_DKA-M5_B-Phase.csv',
-    #             '5.648005247116092_64-Site_DKA-M17_B-Phase.csv'     : '12_5.648005247116092_64-Site_DKA-M17_B-Phase.csv',
-    #             '5.025952617327375_214-Site_DKA-M18_B-Phase_II.csv' : '13_5.025952617327375_214-Site_DKA-M18_B-Phase_II.csv',
-    #             '5.651080489158642_54-Site_DKA-M15_C-Phase.csv'     : '14_5.651080489158642_54-Site_DKA-M15_C-Phase.csv',
-    #             '5.106038808822617_92-Site_DKA-M6_B-Phase.csv'      : '15_5.106038808822617_92-Site_DKA-M6_B-Phase.csv',
-    #             '5.675088723500576_212-Site_DKA-M15_C-Phase_II.csv' : '16_5.675088723500576_212-Site_DKA-M15_C-Phase_II.csv',
-    #             '5.1098860502243_58-Site_DKA-M17_C-Phase.csv'       : '17_5.1098860502243_58-Site_DKA-M17_C-Phase.csv',
-    #             '5.858203013738009_205-Site_Archived_DKA-M15_BPhase_UMG_QCells.csv' : '18_5.858203013738009_205-Site_Archived_DKA-M15_BPhase_UMG_QCells.csv',
-    #             '5.1862111488978_52-Site_DKA-M16_C-Phase.csv'       : '19_5.1862111488978_52-Site_DKA-M16_C-Phase.csv',
-    #             '6.012480338414508_93-Site_DKA-M4_A-Phase.csv'      : '20_6.012480338414508_93-Site_DKA-M4_A-Phase.csv',
-    #             '5.252291798591625_63-Site_DKA-M17_A-Phase.csv'     : '21_5.252291798591625_63-Site_DKA-M17_A-Phase.csv',
-    #             '6.012586116790767_213-Site_DKA-M16_A-Phase_II.csv' : '22_6.012586116790767_213-Site_DKA-M16_A-Phase_II.csv',
-    #             '5.279052972793592_77-Site_DKA-M18_B-Phase.csv'     : '23_5.279052972793592_77-Site_DKA-M18_B-Phase.csv',
-    #             '6.107803106308_66-Site_DKA-M16_B-Phase.csv'        : '24_6.107803106308_66-Site_DKA-M16_B-Phase.csv',
-    #             '5.291588862737025_73-Site_DKA-M19_A-Phase.csv'     : '25_5.291588862737025_73-Site_DKA-M19_A-Phase.csv',
-    #             '6.494097034136466_79-Site_DKA-M6_A-Phase.csv'      : '26_6.494097034136466_79-Site_DKA-M6_A-Phase.csv',
-    #             '5.377141674359625_71-Site_DKA-M2_C-Phase.csv'      : '27_5.377141674359625_71-Site_DKA-M2_C-Phase.csv',
-    #             '6.640705426534017_69-Site_DKA-M4_B-Phase.csv'      : '28_6.640705426534017_69-Site_DKA-M4_B-Phase.csv',
-    #             '5.381122271219891_218-Site_DKA-M4_C-Phase_II.csv'  : '29_5.381122271219891_218-Site_DKA-M4_C-Phase_II.csv',
-    #             '8.239588975906374_67-Site_DKA-M8_A-Phase.csv'      : '30_8.239588975906374_67-Site_DKA-M8_A-Phase.csv',
-    #             '5.392713745435067_72-Site_DKA-M15_B-Phase.csv'     : '31_5.392713745435067_72-Site_DKA-M15_B-Phase.csv',
-    #             '8.4429276784261_68-Site_DKA-M8_C-Phase.csv'        : '32_8.4429276784261_68-Site_DKA-M8_C-Phase.csv',
-    #             '5.424700140953067_90-Site_DKA-M3_A-Phase.csv'      : '33_5.424700140953067_90-Site_DKA-M3_A-Phase.csv',
-    #             '8.563250303268434_98-Site_DKA-M8_B-Phase.csv'      : '34_8.563250303268434_98-Site_DKA-M8_B-Phase.csv',
-    #             '5.4838057756424_61-Site_DKA-M15_A-Phase.csv'       : '35_5.4838057756424_61-Site_DKA-M15_A-Phase.csv',
-    #             '9.772030671437577_85-Site_DKA-M7_A-Phase.csv'      : '36_9.772030671437577_85-Site_DKA-M7_A-Phase.csv'
-    #         },
-
-    #         'DKASC_Yulara': {
-    #             '208.47536849975663_10-Site_SS-PV1-DB-SS-1A.csv'   : '01_208.47536849975663_10-Site_SS-PV1-DB-SS-1A.csv',
-    #             '21.760133743286087_7-Site_SD-PV2-DB-SD-1A.csv'    : '02_21.760133743286087_7-Site_SD-PV2-DB-SD-1A.csv',
-    #             '300.15113321940083_11-Site_LD-PV1-DB-LD-1A.csv'   : '03_300.15113321940083_11-Site_LD-PV1-DB-LD-1A.csv',
-    #             '36.68936411539717_9-Site_SD-PV2-DB-SD-2A.csv'     : '04_36.68936411539717_9-Site_SD-PV2-DB-SD-2A.csv',
-    #             '44.16863854726167_6-Site_SD-PV2-DB-SD-3A.csv'     : '05_44.16863854726167_6-Site_SD-PV2-DB-SD-3A.csv',
-    #             '897.5805969238291_5-Site_DG-PV1-DB-DG-M1A.csv'    : '06_897.5805969238291_5-Site_DG-PV1-DB-DG-M1A.csv',
-    #             '97.79799715677892_8-Site_CA-PV1-DB-CA-1A.csv'     : '07_97.79799715677892_8-Site_CA-PV1-DB-CA-1A.csv'
-    #         },
-    #         'GIST': {
-    #             '66.0_C07_Samsung-Env-Bldg.csv'          : '01_66.0_C07_Samsung-Env-Bldg.csv',
-    #             '37.4_C09_Dasan.csv'                     : '02_37.4_C09_Dasan.csv',
-    #             '69.6_C10_Renewable-E-Bldg.csv'          : '03_69.6_C10_Renewable-E-Bldg.csv',
-    #             '122.5_C11_GAIA.csv'                     : '04_122.5_C11_GAIA.csv',
-    #             '76.8_E02_Animal-Recource-Center.csv'    : '05_76.8_E02_Animal-Recource-Center.csv',
-    #             '133.1_E03_GTI.csv'                      : '06_133.1_E03_GTI.csv',
-    #             '220.1_E8_Natural-Science-Bldg.csv'      : '07_220.1_E8_Natural-Science-Bldg.csv',
-    #             '27.7_E11_DormA.csv'                     : '08_27.7_E11_DormA.csv',
-    #             '52.1_E12_DormB.csv'                     : '09_52.1_E12_DormB.csv',
-    #             '29.9_N01_Central-Library.csv'           : '10_29.9_N01_Central-Library.csv',
-    #             '45.8_N02_LG-Library.csv'                : '11_45.8_N02_LG-Library.csv',
-    #             '14.9_N06_College-Bldg.csv'              : '12_14.9_N06_College-Bldg.csv',
-    #             '48.2_W06_Student-Union.csv'             : '13_48.2_W06_Student-Union.csv',
-    #             '127.9_W11_Facility-Maintenance-Bldg.csv': '14_127.9_W11_Facility-Maintenance-Bldg.csv',
-    #             '33.7_W13_Centeral-Storage.csv'          : '15_33.7_W13_Centeral-Storage.csv',
-    #             '164.1_Soccer-Field.csv'                 : '16_164.1_Soccer-Field.csv'
-    #         },
-    #         'Germany': {
-    #             '4.75_DE_KN_industrial1_pv_1.csv'                  : '01_4.75_DE_KN_industrial1_pv_1.csv',
-    #             '4.170000000000073_DE_KN_industrial1_pv_2.csv'     : '02_4.170000000000073_DE_KN_industrial1_pv_2.csv',
-    #             '14.599999999998545_DE_KN_industrial2_pv.csv'      : '03_14.599999999998545_DE_KN_industrial2_pv.csv',
-    #             '6.055000000000291_DE_KN_industrial3_pv_facade.csv': '04_6.055000000000291_DE_KN_industrial3_pv_facade.csv',
-    #             '11.100999999998749_DE_KN_industrial3_pv_roof.csv' : '05_11.100999999998749_DE_KN_industrial3_pv_roof.csv',
-    #             '8.197000000000116_DE_KN_residential1_pv.csv'      : '06_8.197000000000116_DE_KN_residential1_pv.csv',
-    #             '3.845999999999549_DE_KN_residential3_pv.csv'      : '07_3.845999999999549_DE_KN_residential3_pv.csv',
-    #             '8.784999999999854_DE_KN_residential4_pv.csv'      : '08_8.784999999999854_DE_KN_residential4_pv.csv',
-    #             '7.64600000000064_DE_KN_residential6_pv.csv'       : '09_7.64600000000064_DE_KN_residential6_pv.csv'
-    #         },
-    #         'Miryang': {
-    #             '101.286_C_99kW.csv'  : '01_101.286_C_99kW.csv',
-    #             '30.096_G_50kW.csv'   : '02_30.096_G_50kW.csv',
-    #             '52.102_F_64kW.csv'   : '03_52.102_F_64kW.csv',
-    #             '533.6_B_658kW.csv'   : '04_533.6_B_658kW.csv',
-    #             '62.415_E_69kW.csv'   : '05_62.415_E_69kW.csv',
-    #             '75.57_D_89kW.csv'    : '06_75.57_D_89kW.csv',
-    #             '826.165_A_999kW.csv' : '07_826.165_A_999kW.csv'
-    #         }
-    #     }
+        return scaler_dict[self.target].inverse_transform(data)
 
 
-    #     return mappings.get(self.data, {})
-   
+########################################################################################
 
-##########################################################################################
-    
-class Dataset_DKASC_AliceSprings(Dataset):
-    def __init__(self, root_path, flag='train', size=None,
-                 features='S', data_path='', scaler='MinMaxScaler',
-                 target='Active_Power', scale=True, timeenc=0, freq='h'):
-        # size [seq_len, label_len, pred_len]
-        # info
-        if size == None:
+class Dataset_GIST(Dataset):
+    def __init__(self, root_path, data_path = None,
+                 flag='train', size=None,
+                 features='MS', target='Active_Power', timeenc=0, freq='h', domain='target',
+                 scaler=True,
+                 train_inst=[1,2],
+                 val_inst=[3],
+                 test_inst=[4],
+                 input_channels=['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
+                                 'Weather_Relative_Humidity', 'Wind_Speed'],
+                 data=None):
+        """
+        이 예시는 installation 단위로 데이터가 나뉘어 있고,
+        train_inst, val_inst, test_inst로 어떤 installation이 어느 단계에 속하는지 알려줍니다.
+
+        원칙:
+        - 각 installation은 자신이 속한 단계에서(Train/Val/Test) scaler를 fit & save (처음 처리 시)하고 transform 수행.
+        - 이후 동일 installation에 대한 재처리 시에는 이미 저장된 scaler를 로드하여 transform만 할 수 있음.
+        """
+
+        if size is None:
             self.seq_len = 24 * 4 * 4
             self.label_len = 24 * 4
             self.pred_len = 24 * 4
         else:
-            self.seq_len = size[0]
-            self.label_len = size[1]
-            self.pred_len = size[2]
-        # init
-        # assert flag in ['train', 'test', 'val']
-        # type_map = {'train': 0, 'val': 1, 'test': 2}
-        # self.set_type = type_map[flag]
+            self.seq_len, self.label_len, self.pred_len = size
+        
+        assert flag in ['train', 'val', 'test'], "flag must be 'train', 'val', or 'test'."
+        self.flag = flag
         self.features = features
         self.target = target
-        self.scale = scale
+        self.scaler = scaler
         self.timeenc = timeenc
         self.freq = freq
-        self.flag = flag
-        if self.flag == 'pred': 
-            self.flag = 'test'
-
-        self.scaler = scaler
-
+        self.domain = domain
         self.root_path = root_path
-        self.data_path = data_path
-        
-   
-        # # Total 개
-        # self.LOCATIONS = [
-        #     '52-Site_DKA-M16_C-Phase.csv'    ,    # 33
-        #     '54-Site_DKA-M15_C-Phase.csv'    ,
-        #     '55-Site_DKA-M20_B-Phase.csv'    ,    # 29
-        #     '56-Site_DKA-M20_A-Phase.csv'    ,    # 30
-        #     '57-Site_DKA-M16_A-Phase.csv'    ,
-        #     '58-Site_DKA-M17_C-Phase.csv'    ,    # 36
-        #     '59-Site_DKA-M19_C-Phase.csv'    ,    # 38
-        #     '60-Site_DKA-M18_A-Phase.csv'    ,
-        #     '61-Site_DKA-M15_A-Phase.csv'    ,    # 23
-        #     '63-Site_DKA-M17_A-Phase.csv'    ,    # 34
-        #     '64-Site_DKA-M17_B-Phase.csv'    ,    # 37
-        #     '66-Site_DKA-M16_B-Phase.csv'    ,
-        #     '67-Site_DKA-M8_A-Phase.csv'     ,    # 21
-        #     '68-Site_DKA-M8_C-Phase.csv'     ,    # 20
-        #     '69-Site_DKA-M4_B-Phase.csv'     ,    # 17
-        #     '70-Site_DKA-M5_A-Phase.csv'     ,    # 3
-        #     '71-Site_DKA-M2_C-Phase.csv'     ,    # 18
-        #     '72-Site_DKA-M15_B-Phase.csv'    ,    # 26
-        #     '73-Site_DKA-M19_A-Phase.csv'    ,    # 35
-        #     '74-Site_DKA-M18_C-Phase.csv'    ,    # 31
-        #     '77-Site_DKA-M18_B-Phase.csv'    ,
-        #     '79-Site_DKA-M6_A-Phase.csv'     ,    # 7
-        #     '84-Site_DKA-M5_B-Phase.csv'     ,    # 12
-        #     '85-Site_DKA-M7_A-Phase.csv'     ,    # 10
-        #     '90-Site_DKA-M3_A-Phase.csv'     ,    # 14
-        #     '92-Site_DKA-M6_B-Phase.csv'     ,    # 13
-        #     '93-Site_DKA-M4_A-Phase.csv'     ,    # 8
-        #     '97-Site_DKA-M10_B+C-Phases.csv' ,    # 22
-        #     '98-Site_DKA-M8_B-Phase.csv'     ,    # 19
-        #     '98-Site_DKA-M8_B-Phase(site19).csv',
-        #     '99-Site_DKA-M4_C-Phase.csv'     ,
-        #     '100-Site_DKA-M1_A-Phase.csv'    ,    # 16A
-        #     '212-Site_DKA-M15_C-Phase_II.csv',    # 25
-        #     '213-Site_DKA-M16_A-Phase_II.csv',    # 24
-        #     '214-Site_DKA-M18_B-Phase_II.csv',    # 32
-        #     '218-Site_DKA-M4_C-Phase_II.csv'      # 9A
-        # ]
+        self.input_channels = input_channels + [target]
 
-    
-        
-        self.scalers = {}
-        self.site_data = {}
-
-        self.load_preprocessed_data()
-        self.indices = self.create_sequences_indices()
-
-        
-    
-    def load_preprocessed_data(self):
-        # 파일 로드 및 사이트별 데이터 수집
-        self._load_files()
-        # train, val, test split, 해당하는 flag에 맞게 데이터 가져옴
-        selected_sites = self._split_sites()[self.flag]
-        site_data = {}
-        # site 별로 데이터 저장
-        site_all_data = {site_id: [] for site_id in selected_sites}
-        # all_data = [] # 전체 데이터셋
-
-        for site_id in selected_sites:
-            site_files = self.site_files.get(site_id, [])
-            for file_name in site_files:
-                file_path = os.path.join(self.root_path, file_name)
-                df_raw = pd.read_csv(file_path)
-                df_x, df_y, time_feature, timestamp, site = self._process_file(df_raw, site_id)
-
-                # 데이터 저장
-                site_data.setdefault(site_id, []).append({
-                    'x': df_x,
-                    'y': df_y,
-                    'data_stamp': time_feature,
-                    'timestamp': timestamp
-                })
-
-                # for scaling
-                site_all_data[site_id].append(df_x)
-
-        
-        # combined_data = pd.concat(all_data, axis=0)
-           
-        self.scalers = {}          
-        if self.scaler:
-            for site_id in selected_sites:
-                self.scalers[site_id] = {}
-                site_combined_data = pd.concat(site_all_data[site_id], axis=0)
-
-                if self.flag == 'train':
-
-                    for col in site_combined_data.columns:
-                        if col == 'timestamp': continue
-                        if self.scaler == 'MinMaxScaler':
-                            scaler = MinMaxScaler()
-                        else: 
-                            scaler = StandardScaler()
-                    
-                        scaler.fit(site_combined_data[[col]])
-                        self.scalers[site_id][col] = scaler
-
-                        os.makedirs(os.path.join(self.root_path, f'scalers/{site_id}'), exist_ok=True)
-                        with open(os.path.join(self.root_path, f'scalers/{site_id}/{col}_scaler.pkl'), 'wb') as f:
-                            pickle.dump(scaler, f)
-
-                    with open(os.path.join(self.root_path, f'scalers/{site_id}/Active_Power_min_max_train.pkl'), 'wb') as f:
-                        print(f"Active_Power min: {site_combined_data['Active_Power'].min()}")
-                        print(f"Active_Power max: {site_combined_data['Active_Power'].max()}")
-                        pickle.dump([site_combined_data['Active_Power'].min(), site_combined_data['Active_Power'].max()], f)
-
-
-                else:
-                    for col in site_combined_data.columns:
-                        if col == 'timestamp': continue
-                        with open(os.path.join(self.root_path, f'scalers/{site_id}/{col}_scaler.pkl'), 'rb') as f:
-                            self.scalers[site_id][col] = pickle.load(f)
-
-                        
-                if self.flag == 'val':
-                    with open(os.path.join(self.root_path, f'scalers/{site_id}/Active_Power_min_max_val.pkl'), 'wb') as f:
-                            print(f"Site {site_id} Active_Power min: {site_combined_data['Active_Power'].min()}")
-                            print(f"Site {site_id} Active_Power max: {site_combined_data['Active_Power'].max()}")
-                            pickle.dump([site_combined_data['Active_Power'].min(), site_combined_data['Active_Power'].max()], f)
-                
-                elif self.flag == 'test':
-                    train_path = os.path.join(self.root_path, f'scalers/{site_id}/Active_Power_min_max_train.pkl')
-                    val_path = os.path.join(self.root_path, f'scalers/{site_id}/Active_Power_min_max_val.pkl')
-
-                    with open(train_path, 'rb') as f:
-                        train_min, train_max = pickle.load(f)
-                    with open(val_path, 'rb') as f:
-                        val_min, val_max = pickle.load(f)
-
-                    self.ap_max_by_site = getattr(self, 'ap_max_by_site', {})
-                    self.ap_min_by_site = getattr(self, 'ap_min_by_site', {})
-                    self.ap_max_by_site[site_id] = max(train_max, val_max)
-                    self.ap_min_by_site[site_id] = min(train_min, val_min)
-
-                  
-                
-            # scaler 적용 및 site data update
-            for data in site_data[site_id]:
-                for col in data['x'].columns:
-                        if col == 'timestamp': continue
-                        scaler = self.scalers[site_id][col]
-                        data['x'][col] = scaler.transform(data['x'][[col]])  
-                        if col == 'Active_Power':    
-                            data['y'][col] = scaler.transform(data['y'][[col]])
-
-        self.site_data = site_data
-
-    def _process_file(self, df_raw, site_id):
-        # Time encoding ((년,) 월, 일, 요일, 시간)
-
-        data_stamp = pd.DataFrame()
-        data_stamp['date'] = pd.to_datetime(df_raw.timestamp)
-        data_stamp['year'] = data_stamp.date.apply(lambda row: row.year, 1)
-        data_stamp['month'] = data_stamp.date.apply(lambda row: row.month, 1)
-        data_stamp['day'] = data_stamp.date.apply(lambda row: row.day, 1)
-        data_stamp['weekday'] = data_stamp.date.apply(lambda row: row.weekday(), 1)
-        data_stamp['hour'] = data_stamp.date.apply(lambda row: row.hour, 1)
-
-        if self.timeenc == 0:
-            time_feature = data_stamp[['month', 'day', 'weekday', 'hour']].values
+        # flag에 따라 어떤 installation을 처리할지 결정
+        if self.flag == 'train':
+            self.inst_list = train_inst
+        elif self.flag == 'val':
+            self.inst_list = val_inst
         else:
-            time_feature = time_features(pd.to_datetime(df_raw['timestamp'].values), freq=self.freq).T
+            self.inst_list = test_inst
 
-        timestamp = data_stamp[['year', 'month', 'day', 'weekday', 'hour']].values
+        # scaler를 저장할 디렉토리
+        self.scaler_dir = os.path.join(root_path, 'scalers')
+        os.makedirs(self.scaler_dir, exist_ok=True)
 
-        cols = df_raw.columns.tolist()
-        cols.remove('timestamp')
-        cols.remove(self.target)
-
-        if self.features == 'M' or self.features == 'MS':
-            df_x = df_raw[cols + [self.target]]
-        elif self.features == 'S':
-            df_x = df_raw[[self.target]]
-
-        df_y = df_raw[[self.target]]
-        site = np.array([site_id]) * len(df_x)
-
-        return df_x, df_y, time_feature, timestamp, site
-    
-    # def _get_name_mapping(self):
-    #     """데이터셋별 파일 이름 매핑 반환 => inverse transform site 식별 위함"""
+        # 데이터를 저장할 리스트
+        self.data_x_list = []
+        self.data_y_list = []
+        self.data_stamp_list = []
+        self.inst_id_list = []
         
-    #     mappings = {
-    #         'DKASC_AliceSprings': {
-    #             '1.8048249483108585_100-Site_DKA-M1_A-Phase.csv'    : '01_1.8048249483108585_100-Site_DKA-M1_A-Phase.csv',
-    #             '5.489253242810574_57-Site_DKA-M16_A-Phase.csv'     : '02_5.489253242810574_57-Site_DKA-M16_A-Phase.csv',
-    #             '4.0456333955129_99-Site_DKA-M4_C-Phase.csv'        : '03_4.0456333955129_99-Site_DKA-M4_C-Phase.csv',
-    #             '5.5049305359522505_56-Site_DKA-M20_A-Phase.csv'    : '04_5.5049305359522505_56-Site_DKA-M20_A-Phase.csv',
-    #             '4.606877764066067_70-Site_DKA-M5_A-Phase.csv'      : '05_4.606877764066067_70-Site_DKA-M5_A-Phase.csv',
-    #             '5.5889055331548_59-Site_DKA-M19_C-Phase.csv'       : '06_5.5889055331548_59-Site_DKA-M19_C-Phase.csv',
-    #             '4.681516726811734_106-Site_DKA-M5_C-Phase.csv'     : '07_4.681516726811734_106-Site_DKA-M5_C-Phase.csv',
-    #             '5.588966925938926_55-Site_DKA-M20_B-Phase.csv'     : '08_5.588966925938926_55-Site_DKA-M20_B-Phase.csv',
-    #             '4.713372310002634_74-Site_DKA-M18_C-Phase.csv'     : '09_4.713372310002634_74-Site_DKA-M18_C-Phase.csv',
-    #             '5.641808271408075_60-Site_DKA-M18_A-Phase.csv'     : '10_5.641808271408075_60-Site_DKA-M18_A-Phase.csv',
-    #             '4.722724914550775_84-Site_DKA-M5_B-Phase.csv'      : '11_4.722724914550775_84-Site_DKA-M5_B-Phase.csv',
-    #             '5.648005247116092_64-Site_DKA-M17_B-Phase.csv'     : '12_5.648005247116092_64-Site_DKA-M17_B-Phase.csv',
-    #             '5.025952617327375_214-Site_DKA-M18_B-Phase_II.csv' : '13_5.025952617327375_214-Site_DKA-M18_B-Phase_II.csv',
-    #             '5.651080489158642_54-Site_DKA-M15_C-Phase.csv'     : '14_5.651080489158642_54-Site_DKA-M15_C-Phase.csv',
-    #             '5.106038808822617_92-Site_DKA-M6_B-Phase.csv'      : '15_5.106038808822617_92-Site_DKA-M6_B-Phase.csv',
-    #             '5.675088723500576_212-Site_DKA-M15_C-Phase_II.csv' : '16_5.675088723500576_212-Site_DKA-M15_C-Phase_II.csv',
-    #             '5.1098860502243_58-Site_DKA-M17_C-Phase.csv'       : '17_5.1098860502243_58-Site_DKA-M17_C-Phase.csv',
-    #             '5.858203013738009_205-Site_Archived_DKA-M15_BPhase_UMG_QCells.csv' : '18_5.858203013738009_205-Site_Archived_DKA-M15_BPhase_UMG_QCells.csv',
-    #             '5.1862111488978_52-Site_DKA-M16_C-Phase.csv'       : '19_5.1862111488978_52-Site_DKA-M16_C-Phase.csv',
-    #             '6.012480338414508_93-Site_DKA-M4_A-Phase.csv'      : '20_6.012480338414508_93-Site_DKA-M4_A-Phase.csv',
-    #             '5.252291798591625_63-Site_DKA-M17_A-Phase.csv'     : '21_5.252291798591625_63-Site_DKA-M17_A-Phase.csv',
-    #             '6.012586116790767_213-Site_DKA-M16_A-Phase_II.csv' : '22_6.012586116790767_213-Site_DKA-M16_A-Phase_II.csv',
-    #             '5.279052972793592_77-Site_DKA-M18_B-Phase.csv'     : '23_5.279052972793592_77-Site_DKA-M18_B-Phase.csv',
-    #             '6.107803106308_66-Site_DKA-M16_B-Phase.csv'        : '24_6.107803106308_66-Site_DKA-M16_B-Phase.csv',
-    #             '5.291588862737025_73-Site_DKA-M19_A-Phase.csv'     : '25_5.291588862737025_73-Site_DKA-M19_A-Phase.csv',
-    #             '6.494097034136466_79-Site_DKA-M6_A-Phase.csv'      : '26_6.494097034136466_79-Site_DKA-M6_A-Phase.csv',
-    #             '5.377141674359625_71-Site_DKA-M2_C-Phase.csv'      : '27_5.377141674359625_71-Site_DKA-M2_C-Phase.csv',
-    #             '6.640705426534017_69-Site_DKA-M4_B-Phase.csv'      : '28_6.640705426534017_69-Site_DKA-M4_B-Phase.csv',
-    #             '5.381122271219891_218-Site_DKA-M4_C-Phase_II.csv'  : '29_5.381122271219891_218-Site_DKA-M4_C-Phase_II.csv',
-    #             '8.239588975906374_67-Site_DKA-M8_A-Phase.csv'      : '30_8.239588975906374_67-Site_DKA-M8_A-Phase.csv',
-    #             '5.392713745435067_72-Site_DKA-M15_B-Phase.csv'     : '31_5.392713745435067_72-Site_DKA-M15_B-Phase.csv',
-    #             '8.4429276784261_68-Site_DKA-M8_C-Phase.csv'        : '32_8.4429276784261_68-Site_DKA-M8_C-Phase.csv',
-    #             '5.424700140953067_90-Site_DKA-M3_A-Phase.csv'      : '33_5.424700140953067_90-Site_DKA-M3_A-Phase.csv',
-    #             '8.563250303268434_98-Site_DKA-M8_B-Phase.csv'      : '34_8.563250303268434_98-Site_DKA-M8_B-Phase.csv',
-    #             '5.4838057756424_61-Site_DKA-M15_A-Phase.csv'       : '35_5.4838057756424_61-Site_DKA-M15_A-Phase.csv',
-    #             '9.772030671437577_85-Site_DKA-M7_A-Phase.csv'      : '36_9.772030671437577_85-Site_DKA-M7_A-Phase.csv'
-    #         },
+        # 데이터 준비 및 indices 생성
+        self._prepare_data()
+        self.indices = self._create_indices()
 
-    #         'DKASC_Yulara': {
-    #             '208.47536849975663_10-Site_SS-PV1-DB-SS-1A.csv'   : '01_208.47536849975663_10-Site_SS-PV1-DB-SS-1A.csv',
-    #             '21.760133743286087_7-Site_SD-PV2-DB-SD-1A.csv'    : '02_21.760133743286087_7-Site_SD-PV2-DB-SD-1A.csv',
-    #             '300.15113321940083_11-Site_LD-PV1-DB-LD-1A.csv'   : '03_300.15113321940083_11-Site_LD-PV1-DB-LD-1A.csv',
-    #             '36.68936411539717_9-Site_SD-PV2-DB-SD-2A.csv'     : '04_36.68936411539717_9-Site_SD-PV2-DB-SD-2A.csv',
-    #             '44.16863854726167_6-Site_SD-PV2-DB-SD-3A.csv'     : '05_44.16863854726167_6-Site_SD-PV2-DB-SD-3A.csv',
-    #             '897.5805969238291_5-Site_DG-PV1-DB-DG-M1A.csv'    : '06_897.5805969238291_5-Site_DG-PV1-DB-DG-M1A.csv',
-    #             '97.79799715677892_8-Site_CA-PV1-DB-CA-1A.csv'     : '07_97.79799715677892_8-Site_CA-PV1-DB-CA-1A.csv'
-    #         },
-    #         'GIST': {
-    #             '66.0_C07_Samsung-Env-Bldg.csv'          : '01_66.0_C07_Samsung-Env-Bldg.csv',
-    #             '37.4_C09_Dasan.csv'                     : '02_37.4_C09_Dasan.csv',
-    #             '69.6_C10_Renewable-E-Bldg.csv'          : '03_69.6_C10_Renewable-E-Bldg.csv',
-    #             '122.5_C11_GAIA.csv'                     : '04_122.5_C11_GAIA.csv',
-    #             '76.8_E02_Animal-Recource-Center.csv'    : '05_76.8_E02_Animal-Recource-Center.csv',
-    #             '133.1_E03_GTI.csv'                      : '06_133.1_E03_GTI.csv',
-    #             '220.1_E8_Natural-Science-Bldg.csv'      : '07_220.1_E8_Natural-Science-Bldg.csv',
-    #             '27.7_E11_DormA.csv'                     : '08_27.7_E11_DormA.csv',
-    #             '52.1_E12_DormB.csv'                     : '09_52.1_E12_DormB.csv',
-    #             '29.9_N01_Central-Library.csv'           : '10_29.9_N01_Central-Library.csv',
-    #             '45.8_N02_LG-Library.csv'                : '11_45.8_N02_LG-Library.csv',
-    #             '14.9_N06_College-Bldg.csv'              : '12_14.9_N06_College-Bldg.csv',
-    #             '48.2_W06_Student-Union.csv'             : '13_48.2_W06_Student-Union.csv',
-    #             '127.9_W11_Facility-Maintenance-Bldg.csv': '14_127.9_W11_Facility-Maintenance-Bldg.csv',
-    #             '33.7_W13_Centeral-Storage.csv'          : '15_33.7_W13_Centeral-Storage.csv',
-    #             '164.1_Soccer-Field.csv'                 : '16_164.1_Soccer-Field.csv'
-    #         },
-    #         'Germany': {
-    #             '4.75_DE_KN_industrial1_pv_1.csv'                  : '01_4.75_DE_KN_industrial1_pv_1.csv',
-    #             '4.170000000000073_DE_KN_industrial1_pv_2.csv'     : '02_4.170000000000073_DE_KN_industrial1_pv_2.csv',
-    #             '14.599999999998545_DE_KN_industrial2_pv.csv'      : '03_14.599999999998545_DE_KN_industrial2_pv.csv',
-    #             '6.055000000000291_DE_KN_industrial3_pv_facade.csv': '04_6.055000000000291_DE_KN_industrial3_pv_facade.csv',
-    #             '11.100999999998749_DE_KN_industrial3_pv_roof.csv' : '05_11.100999999998749_DE_KN_industrial3_pv_roof.csv',
-    #             '8.197000000000116_DE_KN_residential1_pv.csv'      : '06_8.197000000000116_DE_KN_residential1_pv.csv',
-    #             '3.845999999999549_DE_KN_residential3_pv.csv'      : '07_3.845999999999549_DE_KN_residential3_pv.csv',
-    #             '8.784999999999854_DE_KN_residential4_pv.csv'      : '08_8.784999999999854_DE_KN_residential4_pv.csv',
-    #             '7.64600000000064_DE_KN_residential6_pv.csv'       : '09_7.64600000000064_DE_KN_residential6_pv.csv'
-    #         },
-    #         'Miryang': {
-    #             '101.286_C_99kW.csv'  : '01_101.286_C_99kW.csv',
-    #             '30.096_G_50kW.csv'   : '02_30.096_G_50kW.csv',
-    #             '52.102_F_64kW.csv'   : '03_52.102_F_64kW.csv',
-    #             '533.6_B_658kW.csv'   : '04_533.6_B_658kW.csv',
-    #             '62.415_E_69kW.csv'   : '05_62.415_E_69kW.csv',
-    #             '75.57_D_89kW.csv'    : '06_75.57_D_89kW.csv',
-    #             '826.165_A_999kW.csv' : '07_826.165_A_999kW.csv'
-    #         }
-    #     }
+    def _prepare_data(self):
+        for inst_id in self.inst_list:
+            csv_file = f"installation_{inst_id}.csv"
+            csv_path = os.path.join(self.root_path, csv_file)
+            df_raw = pd.read_csv(csv_path)
+            df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
 
+            # 필요한 컬럼만
+            df_raw = df_raw[['timestamp'] + self.input_channels]
 
-    #     return mappings.get(self.data, {})
-   
+            # 시간 피처 생성
+            df_stamp = pd.DataFrame()
+            df_stamp['timestamp'] = df_raw['timestamp']
+            if self.timeenc == 0:
+                df_stamp['month'] = df_stamp['timestamp'].dt.month
+                df_stamp['day'] = df_stamp['timestamp'].dt.day
+                df_stamp['weekday'] = df_stamp['timestamp'].dt.weekday
+                df_stamp['hour'] = df_stamp['timestamp'].dt.hour
+                data_stamp = df_stamp[['month','day','weekday','hour']].values
+            else:
+                data_stamp = time_features(df_stamp['timestamp'], freq=self.freq).transpose(1,0)
 
-##########################################################################################
-    
-class Dataset_DKASC_AliceSprings(Dataset):
-    def __init__(self, root_path, flag='train', size=None,
-                 features='S', data_path='', scaler='MinMaxScaler',
-                 target='Active_Power', scale=True, timeenc=0, freq='h'):
-        # size [seq_len, label_len, pred_len]
-        # info
-        if size == None:
-            self.seq_len = 24 * 4 * 4
-            self.label_len = 24 * 4
-            self.pred_len = 24 * 4
-        else:
-            self.seq_len = size[0]
-            self.label_len = size[1]
-            self.pred_len = size[2]
-        # init
-        # assert flag in ['train', 'test', 'val']
-        # type_map = {'train': 0, 'val': 1, 'test': 2}
-        # self.set_type = type_map[flag]
-        self.features = features
-        self.target = target
-        self.scale = scale
-        self.timeenc = timeenc
-        self.freq = freq
-        self.flag = flag
-        if self.flag == 'pred': 
-            self.flag = 'test'
+            df_data = df_raw[self.input_channels]
 
-        self.scaler = scaler
+            scaler_path = os.path.join(self.scaler_dir, f"installation_{inst_id}_scaler.pkl")
 
-        self.root_path = root_path
-        self.data_path = data_path
-        
-   
-        # # Total 개
-        # self.LOCATIONS = [
-        #     '52-Site_DKA-M16_C-Phase.csv'    ,    # 33
-        #     '54-Site_DKA-M15_C-Phase.csv'    ,
-        #     '55-Site_DKA-M20_B-Phase.csv'    ,    # 29
-        #     '56-Site_DKA-M20_A-Phase.csv'    ,    # 30
-        #     '57-Site_DKA-M16_A-Phase.csv'    ,
-        #     '58-Site_DKA-M17_C-Phase.csv'    ,    # 36
-        #     '59-Site_DKA-M19_C-Phase.csv'    ,    # 38
-        #     '60-Site_DKA-M18_A-Phase.csv'    ,
-        #     '61-Site_DKA-M15_A-Phase.csv'    ,    # 23
-        #     '63-Site_DKA-M17_A-Phase.csv'    ,    # 34
-        #     '64-Site_DKA-M17_B-Phase.csv'    ,    # 37
-        #     '66-Site_DKA-M16_B-Phase.csv'    ,
-        #     '67-Site_DKA-M8_A-Phase.csv'     ,    # 21
-        #     '68-Site_DKA-M8_C-Phase.csv'     ,    # 20
-        #     '69-Site_DKA-M4_B-Phase.csv'     ,    # 17
-        #     '70-Site_DKA-M5_A-Phase.csv'     ,    # 3
-        #     '71-Site_DKA-M2_C-Phase.csv'     ,    # 18
-        #     '72-Site_DKA-M15_B-Phase.csv'    ,    # 26
-        #     '73-Site_DKA-M19_A-Phase.csv'    ,    # 35
-        #     '74-Site_DKA-M18_C-Phase.csv'    ,    # 31
-        #     '77-Site_DKA-M18_B-Phase.csv'    ,
-        #     '79-Site_DKA-M6_A-Phase.csv'     ,    # 7
-        #     '84-Site_DKA-M5_B-Phase.csv'     ,    # 12
-        #     '85-Site_DKA-M7_A-Phase.csv'     ,    # 10
-        #     '90-Site_DKA-M3_A-Phase.csv'     ,    # 14
-        #     '92-Site_DKA-M6_B-Phase.csv'     ,    # 13
-        #     '93-Site_DKA-M4_A-Phase.csv'     ,    # 8
-        #     '97-Site_DKA-M10_B+C-Phases.csv' ,    # 22
-        #     '98-Site_DKA-M8_B-Phase.csv'     ,    # 19
-        #     '98-Site_DKA-M8_B-Phase(site19).csv',
-        #     '99-Site_DKA-M4_C-Phase.csv'     ,
-        #     '100-Site_DKA-M1_A-Phase.csv'    ,    # 16A
-        #     '212-Site_DKA-M15_C-Phase_II.csv',    # 25
-        #     '213-Site_DKA-M16_A-Phase_II.csv',    # 24
-        #     '214-Site_DKA-M18_B-Phase_II.csv',    # 32
-        #     '218-Site_DKA-M4_C-Phase_II.csv'      # 9A
-        # ]
-
-    
-        
-        self.scalers = {}
-        self.site_data = {}
-
-        self.load_preprocessed_data()
-        self.indices = self.create_sequences_indices()
-
-        
-    
-    def load_preprocessed_data(self):
-        # 파일 로드 및 사이트별 데이터 수집
-        self._load_files()
-        # train, val, test split, 해당하는 flag에 맞게 데이터 가져옴
-        selected_sites = self._split_sites()[self.flag]
-        site_data = {}
-        # site 별로 데이터 저장
-        site_all_data = {site_id: [] for site_id in selected_sites}
-        # all_data = [] # 전체 데이터셋
-
-        for site_id in selected_sites:
-            site_files = self.site_files.get(site_id, [])
-            for file_name in site_files:
-                file_path = os.path.join(self.root_path, file_name)
-                df_raw = pd.read_csv(file_path)
-                df_x, df_y, time_feature, timestamp, site = self._process_file(df_raw, site_id)
-
-                # 데이터 저장
-                site_data.setdefault(site_id, []).append({
-                    'x': df_x,
-                    'y': df_y,
-                    'data_stamp': time_feature,
-                    'timestamp': timestamp
-                })
-
-                # for scaling
-                site_all_data[site_id].append(df_x)
-
-        
-        # combined_data = pd.concat(all_data, axis=0)
-           
-        self.scalers = {}          
-        if self.scaler:
-            for site_id in selected_sites:
-                self.scalers[site_id] = {}
-                site_combined_data = pd.concat(site_all_data[site_id], axis=0)
-
-                if self.flag == 'train':
-
-                    for col in site_combined_data.columns:
-                        if col == 'timestamp': continue
-                        if self.scaler == 'MinMaxScaler':
-                            scaler = MinMaxScaler()
-                        else: 
-                            scaler = StandardScaler()
-                    
-                        scaler.fit(site_combined_data[[col]])
-                        self.scalers[site_id][col] = scaler
-
-                        os.makedirs(os.path.join(self.root_path, f'scalers/{site_id}'), exist_ok=True)
-                        with open(os.path.join(self.root_path, f'scalers/{site_id}/{col}_scaler.pkl'), 'wb') as f:
-                            pickle.dump(scaler, f)
-
-                    with open(os.path.join(self.root_path, f'scalers/{site_id}/Active_Power_min_max_train.pkl'), 'wb') as f:
-                        print(f"Active_Power min: {site_combined_data['Active_Power'].min()}")
-                        print(f"Active_Power max: {site_combined_data['Active_Power'].max()}")
-                        pickle.dump([site_combined_data['Active_Power'].min(), site_combined_data['Active_Power'].max()], f)
-
-
+            if self.scaler:
+                # 스케일러 fit & transform 로직
+                # 만약 이 installation의 스케일러가 존재하지 않는다면 새로 fit
+                if not os.path.exists(scaler_path):
+                    # 여기서가 이 installation을 처음 처리하는 시점
+                    # 이 시점이 Train/Val/Test 중 어느 단계든 상관 없이, 해당 installation은 자신의 전체 데이터를 사용해 fit 가능
+                    scaler_dict = {}
+                    for ch in self.input_channels:
+                        scaler = StandardScaler()
+                        # 여기서는 installation 전체 데이터 사용 (현재 code에서는 filtering 없음)
+                        scaler.fit(df_data[[ch]])
+                        scaler_dict[ch] = scaler
+                    # fit한 스케일러 저장
+                    with open(scaler_path, 'wb') as f:
+                        pickle.dump(scaler_dict, f)
                 else:
-                    for col in site_combined_data.columns:
-                        if col == 'timestamp': continue
-                        with open(os.path.join(self.root_path, f'scalers/{site_id}/{col}_scaler.pkl'), 'rb') as f:
-                            self.scalers[site_id][col] = pickle.load(f)
+                    # 이미 scaler가 있다면 로드
+                    with open(scaler_path, 'rb') as f:
+                        scaler_dict = pickle.load(f)
 
-                        
-                if self.flag == 'val':
-                    with open(os.path.join(self.root_path, f'scalers/{site_id}/Active_Power_min_max_val.pkl'), 'wb') as f:
-                            print(f"Site {site_id} Active_Power min: {site_combined_data['Active_Power'].min()}")
-                            print(f"Site {site_id} Active_Power max: {site_combined_data['Active_Power'].max()}")
-                            pickle.dump([site_combined_data['Active_Power'].min(), site_combined_data['Active_Power'].max()], f)
-                
-                elif self.flag == 'test':
-                    train_path = os.path.join(self.root_path, f'scalers/{site_id}/Active_Power_min_max_train.pkl')
-                    val_path = os.path.join(self.root_path, f'scalers/{site_id}/Active_Power_min_max_val.pkl')
+                # transform 수행
+                transformed_data = [scaler_dict[ch].transform(df_data[[ch]]) for ch in self.input_channels]
+                data = np.hstack(transformed_data)
+            else:
+                data = df_data.values
 
-                    with open(train_path, 'rb') as f:
-                        train_min, train_max = pickle.load(f)
-                    with open(val_path, 'rb') as f:
-                        val_min, val_max = pickle.load(f)
+            self.data_x_list.append(data)
+            self.data_y_list.append(data)
+            self.data_stamp_list.append(data_stamp)
+            self.inst_id_list.append(inst_id)
 
-                    self.ap_max_by_site = getattr(self, 'ap_max_by_site', {})
-                    self.ap_min_by_site = getattr(self, 'ap_min_by_site', {})
-                    self.ap_max_by_site[site_id] = max(train_max, val_max)
-                    self.ap_min_by_site[site_id] = min(train_min, val_min)
-
-                  
-                
-            # scaler 적용 및 site data update
-            for data in site_data[site_id]:
-                for col in data['x'].columns:
-                        if col == 'timestamp': continue
-                        scaler = self.scalers[site_id][col]
-                        data['x'][col] = scaler.transform(data['x'][[col]])  
-                        if col == 'Active_Power':    
-                            data['y'][col] = scaler.transform(data['y'][[col]])
-
-        self.site_data = site_data
-
-    def _process_file(self, df_raw, site_id):
-        # Time encoding ((년,) 월, 일, 요일, 시간)
-
-        data_stamp = pd.DataFrame()
-        data_stamp['date'] = pd.to_datetime(df_raw.timestamp)
-        data_stamp['year'] = data_stamp.date.apply(lambda row: row.year, 1)
-        data_stamp['month'] = data_stamp.date.apply(lambda row: row.month, 1)
-        data_stamp['day'] = data_stamp.date.apply(lambda row: row.day, 1)
-        data_stamp['weekday'] = data_stamp.date.apply(lambda row: row.weekday(), 1)
-        data_stamp['hour'] = data_stamp.date.apply(lambda row: row.hour, 1)
-        if self.timeenc == 0:
-            time_feature = data_stamp[['month', 'day', 'weekday', 'hour']].values
-        else: 
-            time_feature = time_features(pd.to_datetime(df_raw['timestamp'].values), freq=self.freq).T
-        timestamp = data_stamp[['year', 'month', 'day', 'weekday', 'hour']].values
-
-
-        # 필요한 칼럼만 추출
-        cols = df_raw.columns.tolist()
-     
-        cols.remove('timestamp')
-        cols.remove('Active_Power')
-        
-        # df_raw = df_raw[['date'] + cols + [self.target]]
-    
-        df_raw = df_raw[cols + [self.target]]
-
-        # TODO: MS, S, M 구분해서 처리하는 코드 추가
-
-        df_x = df_raw[cols + [self.target]]
-        # df_x['Wind_Speed'] = np.log
-        df_y = df_raw[[self.target]]
-        site_id = np.array([site_id]) * len(df_x)
-       
-        return df_x, df_y, time_feature, timestamp, site_id
-
-
-    def _load_files(self):
-        if self.data_path['type'] == 'all':
-            all_files = [f for f in os.listdir(self.root_path) if f.endswith('.csv')]
-            self.site_files = {}
-            for file_name in all_files:
-                site_id = int(file_name.split('_')[0])
-                self.site_files.setdefault(site_id, []).append(file_name)
-        if self.data_path['type'] == 'debug':
-            self.site_files = {}
-            for key in ['train', 'val', 'test']:
-                site_id = int(self.data_path[key].split('-')[0])
-                self.site_files.setdefault(site_id, []).append(self.data_path[key])
-    
-    
-    def _split_sites(self):
-        if self.data_path['type'] == 'all':
-            site_ids = list(self.site_files.keys())
-            
-            # TODO: 재현 가능하게 고정하기
-            # [INFO] Train sites: [92, 214, 52, 61, 99, 60, 72, 68, 55, 67, 64, 212, 59, 71, 69, 66, 90, 73, 70, 79, 213, 74, 85]
-            # train 1310017
-            # [INFO] Val sites: [54, 58, 63, 98, 77, 84]
-            # val 348608
-            # [INFO] Test sites: [57, 93, 56, 218, 100]
-            # test 250599
-            train_sites = [1, 4, 7]
-            val_sites = [2, 6]
-            test_sites = [3, 5]
-            # random.seed(42)
-            # random.shuffle(site_ids)
-            # total_sites = len(site_ids)
-            # train_end = int(total_sites * 0.7)
-            # val_end = train_end + int(total_sites * 0.2)
-
-            site_split = {
-                'train': train_sites,
-                'val': val_sites,
-                'test': test_sites 
-            }
-        elif self.data_path['type'] == 'debug':
-            site_split = {
-                'train': [int(self.data_path['train'].split('_')[0])],
-                'val': [int(self.data_path['val'].split('_')[0])],
-                'test': [int(self.data_path['test'].split('_')[0])]
-            }
-
-        print(f'[INFO] {self.flag.capitalize()} sites: {site_split[self.flag]}')
-        return site_split
-    
-    def create_sequences_indices(self):
+    def _create_indices(self):
         indices = []
-        for site_id, data_list in self.site_data.items():
-            for data in data_list:
-                x_len = len(data['x'])
-                max_start = x_len - self.seq_len - self.pred_len + 1
-                indices.extend([(site_id, data, i) for i in range(max_start)])
+        for inst_idx, data_x in enumerate(self.data_x_list):
+            total_len = len(data_x)
+            max_start = total_len - self.seq_len - self.pred_len + 1
+            for s in range(max_start):
+                indices.append((inst_idx, s))
         return indices
 
-    
     def __getitem__(self, index):
-        site_id, data, start_idx = self.indices[index]
-        s_begin = start_idx
+        inst_idx, s_begin = self.indices[index]
+        data_x = self.data_x_list[inst_idx]
+        data_y = self.data_y_list[inst_idx]
+        data_stamp = self.data_stamp_list[inst_idx]
+
         s_end = s_begin + self.seq_len
         r_begin = s_end - self.label_len
         r_end = r_begin + self.label_len + self.pred_len
 
-        seq_x = data['x'].iloc[s_begin:s_end].values
-        seq_y = data['y'].iloc[r_begin:r_end].values
-        seq_x_mark = data['data_stamp'][s_begin:s_end]
-        seq_y_mark = data['data_stamp'][r_begin:r_end]
-        site = np.array([site_id]).repeat(s_end - s_begin).reshape(-1, 1)
-        seq_x_ds = data['timestamp'][s_begin:s_end]
-        seq_y_ds = data['timestamp'][r_begin:r_end]
+        seq_x = data_x[s_begin:s_end]
+        seq_y = data_y[r_begin:r_end]
+        seq_x_mark = data_stamp[s_begin:s_end]
+        seq_y_mark = data_stamp[r_begin:r_end]
 
-        return seq_x, seq_y.reshape(-1, 1), seq_x_mark, seq_y_mark, site, seq_x_ds, seq_y_ds
-    
-    
-    def __len__(self):    
+        return seq_x, seq_y, seq_x_mark, seq_y_mark
+
+    def __len__(self):
         return len(self.indices)
 
+    def inverse_transform(self, data, inst_id):
+        scaler_path = os.path.join(self.scaler_dir, f"installation_{inst_id}_scaler.pkl")
+        if not os.path.exists(scaler_path):
+            raise FileNotFoundError(f"Scaler for installation {inst_id} not found.")
+        with open(scaler_path, 'rb') as f:
+            scaler_dict = pickle.load(f)
+
+        return scaler_dict[self.target].inverse_transform(data)
 
 
-    # 평가 시 필요함
-    def inverse_transform(self, data):
-        data_org = data.copy()
-        # print(data.shape)
-        # print(data[-1].shape) #16,1
-        data = self.scalers['Active_Power'].inverse_transform(data.reshape(-1, 1))
-        data = data.reshape(data_org.shape[0], data_org.shape[1], -1)
-        return data
-    
 
-    # def inverse_transform_tensor(self, data):
-    #     data_org = data.clone()
-    #     inverse_data = torch.zeros_like(data_org)
-        
-        
-    #     scaler = self.scalers['Active_Power']
-            
-    #     # 스케일러의 종류에 따라 역변환 방식 결정
-    #     if isinstance(scaler, MinMaxScaler):
-    #         data_min = torch.tensor(scaler.data_min_, device=data.device)
-    #         data_max = torch.tensor(scaler.data_max_, device=data.device)
-    #         data_range = data_max - data_min
-    #         inverse_sample = data[i] * data_range + data_min
-    #     elif isinstance(scaler, StandardScaler):
-    #         mean = torch.tensor(scaler.mean_, device=data.device)
-    #         scale = torch.tensor(scaler.scale_, device=data.device)
-    #         inverse_sample = data[i] * scale + mean
-    #     else:
-    #         raise ValueError(f"Unsupported scaler type: {type(scaler)}")
-        
-    #     inverse_data[i] = inverse_sample.reshape(data[i].shape)
-    
-    # return inverse_data
 
-####################################################
+
+
+
+
+
+#######################################################################################
 
 class Dataset_Miryang_MinMax(Dataset):
     def __init__(self, root_path, flag='train', size=None,
