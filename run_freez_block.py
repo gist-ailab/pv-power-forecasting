@@ -30,14 +30,12 @@ if __name__ == '__main__':
     # data loader
     parser.add_argument('--data', type=str, default='DKASC', help='dataset type. ex: DKASC, GIST')
     parser.add_argument('--root_path', type=str, default='./data/DKASC_AliceSprings/converted', help='root path of the source domain data file')
-    parser.add_argument('--data_path', type=json.loads, default='{"type":"all"}', 
-                        help='In Debuggig {"type": "debug", "train":"79-Site_DKA-M6_A-Phase.csv", "val":"100-Site_DKA-M1_A-Phase.csv", "test":"85-Site_DKA-M7_A-Phase.csv"}')
+    parser.add_argument('--data_path', type=str, default=None, 
+                        help='write a PV array name when training a single PV array')
     
     # parser.add_argument('--root_path', type=str, default='./data/GIST_dataset/', help='root path of the source domain data file')
     # parser.add_argument('--data_path', type=str, default='GIST_sisuldong.csv', help='source domain data file')
     parser.add_argument('--scaler', type=bool, default=True, help='StandardScaler')
-    parser.add_argument('--features', type=str, default='MS',
-                        help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
     parser.add_argument('--freq', type=str, default='h',
                         help='freq for time 2 encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
@@ -145,11 +143,10 @@ if __name__ == '__main__':
     if (args.is_pretraining) and (not args.is_inference):
         for ii in range(args.itr):
             # setting record of experiments
-            setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
+            setting = '{}_{}_{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
                 args.model_id,
                 args.model,
                 args.data,
-                args.features,
                 args.seq_len,
                 args.label_len,
                 args.pred_len,
@@ -163,7 +160,7 @@ if __name__ == '__main__':
                 args.distil,
                 args.des,
                 args.num_freeze_layers,
-                args.wandb
+                args.wandb,
                 ii)
 
             exp = Exp(args)  # set experiments
@@ -184,11 +181,10 @@ if __name__ == '__main__':
 
     elif args.is_inference:
         ii = 0
-        setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
+        setting = '{}_{}_{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
             args.model_id,
             args.model,
             args.data,
-            args.features,
             args.seq_len,
             args.label_len,
             args.pred_len,
@@ -213,12 +209,11 @@ if __name__ == '__main__':
     elif args.num_freeze_layers > 0:    # freeze block 개수 조절을 통해 finetuning 및 linear probing 수행
         for ii in range(args.itr):
             # setting record of experiments
-            setting = '{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
+            setting = '{}_{}_{}_{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
                 args.num_freeze_layers,
                 args.model_id,
                 args.model,
                 args.data,
-                args.features,
                 args.seq_len,
                 args.label_len,
                 args.pred_len,
