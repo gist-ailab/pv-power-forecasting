@@ -1,27 +1,79 @@
 # from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
 #      Dataset_DKASC_AliceSprings, Dataset_DKASC_Yulara, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang, Dataset_Miryang_MinMax, Dataset_Miryang_Standard, Dataset_SineMax
-from data_provider.data_loader import Dataset_PV, Dataset_SineMax
+from data_provider.data_loader import Dataset_DKASC, Dataset_GIST, Dataset_SineMax
 from torch.utils.data import DataLoader, ConcatDataset
 import torch
 
 data_dict = {
-    'Source' : Dataset_PV,
+    'DKASC' : Dataset_DKASC,
     'SineMax': Dataset_SineMax,
-    'DKASC_AliceSprings': Dataset_PV,
-    'DKASC_Yulara': Dataset_PV,
-    'GIST': Dataset_PV,
-    'German': Dataset_PV,
-    'UK': Dataset_PV,
-    'OEDI_Georgia': Dataset_PV,
-    'OEDI_California': Dataset_PV,
-    'Miryang': Dataset_PV,
+    'GIST': Dataset_GIST,
+    # 'German': Dataset_PV,
+    # 'UK': Dataset_PV,
+    # 'OEDI_Georgia': Dataset_PV,
+    # 'OEDI_California': Dataset_PV,
+    # 'Miryang': Dataset_PV,
+}
+
+split_configs = {
+    'DKASC': {
+        'train': [1, 4, 7, 9, 10, 13, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30, 31, 33, 34, 35, 36, 37, 40, 43],
+        'val': [2, 5, 8, 11, 14, 38, 41],
+        'test': [3, 6, 12, 20, 28, 32, 39, 42]
+    },
+    # 사이트로 나누는 loc
+    'DKASC_AliceSprings': {
+        'train': [1, 4, 7, 9, 10, 13, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30, 31, 33, 34, 35, 36],
+        'val': [2, 5, 8, 11, 14],
+        'test': [3, 6, 12, 20, 28, 32]
+    },
+    'DKASC_Yulara': {
+        'train': [1, 4, 7],
+        'val': [2, 5],
+        'test': [3, 6]
+    },
+    'GIST': {
+        'train': [1, 3, 4, 5, 6, 7, 8, 9, 11, 13],
+        'val': [2, 12],
+        'test': [10, 14]
+        # 'train': [1, 3, 4, 5, 6],
+        # 'val': [2],
+        # 'test': [10]
+    },
+    'German': {
+        'train': [1, 4, 7, 8, 9],
+        'val': [2, 5],
+        'test': [3, 6]
+    },
+    'Miryang': {
+        'train': [1, 4, 7, 2, 6],
+        'val': [3],
+        'test': [5]
+    },
+    #### 날짜로 나누는 loc
+    'UK' : {
+        'train' : 0.7,
+        'val' : 0.2,
+        'test' : 0.1
+    },
+    'OEDI_California': { # 2017.12.05  2023.10.31
+        'train' : [2017, 2021],
+        'val' : [2021, 2022],
+        'test' : [2022, 2024]
+
+    },
+    'OEDI_Georgia' : {  # 2018.03.29  2022.03.10
+        'train' : [2018, 2020],
+        'val' : [2020, 2021],
+        'test' : [2021, 2023]
+    },
 }
 
 
 def data_provider(args, flag, distributed=False):
     ## flag : train, val, test
     Data = data_dict[args.data]
-    # Data = data_dict[args.data]
+
     timeenc = 0 if args.embed != 'timeF' else 1
 
     if flag == 'test':
@@ -41,24 +93,16 @@ def data_provider(args, flag, distributed=False):
         batch_size = args.batch_size
         freq = args.freq
     
-    
-    def create_dataset(Data, root_path, data):
-        return Data(
-            root_path=root_path,
-            data_path=args.data_path,
-            data=data,
-            flag=flag,
-            size=[args.seq_len, args.label_len, args.pred_len],
-            features=args.features,
-            target=args.target,
-            timeenc=timeenc,
-            freq=freq,
-            scaler=args.scaler
-
+    data_set = Data(
+        root_path=args.root_path,
+        data_path=args.data_path,
+        split_configs=split_configs[args.data],
+        flag=flag,
+        size=[args.seq_len, args.label_len, args.pred_len],
+        timeenc=timeenc,
+        freq=freq,
+        scaler=args.scaler
         )
-    
-   
-    data_set = create_dataset(Data, args.root_path, args.data)
     print(flag, data_set.__len__())
     if distributed:
         sampler = torch.utils.data.distributed.DistributedSampler(
