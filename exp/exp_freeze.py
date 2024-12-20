@@ -125,7 +125,7 @@ class Exp_Freeze(Exp_Basic):
     def train(self, checkpoints):
         self.args.checkpoints = os.path.join('checkpoints', checkpoints)
         # wandb 관련 작업은 rank 0에서만 실행
-        if self.args.local_rank == 0:
+        if (self.args.local_rank == 0) and self.args.wandb:
             self._set_wandb(checkpoints)
             config = {
                 "model": self.args.model,
@@ -229,10 +229,11 @@ class Exp_Freeze(Exp_Basic):
                 train_losses.append(loss.item())
 
                 if self.args.local_rank == 0 and (i + 1) % 100 == 0:
-                    wandb.log({
-                        "iteration": (epoch * len(train_loader)) + i + 1,
-                        "train_loss_iteration": loss.item()
-                    })
+                    if self.args.wandb:
+                        wandb.log({
+                            "iteration": (epoch * len(train_loader)) + i + 1,
+                            "train_loss_iteration": loss.item()
+                        })
                     print(f"\titers: {i+1}, epoch: {epoch+1} | loss: {loss.item():.7f}")
                     speed = (time.time() - epoch_time) / iter_count
                     left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
@@ -243,8 +244,6 @@ class Exp_Freeze(Exp_Basic):
                 if self.args.lradj == 'TST':
                     adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=False)
                     scheduler.step()
-            if self.args.local_rank == 0:
-                print(f"Epoch: {epoch + 1} | cost time: {time.time() - epoch_time}")
             
             train_loss = np.average(train_losses)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
@@ -252,13 +251,14 @@ class Exp_Freeze(Exp_Basic):
             
             if self.args.local_rank == 0:
                 print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
-
-                wandb.log({
-                    "epoch": epoch + 1,
-                    "train_loss": train_loss,
-                    "validation_loss": vali_loss,
-                    "test_loss": test_loss,
-                })
+                print(f"└ cost time: {time.time() - epoch_time}")
+                if self.args.wandb:
+                    wandb.log({
+                        "epoch": epoch + 1,
+                        "train_loss": train_loss,
+                        "validation_loss": vali_loss,
+                        "test_loss": test_loss,
+                    })
             
             early_stopping(vali_loss, self.model, path)
             if early_stopping.early_stop:
@@ -270,8 +270,8 @@ class Exp_Freeze(Exp_Basic):
             else:
                 print(f'Learning rate updated to {scheduler.get_last_lr()[0]}')
         
-        if self.args.local_rank == 0:
-            best_model_path = os.path.join(path, 'checkpoint.pth')
+        best_model_path = os.path.join(path, 'checkpoint.pth')
+        if self.args.wandb == 0:
             upload_files_to_wandb(
                 project_name=self.project_name,
                 run_name=self.run_name,
@@ -335,7 +335,7 @@ class Exp_Freeze(Exp_Basic):
         os.makedirs(folder_path, exist_ok=True)
 
         if 'checkpoint.pth' not in model_path:
-            model_path = os.path.join(f'checkpoints/{self.args.checkpoints}', 'checkpoint.pth')
+            model_path = os.path.join(f'{self.args.checkpoints}', 'checkpoint.pth')
         
         self.model.load_state_dict(torch.load(model_path))
         
