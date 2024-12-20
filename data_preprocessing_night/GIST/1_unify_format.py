@@ -58,7 +58,7 @@ def combine_into_each_site(file_list, index_of_site,
         daily_pv_data = daily_pv_data[columns_to_keep]
 
         # 결측치 처리:'-' 또는 빈 값을 NaN으로 변환
-        daily_pv_data = daily_pv_data.applymap(lambda x: np.nan if x in ['-', '', ' '] else x)
+        daily_pv_data = daily_pv_data.map(lambda x: np.nan if x in ['-', '', ' '] else x)
 
         # get date
         pv_date = file.split('_')[-2]
@@ -226,8 +226,8 @@ if __name__ == '__main__':
         '학사과정': 'E11_DormA',
         '다산빌딩': 'C09_Dasan',
         '시설관리동': 'W11_Facility-Maintenance-Bldg',
-        '대학C동': 'N06_College-Bldg',
-        '동물실험동': 'E02_Animal-Recource-Center',
+        # '대학C동': 'N06_College-Bldg',
+        # '동물실험동': 'E02_Animal-Recource-Center',
         '중앙도서관': 'N01_Central-Library',
         'LG도서관': 'N02_LG-Library',
         '신재생에너지동': 'C10_Renewable-E-Bldg',

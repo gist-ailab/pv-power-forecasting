@@ -58,7 +58,7 @@ def ensure_full_day_timestamps(df, timestamp_col='timestamp'):
     # Create a full range of timestamps for each unique date in the DataFrame
     min_date = df[timestamp_col].min().floor('D')
     max_date = df[timestamp_col].max().ceil('D') - pd.Timedelta(hours=1)
-    full_timestamps = pd.date_range(start=min_date, end=max_date, freq='H')
+    full_timestamps = pd.date_range(start=min_date, end=max_date, freq='h')
     
     # Find missing timestamps
     missing_timestamps = full_timestamps.difference(df[timestamp_col])
@@ -152,8 +152,8 @@ if __name__ == '__main__':
         identical_values_mask = detect_consecutive_identical_values(df_hourly, 'Active_Power', min_consecutive=10)
         df_hourly.loc[identical_values_mask, 'Active_Power'] = pd.NA
 
-        # Group by date and apply the `adjust_daily_margin` function
-        df_hourly = df_hourly.groupby(df_hourly['timestamp'].dt.date, group_keys=False).apply(adjust_daily_margin)
+        # # Group by date and apply the `adjust_daily_margin` function
+        # df_hourly = df_hourly.groupby(df_hourly['timestamp'].dt.date, group_keys=False).apply(adjust_daily_margin)
         
         # Detect 2 consecutive NaN values in any column
         consecutive_nan_mask = detect_consecutive_nans(df_hourly, max_consecutive=2)
