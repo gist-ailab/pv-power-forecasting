@@ -138,7 +138,7 @@ if __name__ == '__main__':
         args.device_ids = [int(id_) for id_ in device_ids]
         args.gpu = args.device_ids[0]
 
-    if args.local_rank == 0:
+    if args.local_rank == -1:
         print('Args in experiment:')
         print(args)
     

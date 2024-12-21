@@ -125,7 +125,7 @@ class Exp_Main(Exp_Basic):
     def train(self, checkpoints):
         self.args.checkpoints = os.path.join('checkpoints', checkpoints)
         # wandb 관련 작업은 rank 0에서만 실행
-        if (self.args.local_rank == 0) and self.args.wandb:
+        if (self.args.local_rank == -1) and self.args.wandb:
             self._set_wandb(checkpoints)
             config = {
                 "model": self.args.model,
@@ -228,7 +228,7 @@ class Exp_Main(Exp_Basic):
                 
                 train_losses.append(loss.item())
 
-                if self.args.local_rank == 0 and (i + 1) % 100 == 0:
+                if self.args.local_rank == -1 and (i + 1) % 100 == 0:
                     if self.args.wandb:
                         wandb.log({
                             "iteration": (epoch * len(train_loader)) + i + 1,
@@ -249,7 +249,7 @@ class Exp_Main(Exp_Basic):
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             # test_loss = self.vali(test_data, test_loader, criterion)
             
-            if self.args.local_rank == 0:
+            if self.args.local_rank == -1:
                 print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
                 print(f"└ cost time: {time.time() - epoch_time}")
                 if self.args.wandb:
