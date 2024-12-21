@@ -27,13 +27,14 @@ import numpy as np
 import wandb
 from utils.wandb_uploader import upload_files_to_wandb
 from collections import defaultdict
+from tqdm import tqdm
 
 warnings.filterwarnings('ignore')
 
-class Exp_Main(Exp_Basic):
+class Exp_Freeze(Exp_Basic):
     def __init__(self, args):
-        super(Exp_Main, self).__init__(args)
-        self.project_name = "pv-forecasting"
+        super(Exp_Freeze, self).__init__(args)
+        self.project_name = "pv-forecasting-freeze-test"
         current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         self.run_name = f"{self.args.model}_run_{current_time}"
 
@@ -63,6 +64,28 @@ class Exp_Main(Exp_Basic):
                 device_ids=[self.args.local_rank],
                 output_device=self.args.local_rank
             )
+
+        if self.args.resume:
+            model = self.load_model(model, self.args.checkpoints)
+
+        if self.args.num_freeze_layers > 0:
+            model = self.load_model(model, self.args.checkpoints)
+            
+            # Define the layers to freeze
+            freeze_layers = ['W_pos', 'W_P.weight', 'W_P.bias']
+            freeze_layers += [f'model.backbone.encoder.layers.{i}' for i in range(self.args.num_freeze_layers)]
+            
+            # Freeze the specified layers
+            for name, param in model.named_parameters():
+                # freeze_layers에 해당하는 레이어 이름이 포함된 파라미터는 requires_grad=False로 설정
+                if any(layer in name for layer in freeze_layers):
+                    param.requires_grad = False
+
+            # Check which layers are frozen
+            for name, param in model.named_parameters():
+                if not param.requires_grad:
+                    print(f"Layer {name} is frozen.")
+                    print(f"sdp_attn (scaled dot-product attention) layer is like a constant, so it is already frozen.")
         
         return model
 
@@ -80,10 +103,29 @@ class Exp_Main(Exp_Basic):
     def _select_criterion(self):
         return nn.MSELoss()
 
-    def train(self, checkpoints, resume):
+    def masked_loss(self, predictions, targets, mask_value=-9999, loss_fn=torch.nn.MSELoss()):
+        """
+        Custom loss function to ignore specific mask_value during loss calculation.
+        :param predictions: Model predictions [batch_size, seq_len, num_features]
+        :param targets: Ground truth values [batch_size, seq_len, num_features]
+        :param mask_value: Value to ignore in loss calculation
+        :param loss_fn: Base loss function (e.g., MSELoss, MAELoss)
+        """
+        mask = (targets != mask_value)  # True for valid data
+        valid_predictions = predictions[mask]
+        valid_targets = targets[mask]
+        return loss_fn(valid_predictions, valid_targets)
+    
+    def load_model(self, model, checkpoints_path):
+        latest_model_path = os.path.join(checkpoints_path, 'model_latest.pth')
+        model.load_state_dict(torch.load(latest_model_path))
+        print(f'Model loaded from {latest_model_path}')
+        return model
+
+    def train(self, checkpoints):
         self.args.checkpoints = os.path.join('checkpoints', checkpoints)
         # wandb 관련 작업은 rank 0에서만 실행
-        if self.args.local_rank == 0:
+        if (self.args.local_rank == 0) and self.args.wandb:
             self._set_wandb(checkpoints)
             config = {
                 "model": self.args.model,
@@ -98,6 +140,7 @@ class Exp_Main(Exp_Basic):
                 "prediction_sequence_length": self.args.pred_len,
                 "patch_length": self.args.patch_len,
                 "stride": self.args.stride,
+                "num_freeze_layers": self.args.num_freeze_layers,
             }
             upload_files_to_wandb(
                 project_name=self.project_name,
@@ -128,18 +171,14 @@ class Exp_Main(Exp_Basic):
             max_lr=self.args.learning_rate
         )
 
-        if resume:
-            latest_model_path = os.path.join(self.args.checkpoints, 'model_latest.pth')
-            self.model.load_state_dict(torch.load(latest_model_path))
-            print(f'Model loaded from {latest_model_path}')
-
         for epoch in range(self.args.train_epochs):
             iter_count = 0
             train_losses = []
             epoch_time = time.time()
             
             self.model.train()
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, installation, batch_x_ts, batch_y_ts) in enumerate(train_loader):
+            # for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts) in enumerate(train_loader):
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
                 iter_count += 1
                 model_optim.zero_grad()
                 
@@ -179,10 +218,10 @@ class Exp_Main(Exp_Basic):
                         else:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                     
-                    f_dim = -1 if self.args.features == 'MS' else 0
-                    outputs = outputs[:, -self.args.pred_len:, f_dim:]
-                    batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+                    outputs = outputs[:, -self.args.pred_len:, -1:]
+                    batch_y = batch_y[:, -self.args.pred_len:, -1:].to(self.device)
                     loss = criterion(outputs, batch_y)
+                    # loss = self.masked_loss(outputs, batch_y, mask_value=-9999, loss_fn=criterion)  ### BSH
                     
                     loss.backward()
                     model_optim.step()
@@ -190,10 +229,11 @@ class Exp_Main(Exp_Basic):
                 train_losses.append(loss.item())
 
                 if self.args.local_rank == 0 and (i + 1) % 100 == 0:
-                    wandb.log({
-                        "iteration": (epoch * len(train_loader)) + i + 1,
-                        "train_loss_iteration": loss.item()
-                    })
+                    if self.args.wandb:
+                        wandb.log({
+                            "iteration": (epoch * len(train_loader)) + i + 1,
+                            "train_loss_iteration": loss.item()
+                        })
                     print(f"\titers: {i+1}, epoch: {epoch+1} | loss: {loss.item():.7f}")
                     speed = (time.time() - epoch_time) / iter_count
                     left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
@@ -204,22 +244,21 @@ class Exp_Main(Exp_Basic):
                 if self.args.lradj == 'TST':
                     adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=False)
                     scheduler.step()
-            if self.args.local_rank == 0:
-                print(f"Epoch: {epoch + 1} | cost time: {time.time() - epoch_time}")
             
             train_loss = np.average(train_losses)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
-            test_loss = self.vali(test_data, test_loader, criterion)
+            # test_loss = self.vali(test_data, test_loader, criterion)
             
             if self.args.local_rank == 0:
                 print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
-
-                wandb.log({
-                    "epoch": epoch + 1,
-                    "train_loss": train_loss,
-                    "validation_loss": vali_loss,
-                    "test_loss": test_loss,
-                })
+                print(f"└ cost time: {time.time() - epoch_time}")
+                if self.args.wandb:
+                    wandb.log({
+                        "epoch": epoch + 1,
+                        "train_loss": train_loss,
+                        "validation_loss": vali_loss,
+                        "test_loss": test_loss,
+                    })
             
             early_stopping(vali_loss, self.model, path)
             if early_stopping.early_stop:
@@ -231,8 +270,8 @@ class Exp_Main(Exp_Basic):
             else:
                 print(f'Learning rate updated to {scheduler.get_last_lr()[0]}')
         
-        if self.args.local_rank == 0:
-            best_model_path = os.path.join(path, 'checkpoint.pth')
+        best_model_path = os.path.join(path, 'checkpoint.pth')
+        if self.args.wandb == 0:
             upload_files_to_wandb(
                 project_name=self.project_name,
                 run_name=self.run_name,
@@ -251,7 +290,7 @@ class Exp_Main(Exp_Basic):
         self.model.eval()
         
         with torch.no_grad():
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, installation, batch_x_ts, batch_y_ts) in enumerate(vali_loader):
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts) in enumerate(vali_loader):
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
@@ -296,28 +335,20 @@ class Exp_Main(Exp_Basic):
         os.makedirs(folder_path, exist_ok=True)
 
         if 'checkpoint.pth' not in model_path:
-            model_path = os.path.join(self.args.checkpoints, 'checkpoint.pth')
-        if '/checkpoints/' not in model_path:
-            model_path = os.path.join('./checkpoints', model_path)
-           
-        # if test:
-        #     if model_path is not None:
+            model_path = os.path.join(f'{self.args.checkpoints}', 'checkpoint.pth')
         
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
-            # else:
-            #     self.model.load_state_dict(torch.load(os.path.join('./checkpoints/', setting, 'checkpoint.pth')))
-        
-        
+        self.model.load_state_dict(torch.load(model_path))
         
         evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
         scale_groups = evaluator.generate_scale_groups_for_dataset(self.args.data)
+
         pred_list = []
         true_list = []
         input_list = []
         
         self.model.eval()
         with torch.no_grad():
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, installation, batch_x_ts, batch_y_ts) in enumerate(test_loader):
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, installation, batch_x_ts, batch_y_ts) in tqdm(enumerate(test_loader)):
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
@@ -340,30 +371,41 @@ class Exp_Main(Exp_Basic):
                 outputs = outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                 
-                batch_x_np = batch_x.detach().cpu().numpy()
                 outputs_np = outputs.detach().cpu().numpy()
                 batch_y_np = batch_y.detach().cpu().numpy()
+                batch_x_np = batch_x.detach().cpu().numpy()
                 
-                # pred = test_data.inverse_transform(site[:, 0], outputs_np.copy())
-                # true = test_data.inverse_transform(site[:, 0], batch_y_np.copy())
+                input_seq = test_data.inverse_transform(installation[:, 0], batch_x_np.copy())
+                pred = test_data.inverse_transform(installation[:, 0], outputs_np.copy())
+                true = test_data.inverse_transform(installation[:, 0], batch_y_np.copy())
                 # print(pred.max(), pred.min(), flush=True)
                 # print(true.max(), true.min(), flush=True)
-                evaluator.update(preds=outputs_np, targets=batch_y_np)
+
+                # # 예측값 범위 로깅
+                # if i % 100 == 0:
+                #     print("\n" + "="*50)
+                #     print(f"Batch {i} - Prediction Range: [{pred.min():.4f}, {pred.max():.4f}]", flush=True)
+                #     print(f"Batch {i} - True Range: [{true.min():.4f}, {true.max():.4f}]", flush=True)
+                #     print("="*50 + "\n")
+
+                # denormalized 데이터로 평가 수행
+                # evaluator.update(preds=outputs_np, targets=batch_y_np)
+                evaluator.update(preds=pred, targets=true)
                 
-                pred_list.append(outputs_np)
-                true_list.append(batch_y_np)
-                input_list.append(batch_x_np)
+                # pred_list.append(outputs_np)
+                # true_list.append(batch_y_np)
+                # input_list.append(batch_x_np)
+                pred_list.append(pred)
+                true_list.append(true)
+                input_list.append(input_seq)
 
                 if i % 2 == 0:
-                    self.plot_predictions(i, batch_x_np[0, 0], batch_y_np[0], outputs_np[0], folder_path)
+                    # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
+                    self.plot_predictions(i, input_seq[0, -5:, -1], true[0], pred[0], folder_path)
 
 
                 
-                # # 구분선과 함께 출력
-                # print("\n" + "="*50)
-                # print(f"Batch {i} - Prediction Range: [{pred.min():.4f}, {pred.max():.4f}]", flush=True)
-                # print(f"Batch {i} - True Range: [{true.min():.4f}, {true.max():.4f}]", flush=True)
-                # print("="*50 + "\n")
+
                 
                 # # wandb에도 로깅
                 # wandb.log({
@@ -372,7 +414,8 @@ class Exp_Main(Exp_Basic):
                 #     f"test/batch_{i}/true_max": true.max(),
                 #     f"test/batch_{i}/true_min": true.min()
                 # })
-        
+        print(f"Plotting complete. Results saved in {folder_path}")
+        # results = evaluator.evaluate(scale_groups)
         results = evaluator.evaluate_scale_metrics(scale_groups)
         results_installation_mape = evaluator.evaluate_installation_metrics()
         for scale_name, metrics in results:
@@ -382,7 +425,19 @@ class Exp_Main(Exp_Basic):
             print(f'MAE: {mae:.4f}')
             print(f'MAPE: {results_installation_mape:.4f}')
             print(f'MBE: {mbe:.4f}')
-            print(f'R2: {r2:.4f}')   
+            print(f'R2: {r2:.4f}')
+
+
+            # rmse, nrmse_range, nrmse_mean, mae, nmae, mape, mbe, r2 = metrics
+            # print(f'Scale: {scale_name}')
+            # print(f'RMSE: {rmse:.4f}')
+            # print(f'NRMSE (Range): {nrmse_range:.4f}')
+            # print(f'NRMSE (Mean): {nrmse_mean:.4f}')
+            # print(f'MAE: {mae:.4f}')
+            # print(f'NMAE: {nmae:.4f}')
+            # print(f'MAPE: {mape:.4f}')
+            # print(f'MBE: {mbe:.4f}')
+            # print(f'R2: {r2:.4f}')
 
 
     def plot_predictions(self, i, input_sequence, ground_truth, predictions, save_path):
