@@ -57,7 +57,10 @@ class Dataset_DKASC(Dataset):
         self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
                                'Weather_Relative_Humidity', 'Wind_Speed', 'Active_Power']
 
-        self.mapping_name = pd.read_csv('./data_provider/dataset_name_mappings.csv')
+        mapping_name = pd.read_csv('./data_provider/dataset_name_mappings.csv')
+        dataset_name = self.__class__.__name__.split('_')[-1]  # 클래스 이름에서 데이터셋 이름 추출
+        self.current_dataset = mapping_name[mapping_name['dataset'] == dataset_name]
+
         self.inst_list = self.split_configs[flag]
 
         # 스케일러 저장 경로
@@ -76,14 +79,21 @@ class Dataset_DKASC(Dataset):
 
     def _prepare_data(self):
         for inst_id in self.inst_list:
-            # 매핑된 파일 이름 가져오기
-            # TODO: 여기에서 'self.mapping_name'을 사용하여 file_name을 가져오도록 한다.
-            file_name = self.mapping_name[self.mapping_name['index'] == inst_id]['file_name'].values[0]
-            csv_path = os.path.join(self.root_path, file_name)
-            df_raw = pd.read_csv(csv_path)
-            df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
+            # inst_id를 기반으로 파일 이름 가져오기
+            self.current_dataset['index'] = self.current_dataset['mapping_name'].apply(lambda x: int(x.split('_')[0]))
+            file_row = self.current_dataset[self.current_dataset['index'] == inst_id]
 
-            # 필요한 컬럼만
+            if file_row.empty:
+                raise ValueError(f"No matching file found for inst_id {inst_id} in dataset {current_dataset}.")
+            
+            file_name = file_row['original_name'].values[0]
+            csv_path = os.path.join(self.root_path, file_name)
+            
+            # read dataset
+            df_raw = pd.read_csv(csv_path)
+            df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'], errors='coerce')
+
+            # 필요한 컬럼만 추출
             df_raw = df_raw[['timestamp'] + self.input_channels]
 
             # 시간 피처 생성
@@ -99,7 +109,6 @@ class Dataset_DKASC(Dataset):
                 data_stamp = time_features(df_stamp['timestamp'], freq=self.freq).transpose(1, 0)
 
             df_data = df_raw[self.input_channels]
-
             scaler_path = os.path.join(self.scaler_dir, f"{file_name}_scaler.pkl")
 
             if self.scaler:
