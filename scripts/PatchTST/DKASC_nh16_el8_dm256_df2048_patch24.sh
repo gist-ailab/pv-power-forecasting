@@ -17,13 +17,13 @@ random_seed=2024
 pred_len=24
 label_len=0
 
-n_heads=8
-e_layers=6
+n_heads=16
+e_layers=8
 d_model=256
-d_ff=1024
+d_ff=2048
 patch_len=24
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=6
 # export WORLD_SIZE=2 # 총 프로세스 수
 # export MASTER_ADDR='localhost'
 # # export MASTER_PORT='12356'  # 임의의 빈 포트
