@@ -177,7 +177,8 @@ class Exp_Freeze(Exp_Basic):
             epoch_time = time.time()
             
             self.model.train()
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts) in enumerate(train_loader):
+            # for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts) in enumerate(train_loader):
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
                 iter_count += 1
                 model_optim.zero_grad()
                 
@@ -217,11 +218,10 @@ class Exp_Freeze(Exp_Basic):
                         else:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                     
-                    f_dim = -1 if self.args.features == 'MS' else 0
-                    outputs = outputs[:, -self.args.pred_len:, f_dim:]
-                    batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                    # loss = criterion(outputs, batch_y)
-                    loss = self.masked_loss(outputs, batch_y, mask_value=-9999, loss_fn=criterion)  ### BSH
+                    outputs = outputs[:, -self.args.pred_len:, -1:]
+                    batch_y = batch_y[:, -self.args.pred_len:, -1:].to(self.device)
+                    loss = criterion(outputs, batch_y)
+                    # loss = self.masked_loss(outputs, batch_y, mask_value=-9999, loss_fn=criterion)  ### BSH
                     
                     loss.backward()
                     model_optim.step()
@@ -247,7 +247,7 @@ class Exp_Freeze(Exp_Basic):
             
             train_loss = np.average(train_losses)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
-            test_loss = self.vali(test_data, test_loader, criterion)
+            # test_loss = self.vali(test_data, test_loader, criterion)
             
             if self.args.local_rank == 0:
                 print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")

@@ -20,7 +20,6 @@ if __name__ == '__main__':
     parser.add_argument('--is_pretraining', type=int, default=0, help='status')
     parser.add_argument('--num_freeze_layers', type=int, default=0,
                         help='num of transformer freeze layer. 0: finetune all layers or do not transfer learning')
-
     parser.add_argument('--is_inference', type=int, default=0, help='status')
 
     parser.add_argument('--run_name', type=str, default=None, help='run name, if None: setting is run name')
