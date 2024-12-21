@@ -116,13 +116,9 @@ if __name__ == '__main__':
     parser.add_argument('--dist_on_itp', action='store_true', help='Use distributed training on internal cluster')
     parser.add_argument('--distributed', action='store_true', help='Use distributed training', default=False)
     parser.add_argument('--wandb', action='store_true', help='Use wandb')
+    # parser.add_argument('--wandb', type=bool, default=True, help='Use wandb')
+    
     args = parser.parse_args()
-   
-    print(f"LOCAL_RANK: {os.environ.get('LOCAL_RANK')}")
-    print(f"RANK: {os.environ.get('RANK')}")
-    print(f"WORLD_SIZE: {os.environ.get('WORLD_SIZE')}")
-    print(f"MASTER_ADDR: {os.environ.get('MASTER_ADDR')}")
-    print(f"MASTER_PORT: {os.environ.get('MASTER_PORT')}")
 
     # random seed
     fix_seed = args.random_seed
@@ -168,7 +164,7 @@ if __name__ == '__main__':
                 ii)
 
             exp = Exp(args)  # set experiments
-            if args.local_rank == 0:
+            if args.local_rank == -1:
                 print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
             exp.train(args.checkpoints)
 

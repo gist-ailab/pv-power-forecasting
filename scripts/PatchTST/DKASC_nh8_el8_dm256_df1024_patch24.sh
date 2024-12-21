@@ -18,12 +18,12 @@ pred_len=24
 label_len=0
 
 n_heads=8
-e_layers=6
+e_layers=8
 d_model=256
 d_ff=1024
 patch_len=24
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 # export WORLD_SIZE=2 # 총 프로세스 수
 # export MASTER_ADDR='localhost'
 # # export MASTER_PORT='12356'  # 임의의 빈 포트
@@ -46,15 +46,14 @@ do
     python run_longExp.py \
         --random_seed $random_seed \
         --is_pretraining 1 \
-        --run_name $setting_name \
         --model_id $model_id \
         --model $model_name \
         --data $data_name \
         --root_path $root_path_name \
-        --checkpoints "${SCRIPT_NAME}_${seq_len}_${pred_len}" \
-        --seq_len $seq_len\
+        --checkpoints "${setting_name}" \
+        --seq_len $seq_len \
         --label_len $label_len \
-        --pred_len $pred_len\
+        --pred_len $pred_len \
         --fc_dropout 0.05\
         --head_dropout 0\
         --patch_len $patch_len\
@@ -69,9 +68,6 @@ do
         --num_workers $num_workers \
         --batch_size 256 \
         --learning_rate 0.0001 \
-        --gpu 0 \
-        --local_rank 0 \
         --des 'Exp' \
-        --distributed \
-        --wandb >logs/$exp_id/$model_name'_'$data_name'_'$seq_len'_'$pred_len'_'$n_heads'_'$patch_len.log
+        --wandb
 done
