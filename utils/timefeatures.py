@@ -131,9 +131,8 @@ def time_features_from_frequency_str(freq_str: str) -> List[TimeFeature]:
 
 
 def time_features(dates, freq='h'):
-    # for feat in time_features_from_frequency_str(freq):
-    #     print(feat)
-        # print(feat(dates))
-
+    # Ensure `dates` is a DatetimeIndex
+    if isinstance(dates, pd.Series):
+        dates = dates.dt  # Access the datetime-like properties of the Series
 
     return np.vstack([feat(dates) for feat in time_features_from_frequency_str(freq)])
