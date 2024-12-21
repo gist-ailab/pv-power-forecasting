@@ -31,9 +31,9 @@ from tqdm import tqdm
 
 warnings.filterwarnings('ignore')
 
-class Exp_Freeze(Exp_Basic):
+class Exp_Main(Exp_Basic):
     def __init__(self, args):
-        super(Exp_Freeze, self).__init__(args)
+        super(Exp_Main, self).__init__(args)
         self.project_name = "pv-forecasting-freeze-test"
         current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         self.run_name = f"{self.args.model}_run_{current_time}"
@@ -399,6 +399,7 @@ class Exp_Freeze(Exp_Basic):
                 true_list.append(true)
                 input_list.append(input_seq)
 
+                # TODO: metric 계산하는거 개선해야 함.
                 if i % 2 == 0:
                     # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
                     self.plot_predictions(i, input_seq[0, -5:, -1], true[0], pred[0], folder_path)

@@ -2,7 +2,6 @@ import argparse
 import os
 import torch
 from exp.exp_main import Exp_Main
-from exp.exp_freeze import Exp_Freeze
 from exp.exp_finetune import Exp_Finetune
 import random
 import numpy as np
@@ -41,7 +40,7 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
 
     # forecasting task
-    parser.add_argument('--seq_len', type=int, default=336, help='input sequence length')
+    parser.add_argument('--seq_len', type=int, default=240, help='input sequence length')
     parser.add_argument('--label_len', type=int, default=0, help='start token length') # decoder 있는 모델에서 사용
     parser.add_argument('--pred_len', type=int, default=16, help='prediction sequence length')
 
@@ -119,6 +118,11 @@ if __name__ == '__main__':
     parser.add_argument('--wandb', action='store_true', help='Use wandb')
     args = parser.parse_args()
    
+    print(f"LOCAL_RANK: {os.environ.get('LOCAL_RANK')}")
+    print(f"RANK: {os.environ.get('RANK')}")
+    print(f"WORLD_SIZE: {os.environ.get('WORLD_SIZE')}")
+    print(f"MASTER_ADDR: {os.environ.get('MASTER_ADDR')}")
+    print(f"MASTER_PORT: {os.environ.get('MASTER_PORT')}")
 
     # random seed
     fix_seed = args.random_seed
@@ -138,7 +142,7 @@ if __name__ == '__main__':
         print('Args in experiment:')
         print(args)
     
-    Exp = Exp_Freeze
+    Exp = Exp_Main
     
     if (args.is_pretraining) and (not args.is_inference):
         for ii in range(args.itr):
@@ -168,9 +172,11 @@ if __name__ == '__main__':
                 print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
             exp.train(args.checkpoints)
 
-            if args.local_rank == 0:
-                print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-            exp.test(setting)
+            # TODO: metric 계산하는거 개선해야 함.
+            # if args.local_rank == 0:
+            #     print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+            # exp.test(setting)
+            print('Training Done')
 
             if args.do_predict:
                 if args.local_rank == 0:
