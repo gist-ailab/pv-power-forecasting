@@ -18,12 +18,12 @@ pred_len=24
 label_len=0
 
 n_heads=8
-e_layers=6
+e_layers=8
 d_model=512
 d_ff=2048
 patch_len=24
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 # export WORLD_SIZE=2 # 총 프로세스 수
 # export MASTER_ADDR='localhost'
 # # export MASTER_PORT='12356'  # 임의의 빈 포트
