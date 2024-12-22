@@ -249,7 +249,8 @@ class Exp_Main(Exp_Basic):
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             # test_loss = self.vali(test_data, test_loader, criterion)
             
-            print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
+            # print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
+            print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}")
             print(f"└ cost time: {time.time() - epoch_time}")
             if self.args.wandb:
                 wandb.log({
