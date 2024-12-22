@@ -6,7 +6,8 @@ GPU_ID=$1
 # GPU 사용률 확인 함수
 check_gpu_usage() {
     usage=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits -i $GPU_ID)
-    echo $usage
+    current_time=$(date "+%Y-%m-%d %H:%M:%S") # 현재 시간
+    echo "[$current_time] GPU $GPU_ID Utilization: $usage%"
     if [ "$usage" -eq "0" ]; then
         return 0 # GPU가 사용 중이 아님
     else
