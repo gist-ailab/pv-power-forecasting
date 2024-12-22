@@ -19,11 +19,11 @@ label_len=0
 
 n_heads=16
 e_layers=8
-d_model=128
-d_ff=512
+d_model=512
+d_ff=2048
 patch_len=24
 
-export CUDA_VISIBLE_DEVICES=6
+export CUDA_VISIBLE_DEVICES=1
 # export WORLD_SIZE=2 # 총 프로세스 수
 # export MASTER_ADDR='localhost'
 # # export MASTER_PORT='12356'  # 임의의 빈 포트
@@ -51,7 +51,7 @@ do
         --model $model_name \
         --data $data_name \
         --root_path $root_path_name \
-        --checkpoints "${setting_name}" \
+        --checkpoints $setting_name \
         --seq_len $seq_len \
         --label_len $label_len \
         --pred_len $pred_len \

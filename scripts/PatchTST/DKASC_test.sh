@@ -42,6 +42,7 @@ num_workers=4
 
 echo "Total CPU cores: $total_cores"
 echo "Using num_workers: $num_workers"
+echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
 for seq_len in 168 240 336
 do

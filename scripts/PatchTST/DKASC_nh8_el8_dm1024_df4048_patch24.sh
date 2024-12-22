@@ -17,13 +17,13 @@ random_seed=2024
 pred_len=24
 label_len=0
 
-n_heads=16
+n_heads=8
 e_layers=8
-d_model=128
-d_ff=512
+d_model=1024
+d_ff=4048
 patch_len=24
 
-export CUDA_VISIBLE_DEVICES=6
+export CUDA_VISIBLE_DEVICES=2
 # export WORLD_SIZE=2 # 총 프로세스 수
 # export MASTER_ADDR='localhost'
 # # export MASTER_PORT='12356'  # 임의의 빈 포트
@@ -40,7 +40,7 @@ echo "Total CPU cores: $total_cores"
 echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
-for seq_len in 168 240 336
+for seq_len in 168
 do
     setting_name="${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
     echo "Generated setting name: $setting_name"
@@ -51,7 +51,7 @@ do
         --model $model_name \
         --data $data_name \
         --root_path $root_path_name \
-        --checkpoints "${setting_name}" \
+        --checkpoints $setting_name \
         --seq_len $seq_len \
         --label_len $label_len \
         --pred_len $pred_len \
