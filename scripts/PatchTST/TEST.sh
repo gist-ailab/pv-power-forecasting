@@ -17,7 +17,7 @@ check_gpu_usage() {
 # GPU 사용률이 0%가 될 때까지 대기
 echo "Waiting for GPU $GPU_ID to be available..."
 while ! check_gpu_usage; do
-    sleep 10 # 10초 간격으로 체크
+    sleep 5 # 10초 간격으로 체크
 done
 
 echo "GPU $GPU_ID is now free. Starting training..."
