@@ -145,6 +145,7 @@ class Exp_Main(Exp_Basic):
             upload_files_to_wandb(
                 project_name=self.project_name,
                 run_name=self.run_name,
+                model_weights_path=self.args.checkpoints,
                 config=config
             )        
         

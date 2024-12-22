@@ -56,9 +56,9 @@ def upload_files_to_wandb(project_name, run_name, model_weights_path=None, confi
     # best 모델 가중치 파일 업로드 (checkpoint.pth)
     if model_weights_path:
         model_artifact = wandb.Artifact(
-            name='best_model_weights',
+            name='model_weights',
             type='model',
-            description='Most recent model weights during training'
+            description='Model weights during training'
         )
         model_artifact.add_file(model_weights_path)
         wandb.log_artifact(model_artifact)
