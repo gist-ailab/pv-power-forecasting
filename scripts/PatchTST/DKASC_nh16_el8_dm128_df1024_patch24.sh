@@ -20,7 +20,7 @@ label_len=0
 n_heads=16
 e_layers=8
 d_model=128
-d_ff=1024
+d_ff=512
 patch_len=24
 
 export CUDA_VISIBLE_DEVICES=6
