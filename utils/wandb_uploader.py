@@ -47,7 +47,6 @@ def upload_files_to_wandb(project_name, run_name, model_weights_path=None, confi
     run_and_exp_files = [
         './run_longExp.py',
         './exp/exp_main.py',
-        './exp/exp_finetune.py',
     ]
     for file_path in run_and_exp_files:
         run_and_exp_artifact.add_file(file_path)
