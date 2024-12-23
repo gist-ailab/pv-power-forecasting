@@ -11,7 +11,7 @@ check_gpu_usage() {
 
     echo "[$current_time] GPU $GPU_ID Utilization: $usage%, Memory Used: ${memory_used}MB"
 
-    if [ "$usage" -eq "0" ] && [ "$memory_used" -le "10" ]; then
+    if [ "$usage" -eq "0" ] && [ "$memory_used" -le "50" ]; then
         return 0 # GPU가 사용 중이 아니며 메모리 사용량이 10MB 이하임
     else
         return 1 # 조건을 만족하지 않음
