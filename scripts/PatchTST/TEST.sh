@@ -5,13 +5,16 @@ GPU_ID=$1
 
 # GPU 사용률 확인 함수
 check_gpu_usage() {
-    usage=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits -i $GPU_ID)
+    usage=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits -i $GPU_ID)    # GPU 사용률
+    memory_used=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits -i $GPU_ID)  # GPU 메모리 사용량 (MB)
     current_time=$(date "+%Y-%m-%d %H:%M:%S") # 현재 시간
-    echo "[$current_time] GPU $GPU_ID Utilization: $usage%"
-    if [ "$usage" -eq "0" ]; then
-        return 0 # GPU가 사용 중이 아님
+
+    echo "[$current_time] GPU $GPU_ID Utilization: $usage%, Memory Used: ${memory_used}MB"
+
+    if [ "$usage" -eq "0" ] && [ "$memory_used" -le "10" ]; then
+        return 0 # GPU가 사용 중이 아니며 메모리 사용량이 10MB 이하임
     else
-        return 1 # GPU가 사용 중임
+        return 1 # 조건을 만족하지 않음
     fi
 }
 
