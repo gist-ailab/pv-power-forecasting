@@ -447,25 +447,28 @@ class Exp_Main(Exp_Basic):
         """
         # 인덱스 기반으로 x축을 설정
         input_index = np.arange(len(input_sequence))
-        
-        # ground_truth와 predictions에 input_sequence의 마지막 값을 앞에 추가하여 연결
-        ground_truth = np.insert(ground_truth, 0, input_sequence[-1])
-        predictions = np.insert(predictions, 0, input_sequence[-1])
-        
-        ground_truth_index = np.arange(len(input_sequence) - 1, len(input_sequence) + len(ground_truth) - 1)
-        predictions_index = np.arange(len(input_sequence) - 1, len(input_sequence) + len(predictions) - 1)
+        start_idx = len(input_sequence)
+        ground_truth_index = np.arange(start_idx, start_idx + len(ground_truth))
+        predictions_index = np.arange(start_idx, start_idx + len(predictions))
 
         plt.figure(figsize=(14, 8))  # 더 큰 크기로 설정하여 가독성 향상
 
         # 입력 시퀀스의 마지막 5개 데이터만 플롯 (점선과 작은 점 추���, 투명도 적용)
-        plt.plot(input_index[-10:], input_sequence.squeeze()[-10:], label='Input Sequence', color='royalblue', linestyle='--', alpha=0.7)
-        plt.scatter(input_index[-10:], input_sequence.squeeze()[-10:], color='royalblue', s=10, alpha=0.6)
+        plt.plot(input_index, input_sequence.squeeze(),
+                 label='Input Sequence', color='royalblue',
+                 linestyle='--', alpha=0.7)
+        plt.scatter(input_index, input_sequence.squeeze(),
+                    color='royalblue', s=10, alpha=0.6)
 
         # 수정된 ground_truth 사용하여 실제값 플롯 (굵기와 투명도 적용)
-        plt.plot(ground_truth_index, ground_truth.squeeze(), label='Ground Truth', color='green', linewidth=2, alpha=0.8)
+        plt.plot(ground_truth_index, ground_truth.squeeze(),
+                 label='Ground Truth', color='green',
+                 linewidth=2, alpha=0.8)
         
         # 예측값 플롯 (굵기와 투명도 적용)
-        plt.plot(predictions_index, predictions.squeeze(), label='Predictions', color='red', linewidth=2, alpha=0.8)
+        plt.plot(predictions_index, predictions.squeeze(),
+                 label='Predictions', color='red',
+                 linewidth=2, alpha=0.8)
 
         # 레이블, 제목 설정
         plt.xlabel('Index', fontsize=12)
@@ -481,7 +484,9 @@ class Exp_Main(Exp_Basic):
         # 플롯 저장
         os.makedirs(save_path, exist_ok=True)
         plt.savefig(os.path.join(save_path, f'pred_{i}.png'))
-        plt.close()    # def plot_predictions(self, i, input_sequence, ground_truth, predictions, save_path):
+        plt.close()
+    
+    # def plot_predictions(self, i, input_sequence, ground_truth, predictions, save_path):
     #     """
     #     예측 시각화 함수 (인덱스 기반)
     #     Args:
@@ -522,7 +527,8 @@ class Exp_Main(Exp_Basic):
     #     # 플롯 저장
     #     os.makedirs(save_path, exist_ok=True)
     #     plt.savefig(os.path.join(save_path, f'pred_{i}.png'))
-    #     plt.close()   
+    #     plt.close()
+
     def predict(self, setting, load=False):
         pred_data, pred_loader = self._get_data(flag='pred')
 
