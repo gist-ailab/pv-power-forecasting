@@ -286,7 +286,7 @@ class Exp_Main(Exp_Basic):
         self.model.eval()
         
         with torch.no_grad():
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(vali_loader):
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, _) in enumerate(vali_loader):
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
@@ -374,12 +374,17 @@ class Exp_Main(Exp_Basic):
                 batch_x_np = batch_x.detach().cpu().numpy()
                 inst_id_np = inst_id.cpu().numpy()
                 
-                # inverse transform 적용
-                input_seq = test_data.inverse_transform(batch_x_np, inst_id_np)
-                pred = test_data.inverse_transform(outputs_np, inst_id_np)
-                true = test_data.inverse_transform(batch_y_np, inst_id_np)
-                # print(pred.max(), pred.min(), flush=True)
-                # print(true.max(), true.min(), flush=True)
+                # # inverse transform 적용
+                # input_seq = test_data.inverse_transform(batch_x_np, inst_id_np)
+                # pred = test_data.inverse_transform(outputs_np, inst_id_np)
+                # true = test_data.inverse_transform(batch_y_np, inst_id_np)
+                # # print(pred.max(), pred.min(), flush=True)
+                # # print(true.max(), true.min(), flush=True)
+
+                input_seq = batch_x_np
+                pred = outputs_np
+                true = batch_y_np
+
 
                 # # 예측값 범위 로깅
                 # if i % 100 == 0:
