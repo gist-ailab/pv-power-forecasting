@@ -41,7 +41,7 @@ if __name__ == '__main__':
     # forecasting task
     parser.add_argument('--seq_len', type=int, default=240, help='input sequence length')
     parser.add_argument('--label_len', type=int, default=0, help='start token length') # decoder 있는 모델에서 사용
-    parser.add_argument('--pred_len', type=int, default=16, help='prediction sequence length')
+    parser.add_argument('--pred_len', type=int, default=24, help='prediction sequence length')
 
     # DLinear
     # parser.add_argument('--individual', action='store_true', default=False, help='DLinear: a linear layer for each variate(channel) individually')
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--subtract_last', type=int, default=0, help='0: subtract mean; 1: subtract last')
     parser.add_argument('--decomposition', type=int, default=0, help='decomposition; True 1 False 0')
     parser.add_argument('--kernel_size', type=int, default=25, help='decomposition-kernel')
-    parser.add_argument('--individual', type=int, default=0, help='individual head; True 1 False 0')
+    parser.add_argument('--individual', type=int, default=1, help='individual head; True 1 False 0')
 
     # Formers 
     parser.add_argument('--embed_type', type=int, default=0, help='0: default 1: value embedding + temporal embedding + positional embedding 2: value embedding + temporal embedding 3: value embedding + positional embedding 4: value embedding')
@@ -204,7 +204,7 @@ if __name__ == '__main__':
         exp = Exp(args)  # set experiments
         if args.local_rank == 0:
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-        exp.test(args.checkpoints, test=1)
+        exp.test(args.checkpoints)
         torch.cuda.empty_cache()
     
     elif args.num_freeze_layers > 0:    # freeze block 개수 조절을 통해 finetuning 및 linear probing 수행
