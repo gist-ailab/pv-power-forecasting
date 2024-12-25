@@ -177,8 +177,7 @@ class Exp_Main(Exp_Basic):
             epoch_time = time.time()
             
             self.model.train()
-            # for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, site, batch_x_ts, batch_y_ts) in enumerate(train_loader):
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, _) in enumerate(train_loader):
                 iter_count += 1
                 model_optim.zero_grad()
                 
@@ -246,10 +245,8 @@ class Exp_Main(Exp_Basic):
                     scheduler.step()
             
             train_loss = np.average(train_losses)
-            vali_loss = self.vali(vali_data, vali_loader, criterion)
-            # test_loss = self.vali(test_data, test_loader, criterion)
+            vali_loss = self.vali(vali_loader, criterion)
             
-            # print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}, Test Loss: {test_loss:.7f}")
             print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}")
             print(f"└ cost time: {time.time() - epoch_time}")
             if self.args.wandb:
@@ -257,7 +254,6 @@ class Exp_Main(Exp_Basic):
                     "epoch": epoch + 1,
                     "train_loss": train_loss,
                     "validation_loss": vali_loss,
-                    # "test_loss": test_loss,
                 })
             
             early_stopping(vali_loss, self.model, path)
@@ -285,7 +281,7 @@ class Exp_Main(Exp_Basic):
         self.model.load_state_dict(torch.load(best_model_path))
         return self.model
 
-    def vali(self, vali_data, vali_loader, criterion):
+    def vali(self, vali_loader, criterion):
         total_loss = []
         self.model.eval()
         
@@ -327,19 +323,23 @@ class Exp_Main(Exp_Basic):
         self.model.train()
         return np.average(total_loss)
 
-    def test(self, model_path=None, test=0):
+    def test(self, checkpoint_path=None):
         test_data, test_loader = self._get_data(flag='test')
         
-        folder_path = os.path.join('./test_results/', model_path)
+        # TODO: model_path는 args로부터 받아오도록 수정
+        dir_name = checkpoint_path.split('/')[-1]
+        folder_path = os.path.join('./test_results/', dir_name)
+        # if 'checkpoint.pth' in model_path:
+        #     folder_path = os.path.join('./test_results/', model_path.split('/')[-1:])
         os.makedirs(folder_path, exist_ok=True)
 
-        if 'checkpoint.pth' not in model_path:
-            model_path = os.path.join(f'{self.args.checkpoints}', 'checkpoint.pth')
+        if 'checkpoint.pth' not in checkpoint_path:
+            model_path = os.path.join(f'{checkpoint_path}', 'checkpoint.pth')
         
         self.model.load_state_dict(torch.load(model_path))
         
+        # MetricEvaluator 초기화
         evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
-        scale_groups = evaluator.generate_scale_groups_for_dataset(self.args.data)
 
         pred_list = []
         true_list = []
@@ -347,12 +347,11 @@ class Exp_Main(Exp_Basic):
         
         self.model.eval()
         with torch.no_grad():
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, installation, batch_x_ts, batch_y_ts) in tqdm(enumerate(test_loader)):
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, inst_id) in tqdm(enumerate(test_loader)):
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
-                installation = installation.to(self.device)
                 
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
@@ -366,17 +365,19 @@ class Exp_Main(Exp_Basic):
                     else:
                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 
-                f_dim = -1 if self.args.features == 'MS' else 0
-                outputs = outputs[:, -self.args.pred_len:, f_dim:]
-                batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+                outputs = outputs[:, -self.args.pred_len:, -1:]
+                batch_y = batch_y[:, -self.args.pred_len:, -1:].to(self.device)
                 
+                # numpy 변환 및 inverse transform
                 outputs_np = outputs.detach().cpu().numpy()
                 batch_y_np = batch_y.detach().cpu().numpy()
                 batch_x_np = batch_x.detach().cpu().numpy()
+                inst_id_np = inst_id.cpu().numpy()
                 
-                input_seq = test_data.inverse_transform(installation[:, 0], batch_x_np.copy())
-                pred = test_data.inverse_transform(installation[:, 0], outputs_np.copy())
-                true = test_data.inverse_transform(installation[:, 0], batch_y_np.copy())
+                # inverse transform 적용
+                input_seq = test_data.inverse_transform(batch_x_np, inst_id_np)
+                pred = test_data.inverse_transform(outputs_np, inst_id_np)
+                true = test_data.inverse_transform(batch_y_np, inst_id_np)
                 # print(pred.max(), pred.min(), flush=True)
                 # print(true.max(), true.min(), flush=True)
 
@@ -388,12 +389,8 @@ class Exp_Main(Exp_Basic):
                 #     print("="*50 + "\n")
 
                 # denormalized 데이터로 평가 수행
-                # evaluator.update(preds=outputs_np, targets=batch_y_np)
-                evaluator.update(preds=pred, targets=true)
+                evaluator.update(inst_id=inst_id_np, preds=pred, targets=true)
                 
-                # pred_list.append(outputs_np)
-                # true_list.append(batch_y_np)
-                # input_list.append(batch_x_np)
                 pred_list.append(pred)
                 true_list.append(true)
                 input_list.append(input_seq)
@@ -401,12 +398,12 @@ class Exp_Main(Exp_Basic):
                 # TODO: metric 계산하는거 개선해야 함.
                 if i % 2 == 0:
                     # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
-                    self.plot_predictions(i, input_seq[0, -5:, -1], true[0], pred[0], folder_path)
+                    self.plot_predictions(i,
+                                          input_seq[0, -5:, -1],    # 마지막 5개 입력값
+                                          true[0],                  # 실제값
+                                          pred[0],                  # 예측값
+                                          folder_path)
 
-
-                
-
-                
                 # # wandb에도 로깅
                 # wandb.log({
                 #     f"test/batch_{i}/pred_max": pred.max(),
@@ -415,29 +412,28 @@ class Exp_Main(Exp_Basic):
                 #     f"test/batch_{i}/true_min": true.min()
                 # })
         print(f"Plotting complete. Results saved in {folder_path}")
-        # results = evaluator.evaluate(scale_groups)
-        results = evaluator.evaluate_scale_metrics(scale_groups)
-        results_installation_mape = evaluator.evaluate_installation_metrics()
-        for scale_name, metrics in results:
-            rmse, mae, mbe, r2 = metrics
-            print(f'Scale: {scale_name}')
-            print(f'RMSE: {rmse:.4f}')
-            print(f'MAE: {mae:.4f}')
-            print(f'MAPE: {results_installation_mape:.4f}')
-            print(f'MBE: {mbe:.4f}')
+
+        # metric 계산 및 결과 출력
+        results, mape = evaluator.evaluate_scale_metrics()
+
+        for scale_name, (rmse, mae, mbe, r2) in results:
+            print(f'\nScale: {scale_name}')
+            print(f'RMSE: {rmse:.4f} kW')
+            print(f'MAE: {mae:.4f} kW')
+            print(f'MBE: {mbe:.4f} kW')
             print(f'R2: {r2:.4f}')
+        print(f'\nOverall MAPE: {mape:.4f}%')
 
-
-            # rmse, nrmse_range, nrmse_mean, mae, nmae, mape, mbe, r2 = metrics
-            # print(f'Scale: {scale_name}')
-            # print(f'RMSE: {rmse:.4f}')
-            # print(f'NRMSE (Range): {nrmse_range:.4f}')
-            # print(f'NRMSE (Mean): {nrmse_mean:.4f}')
-            # print(f'MAE: {mae:.4f}')
-            # print(f'NMAE: {nmae:.4f}')
-            # print(f'MAPE: {mape:.4f}')
-            # print(f'MBE: {mbe:.4f}')
-            # print(f'R2: {r2:.4f}')
+        # wandb logging (설정된 경우)
+        if self.args.wandb:
+            for scale_name, (rmse, mae, mbe, r2) in results:
+                wandb.log({
+                    f"test/{scale_name}/RMSE": rmse,
+                    f"test/{scale_name}/MAE": mae,
+                    f"test/{scale_name}/MBE": mbe,
+                    f"test/{scale_name}/R2": r2,
+                })
+            wandb.log({"test/MAPE": mape})
 
 
     def plot_predictions(self, i, input_sequence, ground_truth, predictions, save_path):
