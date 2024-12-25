@@ -1,18 +1,5 @@
 import numpy as np
 import torch
-from torchmetrics import R2Score
-
-
-# - RMSE [kW] 규모 별 평가
-# - nRMSE [%]
-# - MAE [kW] 규모 별 평가
-# - nMAE [%]
-# - MAPE [%]
-# - MBE [kW] 규모 별 평가
-# - R²
-# - SS (transfer)
-
-
 import numpy as np
 import torch
 from sklearn.metrics import r2_score
@@ -22,188 +9,91 @@ class MetricEvaluator:
         self.file_path = file_path
         self.preds_list = []
         self.targets_list = []
-        self.installations_list = []
+        self.inst_ids = []
 
-
-    def update(self, preds, targets):#, installations):
-        """
-        매 배치마다 전체 예측값과 실제값을 누적하여 사용
-        """
+    def update(self, inst_id, preds, targets):
+        """매 배치마다 installation ID와 함께 예측값과 실제값을 누적"""
+        self.inst_ids.append(inst_id)
         self.preds_list.append(preds)
         self.targets_list.append(targets)
-        # self.installations_list.append(installations)
 
-    def calculate_metrics(self, preds, targets):
-        """
-        주어진 예측값과 실제값에 대한 지표 계산
-        """
+    def _calculate_metrics(self, preds, targets):
+        """ 주어진 그룹의 metric 계산 """
+        rmse = np.sqrt(np.mean((preds - targets) ** 2))
         mae = np.mean(np.abs(preds - targets))
-        mse = np.mean((preds - targets) ** 2)
-        rmse = np.sqrt(mse)
-
-        # nRMSE (최대-최소 및 평균값 기준)
-        targets_min = np.min(targets)
-        targets_max = np.max(targets)
-        targets_mean = np.mean(targets)
-
-        nrmse_range = (rmse / (targets_max - targets_min)) * 100  # (최대-최소) 기준 nRMSE
-        nrmse_mean = (rmse / targets_mean) * 100  # 평균 기준 nRMSE
-
-        # nMAE 계산 (평균값 기준)
-        nmae = (mae / targets_mean) * 100  # 평균 기준 nMAE
-
-        # MAPE 계산
-        epsilon = 1e-10
-        mask = np.abs(targets) > epsilon
-        if np.any(mask):
-            mape = np.mean(np.abs((preds[mask] - targets[mask]) / targets[mask])) * 100
-        else:
-            mape = np.nan
-        
-        
-        biases = [pred - act for pred, act in zip(preds, targets)]
-        mbe = sum(biases) / len(biases)
-            # R2 Score 계산
+        mbe = np.mean(preds - targets)
         r2 = r2_score(targets, preds)
+        return rmse, mae, mbe, r2
 
-        return (rmse, nrmse_range, nrmse_mean, mae, nmae, mape, mbe, r2)
+    def calculate_mape(self):
+        """전체 데이터에 대한 MAPE 계산 - installation별 최대값 기준"""
+        total_error = 0
+        total_samples = 0
+        
+        for inst_id, inst_preds, inst_targets in zip(self.inst_ids, self.preds_list, self.targets_list):
+            inst_max = np.max(np.abs(inst_targets))
+            epsilon = 1e-10
+            
+            inst_error = np.sum(np.abs(inst_preds - inst_targets)) / max(inst_max, epsilon)
+            total_error += inst_error
+            total_samples += len(inst_targets)
+        
+        mape = (total_error / total_samples) * 100
+        return mape
 
+    def generate_scale_groups(self):
+        """용량 그룹 정의"""
+        max_target = np.max(self.targets_list)
+        scale_groups = [("Small", lambda targets: (targets >= 0) & (targets < 30)),
+                        ("Small-Medium", lambda targets: (targets >= 30) & (targets < 100))]
 
-    def evaluate_scale_metrics(self, scale_groups):
-        """
-        전체 데이터에 대한 지표를 %단위는 Installation, 나머지는 규모별로 계산하여 파일에 기록
-        scale_groups: list of tuples [(scale_name, mask), ...]
-        mask는 numpy 배열로 preds와 targets의 특정 요소를 필터링하는 조건을 나타냅니다.
-        """
-        preds = np.array(self.preds_list)
-        targets = np.array(self.targets_list)
+        # Generate 100kW intervals
+        for i in range(1, int(max_target // 100) + 1):
+            lower_bound = i * 100
+            upper_bound = (i + 1) * 100
+            scale_groups.append((f"{lower_bound}kW",
+                                 lambda targets, lb=lower_bound, ub=upper_bound:
+                                 (targets >= lb) & (targets < ub)))
+
+        # Add the 1MW group
+        scale_groups.append(("MW", lambda targets: targets >= 1000))
+        return scale_groups
+
+    def evaluate_scale_metrics(self):
+        """용량 그룹별 metric 계산"""
+        preds = np.concatenate(self.preds_list)
+        targets = np.concatenate(self.targets_list)
+        scale_groups = self.generate_scale_groups()
 
         results = []
-        # 규모별 지표 계산 (RMSE, MAE, MBE, R2 )
         for scale_name, scale_func in scale_groups:
-            
-            mask = scale_func(preds, targets)
+            mask = scale_func(targets)
             if isinstance(mask, torch.Tensor):
                 mask = mask.numpy()
-            if np.any(mask):    # mask 안에 True 값(혹은 1)이 하나라도 존재하는지 검사
+            
+            if np.any(mask):
                 masked_preds = preds[mask]
                 masked_targets = targets[mask]
-                rmse = np.sqrt(np.mean((masked_preds - masked_targets) ** 2))
-                mae = np.mean(np.abs(masked_preds - masked_targets))
-                mbe = np.mean(masked_preds - masked_targets)
-                r2 = r2_score(masked_targets, masked_preds)
-
-                scale_metrics = (rmse, mae, mbe, r2)
-           
-                # metrics = self.calculate_metrics(masked_preds, masked_targets)
-                results.append((scale_name, scale_metrics))
+                metrics = self._calculate_metrics(masked_preds, masked_targets)
+                results.append((scale_name, metrics))
             else:
                 print(f"No data for scale {scale_name}")
 
+        # 결과 저장
         with open(self.file_path, "w") as file:
             file.write("=" * 50 + "\n")
             file.write("Scale-Specific Evaluation Metrics\n")
             file.write("=" * 50 + "\n")
+            
             for scale_name, (rmse, mae, mbe, r2) in results:
                 file.write(f"Scale: {scale_name}\n")
-                file.write(f"RMSE: {rmse:.4f} kW\n")                
+                file.write(f"RMSE: {rmse:.4f} kW\n")
                 file.write(f"MAE: {mae:.4f} kW\n")
                 file.write(f"MBE: {mbe:.4f} kW\n")
                 file.write(f"R2 Score: {r2:.4f}\n")
                 file.write("=" * 50 + "\n")
-        
-        return results
-
-    def evaluate_installation_metrics(self):
-        preds = np.array(self.preds_list)
-        targets = np.array(self.targets_list)
-        # Installation별로 지표 계산 (nRMSE, nMAE, MAPE)
-        # unique_installations = np.unique(self.installations_list)
-        # installation_results = []
-        # all_nrmse = []
-        # all_nmae = []
-        # all_mape = []
-        epsilon = 1e-10
-        mask = np.abs(targets) > epsilon
-        if np.any(mask):
-            mape = np.mean(np.abs((preds[mask] - targets[mask]) / targets[mask])) * 100
-        else:
-            mape = np.nan
-
-
-        # 결과를 파일에 기록
-        with open(self.file_path, "a") as file:
-            file.write("=" * 50 + "\n")
-            file.write("Installation-Specific Evaluation Metrics\n")
-            file.write("=" * 50 + "\n")
-
-            file.write("Metrics\n")
-            # file.write(f"nRMSE: {nrmse:.4f}%\n")
-            # file.write(f"nMAE: {nmae:.4f}%\n")
-            file.write(f"MAPE: {mape:.4f}%\n")
-
-            # for installation, nrmse, nmae, mape in installation_results:
-            #     file.write(f"Installation: {installation}\n")
-            #     file.write(f"nRMSE (Max): {nrmse:.4f}%\n")
-            #     file.write(f"nMAE: {nmae:.4f}%\n")
-            #     file.write(f"MAPE: {mape:.4f}%\n")
             
-
-
-        return mape
-
-
-
-    def generate_scale_groups_for_dataset(self, dataset_type):
-
-        if dataset_type == "Source":
-            return [
-                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30)),
-                ("Small-Medium", lambda preds, targets: (targets >= 30) & (targets < 100)),
-                ("100kW", lambda preds, targets: (targets >= 100) & (targets < 200)),
-                ("200kW", lambda preds, targets: (targets >= 200) & (targets < 300)),
-                ("1mW", lambda preds, targets: targets >= 1000)
-            ]
-        
-        elif dataset_type == "GIST":
-            return [
-                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30)),
-                ("Small-Medium", lambda preds, targets: (targets >= 30) & (targets < 100)),
-                ("100kW", lambda preds, targets: (targets >= 100) & (targets < 200)),
-                ("200kW", lambda preds, targets: (targets >= 200) & (targets < 300))
-            ]
-        
-        elif dataset_type == "Miryang":
-            return [
-                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30)),
-                ("Small-Medium", lambda preds, targets: (targets >= 30) & (targets < 100)),
-                ("600kW", lambda preds, targets: (targets >= 600) & (targets < 700)),
-                ("900kW", lambda preds, targets: (targets >= 800) & (targets < 900))
-            ]
-        
-        elif dataset_type == "OEDI_California":
-            return [
-                ("700kW", lambda preds, targets: (targets >= 0) & (targets < 800))
-            ]
-        elif dataset_type == "OEDI_Georgia":
-            return[
-                ("3mW", lambda preds, targets: (targets >= 0) & (targets < 4000))
-            ]
-        elif dataset_type == "UK":
-            return[
-                ('Not Specified', lambda preds, targets: (targets <= 0)),
-                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30)),
-                ("Small-Medium", lambda preds, targets: (targets >= 30) & (targets < 100)),
-                ("Large", lambda preds, targets: targets >= 100)
-
-            ]
-        elif dataset_type == "German":
-            return[
-                ("Small", lambda preds, targets: (targets >= 0) & (targets < 30)),
-                ("Small-Medium", lambda preds, targets: (targets >= 30) & (targets < 100)),
-                ("Large", lambda preds, targets: targets >= 100)
-            ]
-        else:
-            raise ValueError(f"Unknown dataset type: {dataset_type}")
-    
-
+            mape = self.calculate_mape()
+            file.write(f"\nOverall MAPE: {mape:.4f}%\n")
+            
+        return results, mape
