@@ -31,13 +31,12 @@ class Dataset_DKASC(Dataset):
         Args:
             root_path (str): 데이터 파일들이 저장된 경로.
             data_path (str, optional): 추가적인 데이터 경로. 단일 PV array 데이터를 가져오는 경우 사용.
-            data (pd.DataFrame, optional): 외부에서 전달받은 데이터.
+            split_configs (dict): train, val, test 설정.
             flag (str): 'train', 'val', 'test' 중 하나.
             size (tuple, optional): seq_len, label_len, pred_len의 길이를 포함.
             timeenc (int): 시간 인코딩 방법.
             freq (str): 시간 데이터 빈도.
             scaler (bool): 스케일링 여부.
-            split_configs (dict): train, val, test 설정.
         """
 
         if size is None:
@@ -48,19 +47,24 @@ class Dataset_DKASC(Dataset):
         assert flag in ['train', 'val', 'test'], "flag must be 'train', 'val', or 'test'."
 
         self.root_path = root_path
-        self.data_path = None
+        self.data_path = data_path
         self.flag = flag
         self.timeenc = timeenc
         self.freq = freq
         self.scaler = scaler
         self.split_configs = split_configs
+
+        # 입력 채널 정의
         self.input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
                                'Weather_Relative_Humidity', 'Wind_Speed', 'Active_Power']
 
-        mapping_name = pd.read_csv('./data_provider/dataset_name_mappings.csv')
+        # mapping 파일 로드
+        mapping_df = pd.read_csv('./data_provider/dataset_name_mappings.csv')
         dataset_name = self.__class__.__name__.split('_')[-1]  # 클래스 이름에서 데이터셋 이름 추출
-        self.current_dataset = mapping_name[mapping_name['dataset'] == dataset_name]
+        self.current_dataset = mapping_df[mapping_df['dataset'] == dataset_name]
+        self.current_dataset['index'] = self.current_dataset['mapping_name'].apply(lambda x: int(x.split('_')[0]))  # index 열 추가
 
+        # flag에 따른 installation 리스트 설정 (train, val, test)
         self.inst_list = self.split_configs[flag]
 
         # 스케일러 저장 경로
@@ -72,6 +76,7 @@ class Dataset_DKASC(Dataset):
         self.data_y_list = []
         self.data_stamp_list = []
         self.inst_id_list = []
+        self.capacity_info = {}
 
         # 데이터 준비 및 indices 생성
         self._prepare_data()
@@ -80,14 +85,24 @@ class Dataset_DKASC(Dataset):
     def _prepare_data(self):
         for inst_id in self.inst_list:
             # inst_id를 기반으로 파일 이름 가져오기
-            self.current_dataset['index'] = self.current_dataset['mapping_name'].apply(lambda x: int(x.split('_')[0]))
             file_row = self.current_dataset[self.current_dataset['index'] == inst_id]
-
             if file_row.empty:
                 raise ValueError(f"No matching file found for inst_id {inst_id} in dataset {current_dataset}.")
             
             file_name = file_row['original_name'].values[0]
+            # 파일명과 capacity 정보 추출
+            file_name = file_row['original_name'].values[0]
+            try:
+                capacity = float(file_name.split('_')[0])
+                self.capacity_info[inst_id] = capacity
+                self.inst_id_list.append(inst_id)
+            except (IndexError, ValueError):
+                raise ValueError(f"Invalid capacity format in filename: {file_name}")
+            
+            # 데이터 로드 및 전처리
             csv_path = os.path.join(self.root_path, file_name)
+            if not os.path.exists(csv_path):
+                raise FileNotFoundError(f"Data file not found: {csv_path}")
             
             # read dataset
             df_raw = pd.read_csv(csv_path)
@@ -133,7 +148,6 @@ class Dataset_DKASC(Dataset):
             self.data_x_list.append(data)
             self.data_y_list.append(data)
             self.data_stamp_list.append(data_stamp)
-            self.inst_id_list.append(inst_id)
 
     def _create_indices(self):
         indices = []
@@ -146,6 +160,8 @@ class Dataset_DKASC(Dataset):
 
     def __getitem__(self, index):
         inst_idx, s_begin = self.indices[index]
+        inst_id = self.inst_id_list[inst_idx]
+
         data_x = self.data_x_list[inst_idx]
         data_y = self.data_y_list[inst_idx]
         data_stamp = self.data_stamp_list[inst_idx]
@@ -159,19 +175,62 @@ class Dataset_DKASC(Dataset):
         seq_x_mark = data_stamp[s_begin:s_end]
         seq_y_mark = data_stamp[r_begin:r_end]
 
-        return seq_x, seq_y, seq_x_mark, seq_y_mark
+        return seq_x, seq_y, seq_x_mark, seq_y_mark, inst_id
 
     def __len__(self):
         return len(self.indices)
 
-    def inverse_transform(self, data, inst_id):
-        scaler_path = os.path.join(self.scaler_dir, f"{inst_id}_scaler.pkl")
-        if not os.path.exists(scaler_path):
-            raise FileNotFoundError(f"Scaler for installation {inst_id} not found.")
-        with open(scaler_path, 'rb') as f:
-            scaler_dict = pickle.load(f)
+    def inverse_transform(self, data, inst_ids):
+        """
+        스케일링된 데이터를 원래 스케일로 변환
+        
+        Args:
+            inst_ids: 배치 내 각 데이터의 installation ID (배치 크기만큼의 길이)
+            data: 변환할 데이터 (batch_size, seq_len, feature_dim)
+        Returns:
+            inverse_data: 역변환된 데이터 (입력과 같은 shape)
+        """
+        if not self.scaler:
+            return data
+            
+        data_org = data.copy()
+        inverse_data = np.zeros_like(data_org)
+        
+        # unique한 installation IDs 추출
+        unique_inst_ids = np.unique(inst_ids)
+        
+        # 각 unique installation에 대해
+        for inst_id in unique_inst_ids:
+            # 현재 installation의 스케일러 로드
+            file_row = self.current_dataset[self.current_dataset['index'] == inst_id]
+            file_name = file_row['original_name'].values[0]
+            scaler_path = os.path.join(self.scaler_dir, f"{file_name}_scaler.pkl")
+            
+            with open(scaler_path, 'rb') as f:
+                scaler_dict = pickle.load(f)
+                
+            # 현재 installation에 해당하는 데이터의 인덱스 찾기
+            inst_mask = (inst_ids == inst_id)
+            
+            # 해당하는 데이터만 추출하여 역변환
+            inst_data = data_org[inst_mask].reshape(-1, 1)
+            inverse_inst_data = scaler_dict['Active_Power'].inverse_transform(inst_data)
+            
+            # 역변환된 데이터를 원래 위치에 복원
+            inverse_data[inst_mask] = inverse_inst_data.reshape(data_org[inst_mask].shape)
+        
+        return inverse_data
 
-        return scaler_dict[self.target].inverse_transform(data)
+
+
+        # scaler_path = os.path.join(self.scaler_dir, f"{inst_id}_scaler.pkl")
+
+        # if not os.path.exists(scaler_path):
+        #     raise FileNotFoundError(f"Scaler for installation {inst_id} not found.")
+        # with open(scaler_path, 'rb') as f:
+        #     scaler_dict = pickle.load(f)
+
+        # return scaler_dict[self.target].inverse_transform(data)
 
 
 ########################################################################################
