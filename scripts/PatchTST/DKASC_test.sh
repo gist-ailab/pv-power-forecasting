@@ -72,7 +72,7 @@ do
         --dropout 0.05\
         --embed 'timeF' \
         --num_workers $num_workers \
-        --batch_size 512 \
+        --batch_size 256 \
         --learning_rate 0.0001 \
         --des 'Exp'
 done
