@@ -325,16 +325,20 @@ class Exp_Main(Exp_Basic):
 
     def test(self, checkpoint_path=None):
         test_data, test_loader = self._get_data(flag='test')
-        
-        # TODO: model_path는 args로부터 받아오도록 수정
         dir_name = checkpoint_path.split('/')[-1]
         folder_path = os.path.join('./test_results/', dir_name)
         # if 'checkpoint.pth' in model_path:
         #     folder_path = os.path.join('./test_results/', model_path.split('/')[-1:])
         os.makedirs(folder_path, exist_ok=True)
 
+        if checkpoint_path[0] == '.':
+            checkpoint_path = checkpoint_path[2:]
+
+        if checkpoint_path.split('/')[0] != 'checkpoints':
+            model_path = os.path.join('./checkpoints', checkpoint_path)
+
         if 'checkpoint.pth' not in checkpoint_path:
-            model_path = os.path.join(f'{checkpoint_path}', 'checkpoint.pth')
+            model_path = os.path.join(model_path, 'checkpoint.pth')
         
         self.model.load_state_dict(torch.load(model_path))
         
@@ -374,16 +378,16 @@ class Exp_Main(Exp_Basic):
                 batch_x_np = batch_x.detach().cpu().numpy()
                 inst_id_np = inst_id.cpu().numpy()
                 
-                # # inverse transform 적용
-                # input_seq = test_data.inverse_transform(batch_x_np, inst_id_np)
-                # pred = test_data.inverse_transform(outputs_np, inst_id_np)
-                # true = test_data.inverse_transform(batch_y_np, inst_id_np)
-                # # print(pred.max(), pred.min(), flush=True)
-                # # print(true.max(), true.min(), flush=True)
+                # inverse transform 적용
+                input_seq = test_data.inverse_transform(batch_x_np, inst_id_np)
+                pred = test_data.inverse_transform(outputs_np, inst_id_np)
+                true = test_data.inverse_transform(batch_y_np, inst_id_np)
+                # print(pred.max(), pred.min(), flush=True)
+                # print(true.max(), true.min(), flush=True)
 
-                input_seq = batch_x_np
-                pred = outputs_np
-                true = batch_y_np
+                # input_seq = batch_x_np
+                # pred = outputs_np
+                # true = batch_y_np
 
 
                 # # 예측값 범위 로깅
