@@ -90,5 +90,4 @@ class Model(nn.Module):
             x = x.permute(0,2,1)    # x: [Batch, Channel, Input length]
             x = self.model(x, pretrain_flag)
             x = x.permute(0,2,1)    # x: [Batch, Input length, Channel]
-        x = self.relu(x)
         return x
