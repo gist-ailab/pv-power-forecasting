@@ -361,11 +361,3 @@
  - Normalized_Active_Power: 결측치=0개, 최소값=0.0, 최대값=1.0
 
 총 데이터 수: 1719282개
-
-전체 데이터프레임 열별 통계:
-Active_Power: Number of Data Points=1719282, Max=9.77, Mean=2.21, STD=1.63
-Global_Horizontal_Radiation: Number of Data Points=1719282, Max=1373.26, Mean=509.06, STD=350.43
-Weather_Temperature_Celsius: Number of Data Points=1719282, Max=45.23, Mean=25.21, STD=8.70
-Weather_Relative_Humidity: Number of Data Points=1719282, Max=99.99, Mean=29.58, STD=20.26
-Wind_Speed: Number of Data Points=1719282, Max=15.14, Mean=4.55, STD=2.04
-Normalized_Active_Power: Number of Data Points=1719282, Max=1.00, Mean=0.40, STD=0.29

@@ -73,7 +73,7 @@ def ensure_full_day_timestamps(df, timestamp_col='timestamp'):
     # Create a full range of timestamps for each unique date in the DataFrame
     min_date = df[timestamp_col].min().floor('D')
     max_date = df[timestamp_col].max().ceil('D') - pd.Timedelta(hours=1)
-    full_timestamps = pd.date_range(start=min_date, end=max_date, freq='H')
+    full_timestamps = pd.date_range(start=min_date, end=max_date, freq='h')
     
     # Find missing timestamps
     missing_timestamps = full_timestamps.difference(df[timestamp_col])

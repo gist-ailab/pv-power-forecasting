@@ -91,7 +91,7 @@ if __name__ == '__main__':
     dataset_name = 'DKASC_Yulara'
 
     save_dir=os.path.join(project_root,  f'data/{dataset_name}/uniform_format_data')
-    log_save_dir = os.path.join(project_root, f'data_preprocessing_night/{dataset_name}/raw_info')
+    log_save_dir = os.path.join(project_root, f'data_preprocessing_day/{dataset_name}/raw_info')
 
     # 디렉토리 삭제
     remove_directory_if_exists(save_dir)
