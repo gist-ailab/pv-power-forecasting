@@ -59,7 +59,8 @@ class Dataset_DKASC(Dataset):
                                'Weather_Relative_Humidity', 'Wind_Speed', 'Active_Power']
 
         # mapping 파일 로드
-        mapping_df = pd.read_csv('./data_provider/dataset_name_mappings.csv')
+        # mapping_df = pd.read_csv('./data_provider/DKASC_mapping/mapping_all.csv')
+        mapping_df = pd.read_csv('./data_provider/DKASC_mapping/mapping_day.csv')
         dataset_name = self.__class__.__name__.split('_')[-1]  # 클래스 이름에서 데이터셋 이름 추출
         self.current_dataset = mapping_df[mapping_df['dataset'] == dataset_name]
         self.current_dataset['index'] = self.current_dataset['mapping_name'].apply(lambda x: int(x.split('_')[0]))  # index 열 추가
