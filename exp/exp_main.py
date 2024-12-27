@@ -125,7 +125,7 @@ class Exp_Main(Exp_Basic):
     def train(self, checkpoints):
         self.args.checkpoints = os.path.join('checkpoints', checkpoints)
         # wandb 관련 작업은 rank 0에서만 실행
-        if self.args.wandb:
+        if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
             self._set_wandb(checkpoints)
             config = {
                 "model": self.args.model,
@@ -228,7 +228,7 @@ class Exp_Main(Exp_Basic):
                 train_losses.append(loss.item())
 
                 if (i + 1) % 100 == 0:
-                    if self.args.wandb:
+                    if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
                         wandb.log({
                             "iteration": (epoch * len(train_loader)) + i + 1,
                             "train_loss_iteration": loss.item()
@@ -249,7 +249,7 @@ class Exp_Main(Exp_Basic):
             
             print(f"Epoch: {epoch + 1} | Train Loss: {train_loss:.7f}, Vali Loss: {vali_loss:.7f}")
             print(f"└ cost time: {time.time() - epoch_time}")
-            if self.args.wandb:
+            if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
                 wandb.log({
                     "epoch": epoch + 1,
                     "train_loss": train_loss,
@@ -267,7 +267,7 @@ class Exp_Main(Exp_Basic):
                 print(f'Learning rate updated to {scheduler.get_last_lr()[0]}')
         
         best_model_path = os.path.join(path, 'checkpoint.pth')
-        if self.args.wandb == 0:
+        if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
             upload_files_to_wandb(
                 project_name=self.project_name,
                 run_name=self.run_name,
@@ -434,7 +434,7 @@ class Exp_Main(Exp_Basic):
         print(f'\nOverall MAPE: {mape:.4f}%')
 
         # wandb logging (설정된 경우)
-        if self.args.wandb:
+        if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
             for scale_name, (rmse, mae, mbe, r2) in results:
                 wandb.log({
                     f"test/{scale_name}/RMSE": rmse,

@@ -1,6 +1,7 @@
 import argparse
 import os
 import torch
+import torch.distributed as dist
 from exp.exp_main import Exp_Main
 import random
 import numpy as np
@@ -101,23 +102,29 @@ if __name__ == '__main__':
     parser.add_argument('--use_amp', action='store_true', help='use automatic mixed precision training', default=False)
 
     # GPU
-    parser.add_argument('--use_gpu', type=bool, default=True, help='use gpu')
-    parser.add_argument('--gpu', type=int, default=0, help='gpu')
-    parser.add_argument('--use_multi_gpu', action='store_true', help='use multiple gpus', default=False)
+    # parser.add_argument('--use_gpu', type=bool, default=True, help='use gpu')
+    # parser.add_argument('--gpu', type=int, default=0, help='gpu')
+    # parser.add_argument('--use_multi_gpu', action='store_true', help='use multiple gpus', default=False)
     parser.add_argument('--devices', type=str, default='0', help='device ids of multile gpus')
     parser.add_argument('--test_flop', action='store_true', default=False, help='See utils/tools for usage')
 
     parser.add_argument('--resume', action='store_true', default=False, help='resume')
 
     parser.add_argument('--world_size', default=1, type=int, help='number of distributed processes')
-    parser.add_argument('--local_rank', default=-1, type=int)
+    parser.add_argument('--local_rank', default=-1, type=int, help='Local rank for distributed training')
     parser.add_argument('--dist_url', default='env://', help='url used to set up distributed training')
     parser.add_argument('--dist_on_itp', action='store_true', help='Use distributed training on internal cluster')
     parser.add_argument('--distributed', action='store_true', help='Use distributed training', default=False)
     parser.add_argument('--wandb', action='store_true', help='Use wandb')
-    # parser.add_argument('--wandb', type=bool, default=True, help='Use wandb')
     
     args = parser.parse_args()
+
+    # Distributed Training Setup
+    if args.distributed:
+        args.local_rank = int(os.environ["LOCAL_RANK"])  # Read local rank from environment variable
+        dist.init_process_group(backend="nccl", init_method="env://")
+        args.rank = dist.get_rank()  # Get global rank
+        torch.cuda.set_device(args.local_rank)
 
     # random seed
     fix_seed = args.random_seed
@@ -125,19 +132,14 @@ if __name__ == '__main__':
     torch.manual_seed(fix_seed)
     np.random.seed(fix_seed)
 
-    args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
-
-    if args.use_gpu and args.use_multi_gpu:
-        args.dvices = args.devices.replace(' ', '')
-        device_ids = args.devices.split(',')
-        args.device_ids = [int(id_) for id_ in device_ids]
-        args.gpu = args.device_ids[0]
-
     if args.local_rank == -1:
         print('Args in experiment:')
         print(args)
     
     Exp = Exp_Main
+
+    if args.distributed:
+        dist.destroy_process_group()
     
     if (args.is_pretraining) and (not args.is_inference):
         for ii in range(args.itr):

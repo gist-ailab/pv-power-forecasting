@@ -65,11 +65,18 @@ class Exp_Basic(object):
 
         args.distributed = True
 
+        # 명시적으로 GPU 디바이스 설정
         torch.cuda.set_device(args.local_rank)
         args.dist_backend = 'nccl'
-        dist.init_process_group(backend=args.dist_backend, init_method='env://',
-                                world_size=args.world_size, rank=args.rank)
-        dist.barrier()
+
+        dist.init_process_group(
+            backend=args.dist_backend,
+            init_method='env://',
+            world_size=args.world_size,
+            rank=args.rank,
+            )
+        dist.barrier(device_ids=[args.local_rank])
+        # torch.distributed.barrier(device_ids=[args.local_rank])
         self._setup_for_distributed(args.rank == 0)
 
     def _setup_for_distributed(self, is_master):
