@@ -59,10 +59,10 @@ class Dataset_DKASC(Dataset):
                                'Weather_Relative_Humidity', 'Wind_Speed', 'Active_Power']
 
         # mapping 파일 로드
-        # mapping_df = pd.read_csv('./data_provider/DKASC_mapping/mapping_all.csv')
-        mapping_df = pd.read_csv('./data_provider/DKASC_mapping/mapping_day.csv')
         dataset_name = self.__class__.__name__.split('_')[-1]  # 클래스 이름에서 데이터셋 이름 추출
-        self.current_dataset = mapping_df[mapping_df['dataset'] == dataset_name]
+        # self.mapping_df = pd.read_csv(f'./data_provider/{dataset_name}_mapping/mapping_all.csv')
+        self.mapping_df = pd.read_csv(f'./data_provider/{dataset_name}_mapping/mapping_day.csv')
+        self.current_dataset = self.mapping_df[self.mapping_df['dataset'] == dataset_name]
         self.current_dataset['index'] = self.current_dataset['mapping_name'].apply(lambda x: int(x.split('_')[0]))  # index 열 추가
 
         # flag에 따른 installation 리스트 설정 (train, val, test)
@@ -90,7 +90,6 @@ class Dataset_DKASC(Dataset):
             if file_row.empty:
                 raise ValueError(f"No matching file found for inst_id {inst_id} in dataset {current_dataset}.")
             
-            file_name = file_row['original_name'].values[0]
             # 파일명과 capacity 정보 추출
             file_name = file_row['original_name'].values[0]
             try:
@@ -223,181 +222,16 @@ class Dataset_DKASC(Dataset):
         return inverse_data
 
 
-
-        # scaler_path = os.path.join(self.scaler_dir, f"{inst_id}_scaler.pkl")
-
-        # if not os.path.exists(scaler_path):
-        #     raise FileNotFoundError(f"Scaler for installation {inst_id} not found.")
-        # with open(scaler_path, 'rb') as f:
-        #     scaler_dict = pickle.load(f)
-
-        # return scaler_dict[self.target].inverse_transform(data)
-
-
 ########################################################################################
 
-class Dataset_GIST(Dataset):
-    def __init__(self, root_path, data_path = None,
-                 flag='train', size=None,
-                 features='MS', target='Active_Power', timeenc=0, freq='h', domain='target',
-                 scaler=True,
-                 train_inst=[1,2],
-                 val_inst=[3],
-                 test_inst=[4],
-                 input_channels=['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
-                                 'Weather_Relative_Humidity', 'Wind_Speed'],
-                 data=None):
-        """
-        이 예시는 installation 단위로 데이터가 나뉘어 있고,
-        train_inst, val_inst, test_inst로 어떤 installation이 어느 단계에 속하는지 알려줍니다.
-
-        원칙:
-        - 각 installation은 자신이 속한 단계에서(Train/Val/Test) scaler를 fit & save (처음 처리 시)하고 transform 수행.
-        - 이후 동일 installation에 대한 재처리 시에는 이미 저장된 scaler를 로드하여 transform만 할 수 있음.
-        """
-
-        if size is None:
-            self.seq_len = 24 * 4 * 4
-            self.label_len = 24 * 4
-            self.pred_len = 24 * 4
-        else:
-            self.seq_len, self.label_len, self.pred_len = size
-        
-        assert flag in ['train', 'val', 'test'], "flag must be 'train', 'val', or 'test'."
-        self.flag = flag
-        self.features = features
-        self.target = target
-        self.scaler = scaler
-        self.timeenc = timeenc
-        self.freq = freq
-        self.domain = domain
-        self.root_path = root_path
-        self.input_channels = input_channels + [target]
-
-        # flag에 따라 어떤 installation을 처리할지 결정
-        if self.flag == 'train':
-            self.inst_list = train_inst
-        elif self.flag == 'val':
-            self.inst_list = val_inst
-        else:
-            self.inst_list = test_inst
-
-        # scaler를 저장할 디렉토리
-        self.scaler_dir = os.path.join(root_path, 'scalers')
-        os.makedirs(self.scaler_dir, exist_ok=True)
-
-        # 데이터를 저장할 리스트
-        self.data_x_list = []
-        self.data_y_list = []
-        self.data_stamp_list = []
-        self.inst_id_list = []
-        
-        # 데이터 준비 및 indices 생성
-        self._prepare_data()
-        self.indices = self._create_indices()
-
-    def _prepare_data(self):
-        for inst_id in self.inst_list:
-            csv_file = f"installation_{inst_id}.csv"
-            csv_path = os.path.join(self.root_path, csv_file)
-            df_raw = pd.read_csv(csv_path)
-            df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'], errors='raise')
-
-            # 필요한 컬럼만
-            df_raw = df_raw[['timestamp'] + self.input_channels]
-
-            # 시간 피처 생성
-            df_stamp = pd.DataFrame()
-            df_stamp['timestamp'] = df_raw['timestamp']
-            if self.timeenc == 0:
-                df_stamp['month'] = df_stamp['timestamp'].dt.month
-                df_stamp['day'] = df_stamp['timestamp'].dt.day
-                df_stamp['weekday'] = df_stamp['timestamp'].dt.weekday
-                df_stamp['hour'] = df_stamp['timestamp'].dt.hour
-                data_stamp = df_stamp[['month','day','weekday','hour']].values
-            else:
-                data_stamp = time_features(df_stamp['timestamp'], freq=self.freq).transpose(1,0)
-
-            df_data = df_raw[self.input_channels]
-
-            scaler_path = os.path.join(self.scaler_dir, f"installation_{inst_id}_scaler.pkl")
-
-            if self.scaler:
-                # 스케일러 fit & transform 로직
-                # 만약 이 installation의 스케일러가 존재하지 않는다면 새로 fit
-                if not os.path.exists(scaler_path):
-                    # 여기서가 이 installation을 처음 처리하는 시점
-                    # 이 시점이 Train/Val/Test 중 어느 단계든 상관 없이, 해당 installation은 자신의 전체 데이터를 사용해 fit 가능
-                    scaler_dict = {}
-                    for ch in self.input_channels:
-                        scaler = StandardScaler()
-                        # 여기서는 installation 전체 데이터 사용 (현재 code에서는 filtering 없음)
-                        scaler.fit(df_data[[ch]])
-                        scaler_dict[ch] = scaler
-                    # fit한 스케일러 저장
-                    with open(scaler_path, 'wb') as f:
-                        pickle.dump(scaler_dict, f)
-                else:
-                    # 이미 scaler가 있다면 로드
-                    with open(scaler_path, 'rb') as f:
-                        scaler_dict = pickle.load(f)
-
-                # transform 수행
-                transformed_data = [scaler_dict[ch].transform(df_data[[ch]]) for ch in self.input_channels]
-                data = np.hstack(transformed_data)
-            else:
-                data = df_data.values
-
-            self.data_x_list.append(data)
-            self.data_y_list.append(data)
-            self.data_stamp_list.append(data_stamp)
-            self.inst_id_list.append(inst_id)
-
-    def _create_indices(self):
-        indices = []
-        for inst_idx, data_x in enumerate(self.data_x_list):
-            total_len = len(data_x)
-            max_start = total_len - self.seq_len - self.pred_len + 1
-            for s in range(max_start):
-                indices.append((inst_idx, s))
-        return indices
-
-    def __getitem__(self, index):
-        inst_idx, s_begin = self.indices[index]
-        data_x = self.data_x_list[inst_idx]
-        data_y = self.data_y_list[inst_idx]
-        data_stamp = self.data_stamp_list[inst_idx]
-
-        s_end = s_begin + self.seq_len
-        r_begin = s_end - self.label_len
-        r_end = r_begin + self.label_len + self.pred_len
-
-        seq_x = data_x[s_begin:s_end]
-        seq_y = data_y[r_begin:r_end]
-        seq_x_mark = data_stamp[s_begin:s_end]
-        seq_y_mark = data_stamp[r_begin:r_end]
-
-        return seq_x, seq_y, seq_x_mark, seq_y_mark
-
-    def __len__(self):
-        return len(self.indices)
-
-    def inverse_transform(self, data, inst_id):
-        scaler_path = os.path.join(self.scaler_dir, f"installation_{inst_id}_scaler.pkl")
-        if not os.path.exists(scaler_path):
-            raise FileNotFoundError(f"Scaler for installation {inst_id} not found.")
-        with open(scaler_path, 'rb') as f:
-            scaler_dict = pickle.load(f)
-
-        return scaler_dict[self.target].inverse_transform(data)
-
-
-
-
-
-
-
-
+class Dataset_GIST(Dataset_DKASC):
+    def __init__(self,
+                 root_path, data_path = None,
+                 split_configs=None, flag='train',
+                 size=None, timeenc=0,
+                 freq='h', scaler=True,
+                 ):
+        super().__init__(root_path, data_path, split_configs, flag, size, timeenc, freq, scaler)
 
 #######################################################################################
 
