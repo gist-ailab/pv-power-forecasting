@@ -11,7 +11,7 @@ if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-root_path_name="/ailab_mat/dataset/PV/DKASC/processed_data_day/"
+root_path_name="/ailab_mat/dataset/PV/DKASC/processed_data_all/"
 data_name=DKASC
 random_seed=2024
 
