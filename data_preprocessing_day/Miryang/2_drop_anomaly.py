@@ -11,8 +11,16 @@ from utils import plot_correlation_each, check_data
 import shutil
 import os
 
-# Adjust daily data to retain only active daylight hours
+###############################################################################
+# 낮 시간대(발전 구간)만 남기는 함수
+###############################################################################
 def adjust_daily_margin(group):
+    """
+    - 하루 단위 데이터 group에서,
+    - Active_Power가 0 초과인 첫 시점과 마지막 시점을 찾아,
+    - 그 구간을 기준으로 앞뒤로 1시간씩 여유를 두어 잘라줍니다.
+    - 만약 하루 전체가 발전(0 초과)이 한 번도 없으면 그대로 반환합니다.
+    """
     non_zero_power = group['Active_Power'] > 0
     
     if non_zero_power.any():
@@ -24,6 +32,8 @@ def adjust_daily_margin(group):
         
         return group[(group['timestamp'] >= start_time) & (group['timestamp'] <= end_time)]
     else:
+        # 해당 일자에 전력이 0 초과가 단 한 번도 없으면(밤만 있는 것과 동일)
+        # 그대로 group 반환 또는 빈 DataFrame 반환(원하시는 정책에 따라)
         return group
 
 # 디렉토리 삭제 함수
@@ -57,8 +67,6 @@ def detect_consecutive_identical_values(df, column, min_consecutive=10):
     mask = (df[column] != 0) & (df[column] == df[column].shift(1))
     count_series = mask.groupby(mask.ne(mask.shift()).cumsum()).cumsum()
     return count_series >= min_consecutive
-
-
 
 import logging
 import pandas as pd
@@ -131,8 +139,6 @@ if __name__ == '__main__':
             print(file_name+ " 사이트 active power 이상치 제거")
             df_hourly.loc[df_hourly['Normalized_Active_Power'] > 0.2, 'Active_Power'] = pd.NA
             df_hourly['Normalized_Active_Power'] = df_hourly['Active_Power']/ max(df_hourly['Active_Power'])
-
-        df_hourly.loc[df_hourly['Normalized_Active_Power'] < 0.05, 'Active_Power'] = 0
     
         # Modify Active_Power based on the condition of Normalized_Active_Power
         df_hourly.loc[(df_hourly['Normalized_Active_Power'] >= -0.05) & (df_hourly['Normalized_Active_Power'] < 0), 'Active_Power'] = 0
@@ -157,9 +163,6 @@ if __name__ == '__main__':
         # Detect and replace with NaN if there are 10 or more consecutive identical non-zero values in 'Active_Power'
         identical_values_mask = detect_consecutive_identical_values(df_hourly, 'Active_Power', min_consecutive=10)
         df_hourly.loc[identical_values_mask, 'Active_Power'] = pd.NA
-
-        # Group by date and apply the `adjust_daily_margin` function
-        df_hourly = df_hourly.groupby(df_hourly['timestamp'].dt.date, group_keys=False).apply(adjust_daily_margin)
         
         # Detect 2 consecutive NaN values in any column
         consecutive_nan_mask = detect_consecutive_nans(df_hourly, max_consecutive=2)
@@ -171,16 +174,10 @@ if __name__ == '__main__':
         # Interpolate NaN values (1 or fewer consecutive NaNs)
         df_hourly.interpolate(method='linear', limit=1, inplace=True)
 
-        # Replace NaN values in 'Active_Power' with 0
-        df_hourly['Active_Power'].fillna(0, inplace=True)
-
-        # Replace NaN values in other columns based on their position
-        for column in df_hourly.columns:
-            if column != 'Active_Power':
-                # Fill NaNs at the beginning of the series with the next valid value (backward fill)
-                df_hourly[column].fillna(method='bfill', inplace=True)
-                # Fill NaNs at the end of the series with the previous valid value (forward fill)
-                df_hourly[column].fillna(method='ffill', inplace=True)
+        ###############################################################################
+        # 여기서! 낮 시간대만 남기기 위해 groupby 후 adjust_daily_margin 적용
+        ###############################################################################
+        df_hourly = df_hourly.groupby(df_hourly['timestamp'].dt.date, group_keys=False).apply(adjust_daily_margin)
         
         # Save the processed DataFrame
         max_active_power = df_hourly['Active_Power'].max(skipna=True)
@@ -189,13 +186,13 @@ if __name__ == '__main__':
         
         print(f"Processed and saved: {output_file_path}")
     
+    # 이후 로깅/분석 함수 호출
     check_data.process_data_and_log(
-    folder_path=os.path.join(project_root, save_dir),
-    log_file_path=os.path.join(log_save_dir, 'processed_data_info.txt')
+        folder_path=os.path.join(project_root, save_dir),
+        log_file_path=os.path.join(log_save_dir, 'processed_data_info.txt')
     )
     plot_correlation_each.plot_feature_vs_active_power(
-            data_dir=save_dir, 
-            save_dir=log_save_dir, 
-            dataset_name=dataset_name
-            )
-
+        data_dir=save_dir, 
+        save_dir=log_save_dir, 
+        dataset_name=dataset_name
+    )
