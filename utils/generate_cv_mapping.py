@@ -35,7 +35,7 @@ def generate_csv_mapping(input_directory, output_csv, dataset_name="DKASC"):
 data_type = 'all'
 data_name = 'DKASC'
 input_directory = f"/ailab_mat/dataset/PV/{data_name}/processed_data_{data_type}"  # Replace with your directory
-save_dicrectory = "/home/bak/Projects/PatchTST/data_provider/{data_name}_mapping"
+save_dicrectory = f"/home/bak/Projects/PatchTST/data_provider/{data_name}_mapping"
 os.makedirs(save_dicrectory, exist_ok=True)
 output_csv = os.path.join(save_dicrectory, f"mapping_{data_type}.csv")
 
