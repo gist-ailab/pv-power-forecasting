@@ -3,14 +3,16 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-exp_id="${DATE}_Pretrain_DKASC_$model_name"
+data_name=DKASC
+data_type=all
+# data_type=day
+exp_id="${DATE}_Pretrain_$data_name_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-root_path_name="/ailab_mat/dataset/PV/DKASC/processed_data_all/"
-data_name=DKASC
+root_path_name="/ailab_mat/dataset/PV/DKASC/processed_data_${data_type}/"
 random_seed=2024
 
 # seq_len=240
@@ -23,7 +25,7 @@ d_model=512
 d_ff=2048
 patch_len=24
 
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=0,1
 # export WORLD_SIZE=2 # 총 프로세스 수
 # export MASTER_ADDR='localhost'
 # # export MASTER_PORT='12356'  # 임의의 빈 포트
@@ -40,9 +42,10 @@ echo "Total CPU cores: $total_cores"
 echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
-for seq_len in 168 240 336
+# for seq_len in 168 240 336
+for seq_len in 240
 do
-    setting_name="${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+    setting_name="${data_name}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
     echo "Generated setting name: $setting_name"
     python run_longExp.py \
         --random_seed $random_seed \
