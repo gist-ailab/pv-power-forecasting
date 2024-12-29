@@ -4,12 +4,12 @@ import torch.nn.functional as F
 import numpy as np
 
 class Model(nn.Module):
-    """
-    Just one Linear layer
-    """
-    def __init__(self, configs, device):
+    def __init__(self, configs):
         super(Model, self).__init__()
-        self.device = device
+        
+        # 자동으로 device 설정 (cuda 사용 가능하면 cuda, 아니면 cpu)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
         self.input_dim = configs.input_dim
         self.hidden_dim = configs.hidden_dim
         self.num_layers = configs.num_layers
@@ -18,62 +18,90 @@ class Model(nn.Module):
         self.seq_len = configs.seq_len
         self.pred_len = configs.pred_len
 
-        self.lstm_encoder = LSTMEncoder(self.input_dim, self.hidden_dim, self.num_layers, 
-                                        batch_first=True, bidirectional=self.bidirectional)
-        self.lstm_decoder = LSTMDecoder(self.input_dim, self.hidden_dim, self.num_layers,
-                                        batch_first=True, bidirectional=self.bidirectional)
-        # # self.lstm = nn.LSTM(self.input_dim, self.hidden_dim, batch_first=True, num_layers=self.num_layers, bidirectional=self.bidirectional)
-        # self.fc = nn.Linear(self.hidden_dim * 2, 1)
-        # self.Linear = nn.Linear(self.seq_len, self.pred_len)
-        # Use this line if you want to visualize the weights
-        # self.Linear.weight = nn.Parameter((1/self.seq_len)*torch.ones([self.pred_len,self.seq_len]))
-    
+        self.lstm_encoder = LSTMEncoder(
+            self.input_dim, self.hidden_dim, self.num_layers, 
+            batch_first=True, bidirectional=self.bidirectional
+        )
+        self.lstm_decoder = LSTMDecoder(
+            self.input_dim, self.hidden_dim, self.num_layers,
+            batch_first=True, bidirectional=self.bidirectional
+        )
+
     def init_hidden(self, x):
-        h0 = torch.zeros((self.num_layers * (2 if self.bidirectional else 1), x.size(0), self.hidden_dim)).to(self.device)
-        c0 = torch.zeros((self.num_layers * (2 if self.bidirectional else 1), x.size(0), self.hidden_dim)).to(self.device)        
+        # x 와 같은 device로 초기화
+        # (기존에는 self.device 를 사용했지만, x가 이미 어느 device에 있는지 알 수 있으면 x.device 를 쓰는 편이 안전)
+        h0 = torch.zeros(
+            self.num_layers * (2 if self.bidirectional else 1),
+            x.size(0),
+            self.hidden_dim,
+            device=x.device
+        )
+        c0 = torch.zeros(
+            self.num_layers * (2 if self.bidirectional else 1),
+            x.size(0),
+            self.hidden_dim,
+            device=x.device
+        )        
         return h0, c0
 
+    # def forward(self, x, teacher_forcing=None):
+    #     self.encoder_hidden = self.init_hidden(x)  # 여기서 x.device 로 init
+    #     self.out, self.encoder_hidden = self.lstm_encoder(x, self.encoder_hidden)
 
-    def forward(self, x, teacher_forcing = None):
-        
+    #     outputs = torch.zeros(x.size(0), self.pred_len, x.size(2), device=x.device)
+    #     decoder_input = x[:, -1, :].unsqueeze(1)
 
+    #     if teacher_forcing is not None:
+    #         # Train mode(teacher forcing)
+    #         self.decoder_hidden = self.encoder_hidden
+    #         for t in range(self.pred_len): 
+    #             decoder_output, self.decoder_hidden = self.lstm_decoder(decoder_input, self.decoder_hidden)
+    #             outputs[:, t, :] = decoder_output
+    #             # teacher forcing으로 받기
+    #             decoder_input = teacher_forcing[:, t, :].unsqueeze(1)
+    #     else:
+    #         # Test mode
+    #         self.decoder_hidden = self.encoder_hidden
+    #         for t in range(self.pred_len):
+    #             decoder_output, self.decoder_hidden = self.lstm_decoder(decoder_input, self.decoder_hidden)
+    #             outputs[:, t, :] = decoder_output
+    #             # 지금까지 예측한 것을 다시 입력으로
+    #             decoder_input = outputs[:, :t+1, :]
+
+    #     return outputs
+    def forward(self, x, teacher_forcing=None):
+    # 1) 인코더
         self.encoder_hidden = self.init_hidden(x)
-        self.out, self.encoder_hidden = self.lstm_encoder(x, self.encoder_hidden)
+        lstm_out, self.encoder_hidden = self.lstm_encoder(x, self.encoder_hidden)
 
-
-        # outputs = torch.zeros(self.pred_len, x.size(0), x.size(2))
-        outputs = torch.zeros(x.size(0), self.pred_len , x.size(2))
+    # 2) 디코더
+    #    - time step별 결과를 모을 리스트
+        predictions = []
         decoder_input = x[:, -1, :].unsqueeze(1)
+        self.decoder_hidden = self.encoder_hidden
 
-        # Train: use teacher forcing
+    # (a) teacher forcing 모드
         if teacher_forcing is not None:
-            self.decoder_hidden = self.encoder_hidden
-
-            for t in range(self.pred_len): 
+            for t in range(self.pred_len):
                 decoder_output, self.decoder_hidden = self.lstm_decoder(decoder_input, self.decoder_hidden)
-                outputs[:,t,:] = decoder_output
+                predictions.append(decoder_output)  # 리스트에 저장
+                # 다음 입력: ground truth
                 decoder_input = teacher_forcing[:, t, :].unsqueeze(1)
-
-        # Test: predict recursively
+    
+    # (b) Autoregressive (test) 모드
         else:
-            self.decoder_hidden = self.encoder_hidden
-
-            for t in range(self.pred_len): 
+            for t in range(self.pred_len):
                 decoder_output, self.decoder_hidden = self.lstm_decoder(decoder_input, self.decoder_hidden)
-                outputs[:,t,:] = decoder_output
-                decoder_input = outputs[:,:t+1,:].to(self.device)
+                predictions.append(decoder_output)  # 리스트에 저장
+                # 다음 입력: 방금 예측값
+                decoder_input = decoder_output.unsqueeze(1)
 
+    # 3) time-step별로 쌓았던 리스트를 최종 (batch, pred_len, input_dim) 텐서로 변환
+    #    predictions == list of [batch, input_dim] -> stack -> [batch, pred_len, input_dim]
+        outputs = torch.stack(predictions, dim=1)
         return outputs
-        # # use_teacher forcing
-        # for t in range(self.pred_len): 
-        #     decoder_output, decoder_hidden = self.lstm_decoder(decoder_input, decoder_hidden)
-        #     outputs[t] = decoder_output
-        #     decoder_input = target_batch[t, :, :]
 
-        # out_f = out[:, -1, :self.hidden_dim]
-        # out_b = out[:, 0, self.hidden_dim:]
-        # out = torch.cat((out_f, out_b), dim=1)
-        # out = self.Linear(out)
+
 
 class LSTMEncoder(nn.Module):
     ''' Encodes time-series sequence '''
