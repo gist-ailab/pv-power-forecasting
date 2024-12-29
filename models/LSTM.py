@@ -69,7 +69,7 @@ class Model(nn.Module):
     #             decoder_input = outputs[:, :t+1, :]
 
     #     return outputs
-    def forward(self, x, teacher_forcing=None):
+    def forward(self, x, pretrain_flag=None, teacher_forcing=None):
     # 1) 인코더
         self.encoder_hidden = self.init_hidden(x)
         lstm_out, self.encoder_hidden = self.lstm_encoder(x, self.encoder_hidden)
