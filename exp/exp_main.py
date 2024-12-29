@@ -398,13 +398,13 @@ class Exp_Main(Exp_Basic):
                 true_list.append(true)
                 input_list.append(input_seq)
 
-        #         if i % 10 == 0:
-        #             # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
-        #             self.plot_predictions(i,
-        #                                   input_seq[0, -5:, -1],    # 마지막 5개 입력값
-        #                                   true[0],                  # 실제값
-        #                                   pred[0],                  # 예측값
-        #                                   folder_path)
+                if i % 10 == 0:
+                    # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
+                    self.plot_predictions(i,
+                                          input_seq[0, -5:, -1],    # 마지막 5개 입력값
+                                          true[0],                  # 실제값
+                                          pred[0],                  # 예측값
+                                          folder_path)
         # print(f"Plotting complete. Results saved in {folder_path}")
 
         # TODO: metric 계산하는거 개선해야 함.

@@ -94,6 +94,7 @@ def data_provider(args, flag, distributed=False):
     data_set = Data(
         root_path=args.root_path,
         data_path=args.data_path,
+        data_type=args.data_type,
         split_configs=split_configs[args.data],
         flag=flag,
         size=[args.seq_len, args.label_len, args.pred_len],

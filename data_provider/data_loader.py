@@ -20,9 +20,10 @@ warnings.filterwarnings('ignore')
 class Dataset_DKASC(Dataset):
     def __init__(self,
                  root_path, data_path=None,
-                 split_configs=None, flag='train',
-                 size=None, timeenc=0,
-                 freq='h', scaler=True,
+                 data_type='all', split_configs=None,
+                 flag='train', size=None,
+                 timeenc=0, freq='h',
+                 scaler=True,
                 ):
         """
         이 예시는 installation 단위로 데이터가 나뉘어 있고,
@@ -60,8 +61,7 @@ class Dataset_DKASC(Dataset):
 
         # mapping 파일 로드
         dataset_name = self.__class__.__name__.split('_')[-1]  # 클래스 이름에서 데이터셋 이름 추출
-        # self.mapping_df = pd.read_csv(f'./data_provider/{dataset_name}_mapping/mapping_all.csv')
-        self.mapping_df = pd.read_csv(f'./data_provider/{dataset_name}_mapping/mapping_day.csv')
+        self.mapping_df = pd.read_csv(f'./data_provider/{dataset_name}_mapping/mapping_{data_type}.csv')
         self.current_dataset = self.mapping_df[self.mapping_df['dataset'] == dataset_name]
         self.current_dataset['index'] = self.current_dataset['mapping_name'].apply(lambda x: int(x.split('_')[0]))  # index 열 추가
 
@@ -226,12 +226,13 @@ class Dataset_DKASC(Dataset):
 
 class Dataset_GIST(Dataset_DKASC):
     def __init__(self,
-                 root_path, data_path = None,
-                 split_configs=None, flag='train',
-                 size=None, timeenc=0,
-                 freq='h', scaler=True,
+                 root_path, data_path=None,
+                 data_type='all', split_configs=None,
+                 flag='train', size=None,
+                 timeenc=0, freq='h',
+                 scaler=True,
                  ):
-        super().__init__(root_path, data_path, split_configs, flag, size, timeenc, freq, scaler)
+        super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler)
 
 #######################################################################################
 

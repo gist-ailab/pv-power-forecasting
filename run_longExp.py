@@ -28,6 +28,8 @@ if __name__ == '__main__':
                         help='model name, options: [Autoformer, Informer, Transformer, DLinear, NLinear, Linear, PatchTST, PatchCDTST, Naive_repeat, Arima]')
     # data loader
     parser.add_argument('--data', type=str, default='DKASC', help='dataset type. ex: DKASC, GIST')
+    parser.add_argument('--data_type', type=str, default='all',
+                        help='data type. all for using 24h and day for using day-time')
     parser.add_argument('--root_path', type=str, default='./data/DKASC_AliceSprings/converted', help='root path of the source domain data file')
     parser.add_argument('--data_path', type=str, default=None, 
                         help='write a PV array name when training a single PV array')
@@ -144,10 +146,11 @@ if __name__ == '__main__':
     if (args.is_pretraining) and (not args.is_inference):
         for ii in range(args.itr):
             # setting record of experiments
-            setting = '{}_{}_{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
+            setting = '{}_{}_{}_{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
                 args.model_id,
                 args.model,
                 args.data,
+                args.data_type,
                 args.seq_len,
                 args.label_len,
                 args.pred_len,
@@ -184,10 +187,11 @@ if __name__ == '__main__':
 
     elif args.is_inference:
         ii = 0
-        setting = '{}_{}_{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
+        setting = '{}_{}_{}_{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
             args.model_id,
             args.model,
             args.data,
+            args.data_type,
             args.seq_len,
             args.label_len,
             args.pred_len,
@@ -212,11 +216,12 @@ if __name__ == '__main__':
     elif args.num_freeze_layers > 0:    # freeze block 개수 조절을 통해 finetuning 및 linear probing 수행
         for ii in range(args.itr):
             # setting record of experiments
-            setting = '{}_{}_{}_{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
+            setting = '{}_{}_{}_{}_{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
                 args.num_freeze_layers,
                 args.model_id,
                 args.model,
                 args.data,
+                args.data_type,
                 args.seq_len,
                 args.label_len,
                 args.pred_len,
