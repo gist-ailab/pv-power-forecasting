@@ -236,6 +236,19 @@ class Dataset_GIST(Dataset_DKASC):
 
 #######################################################################################
 
+class Dataset_Miryang(Dataset_DKASC):
+    def __init__(self,
+                 root_path, data_path=None,
+                 data_type='all', split_configs=None,
+                 flag='train', size=None,
+                 timeenc=0, freq='h',
+                 scaler=True,
+                 ):
+        super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler)
+
+
+#######################################################################################
+
 class Dataset_Miryang_MinMax(Dataset):
     def __init__(self, root_path, flag='train', size=None,
                 features='MS', data_path='', target='Active_Power',
