@@ -343,7 +343,11 @@ class Exp_Main(Exp_Basic):
         self.model.load_state_dict(torch.load(model_path))
         
         # MetricEvaluator 초기화
-        evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
+        # evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
+        evaluator = MetricEvaluator(
+            file_path=os.path.join(folder_path, "site_metrics.txt"),
+            dataset_name=self.args.data
+            )
 
         pred_list = []
         true_list = []
@@ -382,20 +386,10 @@ class Exp_Main(Exp_Basic):
                 input_seq = test_data.inverse_transform(batch_x_np, inst_id_np)
                 pred = test_data.inverse_transform(outputs_np, inst_id_np)
                 true = test_data.inverse_transform(batch_y_np, inst_id_np)
-                # print(pred.max(), pred.min(), flush=True)
-                # print(true.max(), true.min(), flush=True)
 
                 # input_seq = batch_x_np
                 # pred = outputs_np
                 # true = batch_y_np
-
-
-                # # 예측값 범위 로깅
-                # if i % 100 == 0:
-                #     print("\n" + "="*50)
-                #     print(f"Batch {i} - Prediction Range: [{pred.min():.4f}, {pred.max():.4f}]", flush=True)
-                #     print(f"Batch {i} - True Range: [{true.min():.4f}, {true.max():.4f}]", flush=True)
-                #     print("="*50 + "\n")
 
                 # denormalized 데이터로 평가 수행
                 evaluator.update(inst_id=inst_id_np, preds=pred, targets=true)
@@ -404,45 +398,40 @@ class Exp_Main(Exp_Basic):
                 true_list.append(true)
                 input_list.append(input_seq)
 
-                # TODO: metric 계산하는거 개선해야 함.
-                if i % 2 == 0:
-                    # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
-                    self.plot_predictions(i,
-                                          input_seq[0, -5:, -1],    # 마지막 5개 입력값
-                                          true[0],                  # 실제값
-                                          pred[0],                  # 예측값
-                                          folder_path)
+        #         if i % 10 == 0:
+        #             # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
+        #             self.plot_predictions(i,
+        #                                   input_seq[0, -5:, -1],    # 마지막 5개 입력값
+        #                                   true[0],                  # 실제값
+        #                                   pred[0],                  # 예측값
+        #                                   folder_path)
+        # print(f"Plotting complete. Results saved in {folder_path}")
 
-                # # wandb에도 로깅
-                # wandb.log({
-                #     f"test/batch_{i}/pred_max": pred.max(),
-                #     f"test/batch_{i}/pred_min": pred.min(),
-                #     f"test/batch_{i}/true_max": true.max(),
-                #     f"test/batch_{i}/true_min": true.min()
-                # })
-        print(f"Plotting complete. Results saved in {folder_path}")
-
+        # TODO: metric 계산하는거 개선해야 함.
         # metric 계산 및 결과 출력
-        results, mape = evaluator.evaluate_scale_metrics()
+        results, overall_mape = evaluator.evaluate_scale_metrics()
 
-        for scale_name, (rmse, mae, mbe, r2) in results:
+        for scale_name, (rmse, mae, mbe, r2), site_ids in results:
             print(f'\nScale: {scale_name}')
+            print(f"Sites: {site_ids}\n")
+            print(f"Number of sites: {len(site_ids)}\n")
             print(f'RMSE: {rmse:.4f} kW')
             print(f'MAE: {mae:.4f} kW')
             print(f'MBE: {mbe:.4f} kW')
-            print(f'R2: {r2:.4f}')
-        print(f'\nOverall MAPE: {mape:.4f}%')
+            print(f'R2 Score: {r2:.4f}')
+        print(f'\nOverall MAPE: {overall_mape:.4f}%')
 
         # wandb logging (설정된 경우)
         if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
-            for scale_name, (rmse, mae, mbe, r2) in results:
+            for scale_name, (rmse, mae, mbe, r2), site_ids in results:
                 wandb.log({
+                    f"test/{scale_name}/Sites": site_ids,
                     f"test/{scale_name}/RMSE": rmse,
                     f"test/{scale_name}/MAE": mae,
                     f"test/{scale_name}/MBE": mbe,
-                    f"test/{scale_name}/R2": r2,
+                    f"test/{scale_name}/R2_Score": r2,
                 })
-            wandb.log({"test/MAPE": mape})
+            wandb.log({"test/MAPE": overall_mape})
 
 
     def plot_predictions(self, i, input_sequence, ground_truth, predictions, save_path):
