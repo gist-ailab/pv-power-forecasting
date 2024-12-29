@@ -45,9 +45,9 @@ split_configs = {
         'test': [3, 6]
     },
     'Miryang': {
-        'train': [1, 4, 7, 2, 6],
-        'val': [3],
-        'test': [5]
+        'train': [1, 2, 3, 5, 7],
+        'val': [6],
+        'test': [4]
     },
     #### 날짜로 나누는 loc
     'UK' : {
