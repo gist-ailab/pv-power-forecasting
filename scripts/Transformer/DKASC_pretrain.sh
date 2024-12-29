@@ -19,8 +19,8 @@ random_seed=2024
 pred_len=24
 # label_len=0
 
-n_heads=16
-e_layers=9
+n_heads=8
+e_layers=8
 d_model=512
 d_ff=2048
 
