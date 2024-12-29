@@ -193,7 +193,7 @@ class Exp_Main(Exp_Basic):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
-                            outputs = self.model(batch_x, pretrain_flag)
+                            outputs = self.model(batch_x)
                         else:
                             if self.args.output_attention:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -210,7 +210,7 @@ class Exp_Main(Exp_Basic):
                     scaler.update()
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
-                        outputs = self.model(batch_x, pretrain_flag)
+                        outputs = self.model(batch_x)
                     else:
                         if self.args.output_attention:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -299,7 +299,7 @@ class Exp_Main(Exp_Basic):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
-                            outputs = self.model(batch_x, pretrain_flag)
+                            outputs = self.model(batch_x)
                         else:
                             if self.args.output_attention:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -307,7 +307,7 @@ class Exp_Main(Exp_Basic):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
-                        outputs = self.model(batch_x, pretrain_flag)
+                        outputs = self.model(batch_x)
                     else:
                         if self.args.output_attention:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -366,7 +366,7 @@ class Exp_Main(Exp_Basic):
                 pretrain_flag = True if self.args.is_pretraining else False
               
                 if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
-                    outputs = self.model(batch_x, pretrain_flag)
+                    outputs = self.model(batch_x)
                 else:
                     if self.args.output_attention:
                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
