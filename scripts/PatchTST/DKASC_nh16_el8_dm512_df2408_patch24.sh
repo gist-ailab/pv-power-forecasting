@@ -25,7 +25,7 @@ d_model=512
 d_ff=2048
 patch_len=24
 
-export CUDA_VISIBLE_DEVICES=0,1
+export CUDA_VISIBLE_DEVICES=5
 # export WORLD_SIZE=2 # 총 프로세스 수
 # export MASTER_ADDR='localhost'
 # # export MASTER_PORT='12356'  # 임의의 빈 포트
@@ -53,6 +53,7 @@ do
         --model_id $model_id \
         --model $model_name \
         --data $data_name \
+        --data_type $data_type \
         --root_path $root_path_name \
         --checkpoints $setting_name \
         --seq_len $seq_len \
