@@ -11,7 +11,8 @@ if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-root_path_name="/home/intern/doyoon/innovation/PatchTST/data/DKASC/processed_data_${data_type}/"
+# root_path_name="/home/intern/doyoon/innovation/PatchTST/data/DKASC/processed_data_${data_type}/"
+root_path_name="/home/seongho_bak/PatchTST/data/DKASC/processed_data_${data_type}/"
 data_name=DKASC
 random_seed=2024
 
@@ -41,7 +42,7 @@ echo "Total CPU cores: $total_cores"
 echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
-for seq_len in 168 240 336
+for seq_len in 240
 do
     setting_name="${data_name}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}"
     echo "Generated setting name: $setting_name"
