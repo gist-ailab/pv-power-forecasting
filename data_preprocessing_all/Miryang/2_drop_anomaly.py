@@ -75,6 +75,16 @@ def ensure_full_day_timestamps(df, timestamp_col='timestamp'):
     
     return df
 
+# Drop days where Active_Power is 0 for 24 or more hours
+def drop_days_with_excessive_zeros(df, timestamp_col='timestamp', power_col='Active_Power', zero_count_threshold=24):
+    """
+    Drops days where the number of zero values in the Active_Power column is greater than or equal to the threshold.
+    """
+    zero_count_per_day = df.groupby(df[timestamp_col].dt.date)[power_col].apply(lambda x: (x == 0).sum())
+    days_to_drop = zero_count_per_day[zero_count_per_day >= zero_count_threshold].index
+    return df[~df[timestamp_col].dt.date.isin(days_to_drop)]
+
+
 if __name__ == '__main__':
     # Get the absolute path of the current file
     current_file_path = os.path.abspath(__file__)
@@ -150,6 +160,9 @@ if __name__ == '__main__':
         
         # Interpolate NaN values (1 or fewer consecutive NaNs)
         df_hourly.interpolate(method='linear', limit=1, inplace=True)
+
+        # Apply the function after ensuring full day timestamps
+        df_hourly = drop_days_with_excessive_zeros(df_hourly, timestamp_col='timestamp', power_col='Active_Power', zero_count_threshold=20)
         
         # Save the processed DataFrame
         max_active_power = df_hourly['Active_Power'].max(skipna=True)
