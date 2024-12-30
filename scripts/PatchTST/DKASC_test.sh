@@ -7,7 +7,7 @@ model_name=PatchTST
 model_id=$DATE
 data_name=DKASC
 data_type=all
-exp_id="${DATE}_TEST_$model_name_SHSH"
+exp_id="${DATE}_TEST"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
