@@ -1,6 +1,6 @@
 # from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
 #      Dataset_DKASC_AliceSprings, Dataset_DKASC_Yulara, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang, Dataset_Miryang_MinMax, Dataset_Miryang_Standard, Dataset_SineMax
-from data_provider.data_loader import Dataset_DKASC, Dataset_GIST, Dataset_Miryang, Dataset_Germany, Dataset_SineMax
+from data_provider.data_loader import Dataset_DKASC, Dataset_GIST, Dataset_Miryang, Dataset_Germany, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_UK, Dataset_SineMax
 from torch.utils.data import DataLoader, ConcatDataset
 import torch
 
@@ -10,10 +10,9 @@ data_dict = {
     'GIST': Dataset_GIST,
     'Miryang': Dataset_Miryang,
     'Germany': Dataset_Germany,
-    # 'UK': Dataset_PV,
-    # 'OEDI_Georgia': Dataset_PV,
-    # 'OEDI_California': Dataset_PV,
-    # 'Miryang': Dataset_PV,
+    'OEDI_Georgia': Dataset_OEDI_Georgia,
+    'OEDI_California': Dataset_OEDI_California,
+    'UK': Dataset_UK,
 }
 
 split_configs = {
@@ -50,21 +49,21 @@ split_configs = {
         'test': [4]
     },
     #### 날짜로 나누는 loc
-    'UK' : {
-        'train' : 0.7,
-        'val' : 0.2,
-        'test' : 0.1
-    },
-    'OEDI_California': { # 2017.12.05  2023.10.31
-        'train' : [2017, 2021],
-        'val' : [2021, 2022],
-        'test' : [2022, 2024]
 
+    'OEDI_California': { # 2017.12.05  2023.10.31
+        'train' : 0.75,
+        'val' : 0.1,
+        'test' : 0.15
     },
     'OEDI_Georgia' : {  # 2018.03.29  2022.03.10
-        'train' : [2018, 2020],
-        'val' : [2020, 2021],
-        'test' : [2021, 2023]
+        'train' : 0.75,
+        'val' : 0.1,
+        'test' : 0.15
+    },
+    'UK' : {
+        'train' : 0.75,
+        'val' : 0.1,
+        'test' : 0.15
     },
 }
 
