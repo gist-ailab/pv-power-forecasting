@@ -40,9 +40,9 @@ split_configs = {
         'test': [3, 14]
     },
     'Germany': {
-        'train': [1, 4, 7, 8, 9],
-        'val': [2, 5],
-        'test': [3, 6]
+        'train': [2, 3, 4, 5, 6, 7, 8],
+        'val': [9],
+        'test': [1]
     },
     'Miryang': {
         'train': [1, 2, 3, 5, 7],
