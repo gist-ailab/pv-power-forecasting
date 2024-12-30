@@ -1,6 +1,6 @@
 # from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
 #      Dataset_DKASC_AliceSprings, Dataset_DKASC_Yulara, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang, Dataset_Miryang_MinMax, Dataset_Miryang_Standard, Dataset_SineMax
-from data_provider.data_loader import Dataset_DKASC, Dataset_GIST, Dataset_Miryang, Dataset_SineMax
+from data_provider.data_loader import Dataset_DKASC, Dataset_GIST, Dataset_Miryang, Dataset_Germany, Dataset_SineMax
 from torch.utils.data import DataLoader, ConcatDataset
 import torch
 
@@ -9,7 +9,7 @@ data_dict = {
     'SineMax': Dataset_SineMax,
     'GIST': Dataset_GIST,
     'Miryang': Dataset_Miryang,
-    # 'German': Dataset_PV,
+    'Germany': Dataset_Germany,
     # 'UK': Dataset_PV,
     # 'OEDI_Georgia': Dataset_PV,
     # 'OEDI_California': Dataset_PV,
@@ -39,7 +39,7 @@ split_configs = {
         'val': [2, 12],
         'test': [3, 14]
     },
-    'German': {
+    'Germany': {
         'train': [1, 4, 7, 8, 9],
         'val': [2, 5],
         'test': [3, 6]
