@@ -56,36 +56,61 @@ class Exp_Main(Exp_Basic):
         
         # 먼저 모델을 GPU로 이동
         model = model.to(self.device)
+
+        if self.args.resume:
+            model = self.load_model(model, self.args.source_model_dir)
+
+        # 2. 사전 학습된 모델 로드 및 레이어 프리징
+        if (self.args.num_freeze_layers > 0) or (self.args.linear_probe):
+            model = self._freeze_layers(model)
         
+        # 3. 분산 학습 설정
         if self.args.distributed:
-        # 그 다음 DistributedDataParallel 설정
             model = nn.parallel.DistributedDataParallel(
                 model,
                 device_ids=[self.args.local_rank],
                 output_device=self.args.local_rank
             )
+        
+        return model
+    
+    def _freeze_layers(self, model):
+        """Helper function to handle layer freezing"""
+        model = self.load_model(model, self.args.source_model_dir)
+        
+        # state dict의 키들을 분석하여 총 레이어 수 파악
+        state_dict_keys = model.state_dict().keys()
+        layer_numbers = set()
+        for key in state_dict_keys:
+            if 'backbone.encoder.layers.' in key:
+                layer_num = int(key.split('backbone.encoder.layers.')[1].split('.')[0])
+                layer_numbers.add(layer_num)
+        
+        total_layers = max(layer_numbers) + 1  # 0부터 시작하므로 +1
+        
+        # 뒤에서부터 프리징할 레이어 계산
+        layers_to_freeze = list(range(total_layers - self.args.num_freeze_layers, total_layers))
+        
+        # 프리징할 레이어 지정
+        freeze_layers = [
+            'head',  # head는 항상 프리징
+            'W_pos',  # positional encoding도 프리징
+            'W_P.weight', 'W_P.bias'  # patch embedding도 프리징
+        ]
+        freeze_layers.extend([f'backbone.encoder.layers.{i}' for i in layers_to_freeze])
+        
+        # 레이어 프리징
+        for name, param in model.named_parameters():
+            if any(layer in name for layer in freeze_layers):
+                param.requires_grad = False
+                print(f"Layer {name} is frozen")
 
-        if self.args.resume:
-            model = self.load_model(model, self.args.checkpoints)
-
-        if self.args.num_freeze_layers > 0:
-            model = self.load_model(model, self.args.checkpoints)
-            
-            # Define the layers to freeze
-            freeze_layers = ['W_pos', 'W_P.weight', 'W_P.bias']
-            freeze_layers += [f'model.backbone.encoder.layers.{i}' for i in range(self.args.num_freeze_layers)]
-            
-            # Freeze the specified layers
+        # Linear probing을 위한 추가 설정
+        if self.args.is_linear_probe:
             for name, param in model.named_parameters():
-                # freeze_layers에 해당하는 레이어 이름이 포함된 파라미터는 requires_grad=False로 설정
-                if any(layer in name for layer in freeze_layers):
+                if 'head' not in name:
                     param.requires_grad = False
-
-            # Check which layers are frozen
-            for name, param in model.named_parameters():
-                if not param.requires_grad:
-                    print(f"Layer {name} is frozen.")
-                    print(f"sdp_attn (scaled dot-product attention) layer is like a constant, so it is already frozen.")
+                    print(f"Layer {name} is frozen for linear probing")
         
         return model
 
@@ -116,17 +141,22 @@ class Exp_Main(Exp_Basic):
         valid_targets = targets[mask]
         return loss_fn(valid_predictions, valid_targets)
     
-    def load_model(self, model, checkpoints_path):
-        latest_model_path = os.path.join(checkpoints_path, 'model_latest.pth')
-        model.load_state_dict(torch.load(latest_model_path))
-        print(f'Model loaded from {latest_model_path}')
+    def load_model(self, model, source_model_dir):
+        source_model_dir = os.path.join('./checkpoints', source_model_dir)
+        if self.args.resume:
+            model_path = os.path.join(source_model_dir, 'model_latest.pth')
+        elif (self.args.num_freeze_layers > 0) or (self.args.linear_probe):
+            model_path = os.path.join(source_model_dir, 'checkpoint.pth')
+
+        model.load_state_dict(torch.load(model_path))
+        print(f'Model loaded from {model_path}')
         return model
 
-    def train(self, checkpoints):
-        self.args.checkpoints = os.path.join('checkpoints', checkpoints)
+    def train(self, output_dir):
+        self.args.output_dir = os.path.join('checkpoints', output_dir)
         # wandb 관련 작업은 rank 0에서만 실행
         if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
-            self._set_wandb(checkpoints)
+            self._set_wandb(output_dir)
             config = {
                 "model": self.args.model,
                 "num_parameters": sum(p.numel() for p in self.model.parameters()),
@@ -150,10 +180,9 @@ class Exp_Main(Exp_Basic):
         
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
-        test_data, test_loader = self._get_data(flag='test')
 
-        path = os.path.join(self.args.checkpoints) if 'checkpoint.pth' not in self.args.checkpoints else self.args.checkpoints
-        os.makedirs(path, exist_ok=True)
+        save_path = os.path.join(self.args.output_dir) if 'checkpoint.pth' not in self.args.output_dir else self.args.output_dir
+        os.makedirs(save_path, exist_ok=True)
 
         train_steps = len(train_loader)
         early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
@@ -256,7 +285,7 @@ class Exp_Main(Exp_Basic):
                     "validation_loss": vali_loss,
                 })
             
-            early_stopping(vali_loss, self.model, path)
+            early_stopping(vali_loss, self.model, save_path)
             if early_stopping.early_stop:
                 print("Early stopping triggered")
                 break
@@ -266,7 +295,7 @@ class Exp_Main(Exp_Basic):
             else:
                 print(f'Learning rate updated to {scheduler.get_last_lr()[0]}')
         
-        best_model_path = os.path.join(path, 'checkpoint.pth')
+        best_model_path = os.path.join(save_path, 'checkpoint.pth')
         if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
             upload_files_to_wandb(
                 project_name=self.project_name,
@@ -323,21 +352,21 @@ class Exp_Main(Exp_Basic):
         self.model.train()
         return np.average(total_loss)
 
-    def test(self, checkpoint_path=None):
+    def test(self, source_model_dir=None):
         test_data, test_loader = self._get_data(flag='test')
-        dir_name = checkpoint_path.split('/')[-1]
-        folder_path = os.path.join('./test_results/', dir_name)
+        dir_name = source_model_dir.split('/')[-1]
+        result_path = os.path.join('./test_results/', dir_name)
         # if 'checkpoint.pth' in model_path:
         #     folder_path = os.path.join('./test_results/', model_path.split('/')[-1:])
-        os.makedirs(folder_path, exist_ok=True)
+        os.makedirs(result_path, exist_ok=True)
 
-        if checkpoint_path[0] == '.':
-            checkpoint_path = checkpoint_path[2:]
+        if source_model_dir[0] == '.':
+            source_model_dir = source_model_dir[2:]
 
-        if checkpoint_path.split('/')[0] != 'checkpoints':
-            model_path = os.path.join('./checkpoints', checkpoint_path)
+        if source_model_dir.split('/')[0] != 'checkpoints':
+            model_path = os.path.join('./checkpoints', source_model_dir)
 
-        if 'checkpoint.pth' not in checkpoint_path:
+        if 'checkpoint.pth' not in source_model_dir:
             model_path = os.path.join(model_path, 'checkpoint.pth')
         
         self.model.load_state_dict(torch.load(model_path))
@@ -345,7 +374,7 @@ class Exp_Main(Exp_Basic):
         # MetricEvaluator 초기화
         # evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
         evaluator = MetricEvaluator(
-            file_path=os.path.join(folder_path, "site_metrics.txt"),
+            file_path=os.path.join(result_path, "site_metrics.txt"),
             dataset_name=self.args.data
             )
 
@@ -404,7 +433,7 @@ class Exp_Main(Exp_Basic):
                                           input_seq[0, -5:, -1],    # 마지막 5개 입력값
                                           true[0],                  # 실제값
                                           pred[0],                  # 예측값
-                                          folder_path)
+                                          result_path)
         # print(f"Plotting complete. Results saved in {folder_path}")
 
         # TODO: metric 계산하는거 개선해야 함.

@@ -19,6 +19,8 @@ if __name__ == '__main__':
     parser.add_argument('--is_pretraining', type=int, default=0, help='status')
     parser.add_argument('--num_freeze_layers', type=int, default=0,
                         help='num of transformer freeze layer. 0: finetune all layers or do not transfer learning')
+    parser.add_argument('--is_linear_probe', action='store_true', default=False, help='whether to perform linear probing (only train head)')
+    parser.add_argument('--pretrained_model', type=str, default=None, help='path to pretrained model for transfer learning')
 
     parser.add_argument('--is_inference', type=int, default=0, help='status')
 
@@ -39,7 +41,8 @@ if __name__ == '__main__':
     parser.add_argument('--scaler', type=bool, default=True, help='StandardScaler')
     parser.add_argument('--freq', type=str, default='h',
                         help='freq for time 2 encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
-    parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
+    parser.add_argument('--output_dir', type=str, default='./checkpoints/', help='location of model checkpoints, recommend to use setting name')
+    parser.add_argument('--source_model_dir', type=str, default=None, help='path to source model for transfer learning')
 
     # forecasting task
     parser.add_argument('--seq_len', type=int, default=240, help='input sequence length')
@@ -95,7 +98,7 @@ if __name__ == '__main__':
     parser.add_argument('--itr', type=int, default=1, help='experiments times')
     parser.add_argument('--train_epochs', type=int, default=200, help='train epochs')
     parser.add_argument('--batch_size', type=int, default=128, help='batch size of train input data')
-    parser.add_argument('--patience', type=int, default=10, help='early stopping patience')
+    parser.add_argument('--patience', type=int, default=7, help='early stopping patience')
     parser.add_argument('--learning_rate', type=float, default=0.0001, help='optimizer learning rate')
     parser.add_argument('--des', type=str, default='test', help='exp description')
     parser.add_argument('--loss', type=str, default='mse', help='loss function')
@@ -168,15 +171,15 @@ if __name__ == '__main__':
                 ii)
 
             exp = Exp(args)  # set experiments
-            if args.local_rank == -1:
-                print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-            exp.train(args.checkpoints)
 
-            # TODO: metric 계산하는거 개선해야 함.
-            # if args.local_rank == 0:
-            #     print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-            # exp.test(setting)
-            print('Training Done')
+            print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+            exp.train(args.output_dir)
+            print('***************** Training Done *****************')
+
+
+            print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+            exp.test(setting)
+            print('***************** Test Done *****************')
 
             if args.do_predict:
                 if args.local_rank == 0:
@@ -208,12 +211,12 @@ if __name__ == '__main__':
             ii)    
 
         exp = Exp(args)  # set experiments
-        if args.local_rank == 0:
-            print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-        exp.test(args.checkpoints)
+
+        print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+        exp.test(args.source_model)
         torch.cuda.empty_cache()
     
-    elif args.num_freeze_layers > 0:    # freeze block 개수 조절을 통해 finetuning 및 linear probing 수행
+    elif (args.num_freeze_layers > 0) or (args.linear_probe):    # freeze block 개수 조절을 통해 finetuning 및 linear probing 수행
         for ii in range(args.itr):
             # setting record of experiments
             setting = '{}_{}_{}_{}_{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
@@ -237,16 +240,18 @@ if __name__ == '__main__':
                 args.wandb,
                 ii)
 
-            exp = Exp_Finetune(args)
+            exp = Exp(args)
             
-            if args.is_fully_finetune:
-                if args.local_rank == 0:
-                    print('>>>>>>>start fully finetuning : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-                exp.fully_finetune(args.checkpoints, args.resume)
+            if args.is_linear_probe:
+                print('>>>>>>>>>>>>>>>>>>>>>>>>>> start linear probing : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+            else:
+                print('>>>>>>>>>>>>>>>>>>>>>>>>>> start finetuning : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+            exp.train(args.source_model_dir)
+            print('***************** Training Done *****************')
 
-            elif args.is_linear_probe:
-                if args.local_rank == 0:
-                    print('>>>>>>>start linear probing : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-                exp.linear_probe(args.checkpoints, args.resume)       
+            print('>>>>>>>>>>>>>>>>>>>>>>>>>> testing : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+            exp.test(source_model_dir)
+            print('***************** Test Done *****************')
+     
 
             torch.cuda.empty_cache()
