@@ -59,7 +59,7 @@ do
         --data $data_name \
         --data_type $data_type \
         --root_path $root_path_name \
-        --checkpoints "$exp_id" \
+        --output_dir "$exp_id" \
         --seq_len $seq_len \
         --label_len $label_len \
         --pred_len $pred_len \
