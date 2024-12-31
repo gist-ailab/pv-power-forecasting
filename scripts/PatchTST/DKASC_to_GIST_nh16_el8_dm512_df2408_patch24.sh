@@ -1,5 +1,6 @@
 #!/bin/bash
-
+GPU_ID=$1
+export CUDA_VISIBLE_DEVICES=$GPU_ID
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
@@ -15,7 +16,7 @@ fi
 root_path_name="/ailab_mat/dataset/PV/${data_name}/processed_data_${data_type}/"
 random_seed=2024
 
-num_freeze_layers=1
+num_freeze_layers=4
 
 seq_len=240
 pred_len=24
@@ -27,7 +28,6 @@ d_model=512
 d_ff=2048
 patch_len=24
 
-export CUDA_VISIBLE_DEVICES=0
 # export WORLD_SIZE=2 # 총 프로세스 수
 # export MASTER_ADDR='localhost'
 # export MASTER_PORT=12356  # 임의의 빈 포트
