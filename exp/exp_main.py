@@ -180,6 +180,7 @@ class Exp_Main(Exp_Basic):
         
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
+        vali_data, vali_loader = self._get_data(flag='test')
 
         save_path = os.path.join(self.args.output_dir) if 'checkpoint.pth' not in self.args.output_dir else self.args.output_dir
         os.makedirs(save_path, exist_ok=True)
