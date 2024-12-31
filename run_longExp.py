@@ -20,7 +20,6 @@ if __name__ == '__main__':
     parser.add_argument('--num_freeze_layers', type=int, default=0,
                         help='num of transformer freeze layer. 0: finetune all layers or do not transfer learning')
     parser.add_argument('--linear_probe', action='store_true', default=False, help='whether to perform linear probing (only train head)')
-    parser.add_argument('--pretrained_model', type=str, default=None, help='path to pretrained model for transfer learning')
 
     parser.add_argument('--is_inference', type=int, default=0, help='status')
 
