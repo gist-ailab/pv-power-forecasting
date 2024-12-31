@@ -26,7 +26,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import wandb
 from utils.wandb_uploader import upload_files_to_wandb
-from collections import defaultdict
 from tqdm import tqdm
 
 warnings.filterwarnings('ignore')
@@ -77,35 +76,27 @@ class Exp_Main(Exp_Basic):
     def _freeze_layers(self, model):
         """Helper function to handle layer freezing"""
         model = self.load_model(model, self.args.source_model_dir)
-        
-        # state dict의 키들을 분석하여 총 레이어 수 파악
-        state_dict_keys = model.state_dict().keys()
-        layer_numbers = set()
-        for key in state_dict_keys:
-            if 'backbone.encoder.layers.' in key:
-                layer_num = int(key.split('backbone.encoder.layers.')[1].split('.')[0])
-                layer_numbers.add(layer_num)
-        
-        total_layers = max(layer_numbers) + 1  # 0부터 시작하므로 +1
 
-        # Linear probing을 위한 설정
+        # Linear probing: Freeze all except head
         if self.args.linear_probe:
             for name, param in model.named_parameters():
+                # Exclude positional and input embedding from freezing
+                if 'W_pos' in name or 'W_P' in name:
+                    continue
                 if 'head' not in name:
                     param.requires_grad = False
                     print(f"Layer {name} is frozen for linear probing")
             return model
         
-        # Transfer learning을 위한 레이어 프리징
+        # Freezing layers dynamically (start from beginning)
         if self.args.num_freeze_layers > 0:
             # head에 가까운 레이어부터 프리징
             layers_to_freeze = list(range(0, self.args.num_freeze_layers))
             
-            # 프리징할 레이어 지정
-            freeze_layers = ['head']  # head 항상 프리징
-            freeze_layers.extend([f'backbone.encoder.layers.{total_layers - 1 - i}' for i in layers_to_freeze])
+            # Build a list of layers to freeze (excluding head)
+            freeze_layers = [f'backbone.encoder.layers.{i}' for i in layers_to_freeze]
             
-            # 레이어 프리징
+            # Freeze specified layers
             for name, param in model.named_parameters():
                 if any(layer in name for layer in freeze_layers):
                     param.requires_grad = False
