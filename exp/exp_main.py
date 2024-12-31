@@ -61,7 +61,7 @@ class Exp_Main(Exp_Basic):
             model = self.load_model(model, self.args.source_model_dir)
 
         # 2. 사전 학습된 모델 로드 및 레이어 프리징
-        if (self.args.num_freeze_layers > 0) or (self.args.linear_probe):
+        if (self.args.num_freeze_layers > 0) or (self.args.is_linear_probe):
             model = self._freeze_layers(model)
         
         # 3. 분산 학습 설정
