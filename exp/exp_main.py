@@ -93,7 +93,6 @@ class Exp_Main(Exp_Basic):
         
         # 프리징할 레이어 지정
         freeze_layers = [
-            'head',  # head는 항상 프리징
             'W_pos',  # positional encoding도 프리징
             'W_P.weight', 'W_P.bias'  # patch embedding도 프리징
         ]
