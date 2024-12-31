@@ -87,30 +87,30 @@ class Exp_Main(Exp_Basic):
                 layer_numbers.add(layer_num)
         
         total_layers = max(layer_numbers) + 1  # 0부터 시작하므로 +1
-        
-        # 뒤에서부터 프리징할 레이어 계산
-        layers_to_freeze = list(range(total_layers - self.args.num_freeze_layers, total_layers))
-        
-        # 프리징할 레이어 지정
-        freeze_layers = [
-            'W_pos',  # positional encoding도 프리징
-            'W_P.weight', 'W_P.bias'  # patch embedding도 프리징
-        ]
-        freeze_layers.extend([f'backbone.encoder.layers.{i}' for i in layers_to_freeze])
-        
-        # 레이어 프리징
-        for name, param in model.named_parameters():
-            if any(layer in name for layer in freeze_layers):
-                param.requires_grad = False
-                print(f"Layer {name} is frozen")
 
-        # Linear probing을 위한 추가 설정
+        # Linear probing을 위한 설정
         if self.args.linear_probe:
             for name, param in model.named_parameters():
                 if 'head' not in name:
                     param.requires_grad = False
                     print(f"Layer {name} is frozen for linear probing")
+            return model
         
+        # Transfer learning을 위한 레이어 프리징
+        if self.args.num_freeze_layers > 0:
+            # head에 가까운 레이어부터 프리징
+            layers_to_freeze = list(range(0, self.args.num_freeze_layers))
+            
+            # 프리징할 레이어 지정
+            freeze_layers = ['head']  # head 항상 프리징
+            freeze_layers.extend([f'backbone.encoder.layers.{total_layers - 1 - i}' for i in layers_to_freeze])
+            
+            # 레이어 프리징
+            for name, param in model.named_parameters():
+                if any(layer in name for layer in freeze_layers):
+                    param.requires_grad = False
+                    print(f"Layer {name} is frozen")
+
         return model
 
     def _get_data(self, flag):
