@@ -250,7 +250,7 @@ if __name__ == '__main__':
             print('***************** Training Done *****************')
 
             print('>>>>>>>>>>>>>>>>>>>>>>>>>> testing : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-            exp.test(source_model_dir)
+            exp.test(args.source_model_dir)
             print('***************** Test Done *****************')
      
 
