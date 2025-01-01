@@ -432,7 +432,7 @@ class Exp_Main(Exp_Basic):
         # metric 계산 및 결과 출력
         results, overall_mape = evaluator.evaluate_scale_metrics()
 
-        for scale_name, (rmse, mae, mbe, r2), site_ids in results:
+        for scale_name, (rmse, mae, mbe, r2, skill_score), site_ids in results:
             print(f'\nScale: {scale_name}')
             print(f"Sites: {site_ids}\n")
             print(f"Number of sites: {len(site_ids)}\n")
@@ -440,17 +440,20 @@ class Exp_Main(Exp_Basic):
             print(f'RMSE: {rmse:.4f} kW')
             print(f'MBE: {mbe:.4f} kW')
             print(f'R2 Score: {r2:.4f}')
+            if skill_score is not None:
+                print(f"Skill Score: {skill_score:.4f}\n")
         print(f'\nOverall MAPE: {overall_mape:.4f}%')
 
         # wandb logging (설정된 경우)
         if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
-            for scale_name, (rmse, mae, mbe, r2), site_ids in results:
+            for scale_name, (rmse, mae, mbe, r2, skill_score), site_ids in results:
                 wandb.log({
                     f"test/{scale_name}/Sites": site_ids,
                     f"test/{scale_name}/MAE": mae,
                     f"test/{scale_name}/RMSE": rmse,
                     f"test/{scale_name}/MBE": mbe,
                     f"test/{scale_name}/R2_Score": r2,
+                    f"test/{scale_name}/Skill_Score": skill_score if skill_score is not None else 'N/A'
                 })
             wandb.log({"test/MAPE": overall_mape})
 

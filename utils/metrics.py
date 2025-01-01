@@ -1,24 +1,41 @@
 import numpy as np
 import pandas as pd
-import torch
+import json
 from sklearn.metrics import r2_score
 from collections import defaultdict
 
 class MetricEvaluator:
-    def __init__(self, file_path, dataset_name='DKASC'):
+    def __init__(self, save_path, dataset_name='DKASC', data_type='all', ref_mse_path=None):
         """
         Args:
-            file_path: 결과를 저장할 파일 경로
-            dataset_name: 데이터셋 이름 (mapping 파일 경로 생성에 사용)
+            save_path: 결과를 저장할 파일 경로
+            dataset_name: 데이터셋 이름
+            data_type: 데이터 타입 ('all', 'day' 등)
+            ref_mse_path: Reference MSE 파일 경로 (JSON 또는 CSV)
         """
-        self.file_path = file_path
+        self.save_path = save_path
         self.data = defaultdict(lambda: {"preds": [], "targets": []})
+        self.ref_mse_dict = self._load_reference_mse(ref_mse_path)
         
         # mapping 파일 로드
-        mapping_path = f'./data_provider/{dataset_name}_mapping/mapping_day.csv'
+        mapping_path = f'./data_provider/{dataset_name}_mapping/mapping_{data_type}.csv'
         self.mapping_df = pd.read_csv(mapping_path)
         self.current_dataset = self.mapping_df[self.mapping_df['dataset'] == dataset_name]
         self.current_dataset['index'] = self.current_dataset['mapping_name'].apply(lambda x: int(x.split('_')[0]))
+
+    def _load_reference_mse(self, ref_mse_path):
+        """Load reference MSE from file"""
+        if ref_mse_path is None:
+            return {}
+            
+        if ref_mse_path.endswith('.json'):
+            with open(ref_mse_path, 'r') as f:
+                return json.load(f)
+        elif ref_mse_path.endswith('.csv'):
+            df = pd.read_csv(ref_mse_path)
+            return dict(zip(df['scale_name'], df['ref_mse']))
+        else:
+            raise ValueError("Reference MSE file must be either JSON or CSV")
 
     def update(self, inst_id, preds, targets):
         """매 배치마다 installation ID와 예측값, 실제값을 저장"""
@@ -39,13 +56,15 @@ class MetricEvaluator:
         except (IndexError, ValueError):
             raise ValueError(f"Invalid capacity format in filename: {file_name}")
     
-    def _calculate_metrics(self, preds, targets):
+    def _calculate_metrics(self, preds, targets, scale_name):
         """주어진 그룹의 metric 계산"""
-        rmse = np.sqrt(np.mean((preds - targets) ** 2))
         mae = np.mean(np.abs(preds - targets))
+        rmse = np.sqrt(np.mean((preds - targets) ** 2))
         mbe = np.mean(preds - targets)
         r2 = r2_score(targets.flatten(), preds.flatten())
-        return rmse, mae, mbe, r2
+        mse = np.mean((preds - targets) ** 2)
+        skill_score = self.calculate_skill_score(scale_name, mse)
+        return mae, rmse, mbe, r2, skill_score
 
     def calculate_mape(self):
         """전체 데이터에 대한 MAPE 계산 - installation별 설치 용량 기준"""
@@ -65,7 +84,22 @@ class MetricEvaluator:
         
         mape = (total_error / total_samples) * 100
         return mape
-
+    
+    def calculate_skill_score(self, scale_name, current_mse):
+        """
+        Calculate skill score for a given scale
+        SS = 1 - MSE_transfer/MSE_ref
+        """
+        if scale_name not in self.ref_mse_dict:
+            return None
+            
+        ref_mse = self.ref_mse_dict[scale_name]
+        if ref_mse <= 0:  # Avoid division by zero
+            return None
+            
+        skill_score = 1 - (current_mse / ref_mse)
+        return skill_score 
+ 
     def get_capacity_groups(self):
         """실제 데이터의 용량을 기반으로 그룹 생성"""
         capacity_ranges = [
@@ -128,12 +162,12 @@ class MetricEvaluator:
 
     def _save_results(self, results, overall_mape):
         """결과를 파일로 저장"""
-        with open(self.file_path, "w") as file:
+        with open(self.save_path, "w") as file:
             file.write("=" * 50 + "\n")
             file.write("Scale-Specific Evaluation Metrics\n")
             file.write("=" * 50 + "\n")
             
-            for scale_name, (rmse, mae, mbe, r2), site_ids in results:
+            for scale_name, (rmse, mae, mbe, r2, skill_score), site_ids in results:
                 file.write(f"Scale: {scale_name}\n")
                 file.write(f"Sites: {site_ids}\n")
                 file.write(f"Number of sites: {len(site_ids)}\n")
@@ -141,6 +175,8 @@ class MetricEvaluator:
                 file.write(f"RMSE: {rmse:.4f} kW\n")
                 file.write(f"MBE: {mbe:.4f} kW\n")
                 file.write(f"R2 Score: {r2:.4f}\n")
+                if skill_score is not None:
+                    file.write(f"Skill Score: {skill_score:.4f}\n")
                 file.write("-" * 50 + "\n")
             
             # 전체 사이트 정보 추가
