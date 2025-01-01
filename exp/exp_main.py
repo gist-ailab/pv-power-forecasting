@@ -142,7 +142,7 @@ class Exp_Main(Exp_Basic):
         print(f'Model loaded from {model_path}')
         return model
 
-    def train(self, output_dir):
+    def train(self, output_dir, source_model_dir=None):
         self.args.output_dir = os.path.join('checkpoints', output_dir)
         # wandb 관련 작업은 rank 0에서만 실행
         if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
@@ -418,13 +418,13 @@ class Exp_Main(Exp_Basic):
                 true_list.append(true)
                 input_list.append(input_seq)
 
-                if i % 10 == 0:
-                    # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
-                    self.plot_predictions(i,
-                                          input_seq[0, -5:, -1],    # 마지막 5개 입력값
-                                          true[0],                  # 실제값
-                                          pred[0],                  # 예측값
-                                          result_path)
+                # if i % 10 == 0:
+                #     # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
+                #     self.plot_predictions(i,
+                #                           input_seq[0, -5:, -1],    # 마지막 5개 입력값
+                #                           true[0],                  # 실제값
+                #                           pred[0],                  # 예측값
+                #                           result_path)
         # print(f"Plotting complete. Results saved in {folder_path}")
 
         # TODO: metric 계산하는거 개선해야 함.

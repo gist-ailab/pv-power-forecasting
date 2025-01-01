@@ -172,9 +172,8 @@ if __name__ == '__main__':
             exp = Exp(args)  # set experiments
 
             print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-            exp.train(args.output_dir)
+            exp.train(output_dir=args.output_dir)
             print('***************** Training Done *****************')
-
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
             exp.test(setting)
@@ -245,7 +244,7 @@ if __name__ == '__main__':
                 print('>>>>>>>>>>>>>>>>>>>>>>>>>> start linear probing : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
             else:
                 print('>>>>>>>>>>>>>>>>>>>>>>>>>> start finetuning : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-            exp.train(args.source_model_dir)
+            exp.train(output_dir=args.output_dir, source_model_dir=args.source_model_dir)
             print('***************** Training Done *****************')
 
             print('>>>>>>>>>>>>>>>>>>>>>>>>>> testing : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
