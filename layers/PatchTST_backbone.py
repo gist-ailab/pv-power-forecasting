@@ -57,7 +57,7 @@ class PatchTST_backbone(nn.Module):
             self.head = Flatten_Head(self.individual, self.n_vars, self.head_nf, target_window, head_dropout=head_dropout)
         
         self.padding = False
-    def forward(self, z, pretrain_flag=True):                                                                   # z: [bs x nvars x seq_len]
+    def forward(self, z, transfer_flag=True):                                                                   # z: [bs x nvars x seq_len]
         # norm
     
   
@@ -74,7 +74,7 @@ class PatchTST_backbone(nn.Module):
         
         # model
         z = self.backbone(z)
-        if not pretrain_flag and z.shape[1] < 5:
+        if transfer_flag and z.shape[1] < 5:    #
             self.padding = True
             original_channel = z.shape[1]
             padding = torch.zeros((z.shape[0], 5 - original_channel, z.shape[2], z.shape[3])).to(z.device)
