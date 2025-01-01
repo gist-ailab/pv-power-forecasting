@@ -435,8 +435,8 @@ class Exp_Main(Exp_Basic):
             print(f'\nScale: {scale_name}')
             print(f"Sites: {site_ids}\n")
             print(f"Number of sites: {len(site_ids)}\n")
-            print(f'RMSE: {rmse:.4f} kW')
             print(f'MAE: {mae:.4f} kW')
+            print(f'RMSE: {rmse:.4f} kW')
             print(f'MBE: {mbe:.4f} kW')
             print(f'R2 Score: {r2:.4f}')
         print(f'\nOverall MAPE: {overall_mape:.4f}%')
@@ -446,8 +446,8 @@ class Exp_Main(Exp_Basic):
             for scale_name, (rmse, mae, mbe, r2), site_ids in results:
                 wandb.log({
                     f"test/{scale_name}/Sites": site_ids,
-                    f"test/{scale_name}/RMSE": rmse,
                     f"test/{scale_name}/MAE": mae,
+                    f"test/{scale_name}/RMSE": rmse,
                     f"test/{scale_name}/MBE": mbe,
                     f"test/{scale_name}/R2_Score": r2,
                 })
