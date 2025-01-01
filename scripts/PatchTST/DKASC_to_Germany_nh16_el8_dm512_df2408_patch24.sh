@@ -4,7 +4,7 @@ export CUDA_VISIBLE_DEVICES=$GPU_ID
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-data_name=GIST
+data_name=Germany
 data_type=all
 # data_type=day
 exp_id="${DATE}_Pretrain_$data_name_$model_name"
@@ -16,7 +16,7 @@ fi
 root_path_name="/ailab_mat/dataset/PV/${data_name}/processed_data_${data_type}/"
 random_seed=2024
 
-num_freeze_layers=2
+num_freeze_layers=1
 
 seq_len=240
 pred_len=24
@@ -43,14 +43,14 @@ echo "Total CPU cores: $total_cores"
 echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
-# setting_name="DKASC_to_GIST_linear_probing_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
-# setting_name="DKASC_to_GIST_fully_fine_tunning_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
-setting_name="DKASC_to_GIST_freeze_${num_freeze_layers}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+setting_name="DKASC_to_Germany_linear_probing_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+# setting_name="DKASC_to_Germany_fully_fine_tunning_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+# setting_name="DKASC_to_Germany_freeze_${num_freeze_layers}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
 echo "Generated setting name: $setting_name"
 python run_longExp.py \
     --run_name $setting_name \
     --random_seed $random_seed \
-    --num_freeze_layers $num_freeze_layers \
+    --linear_probe \
     --model_id $model_id \
     --model $model_name \
     --data $data_name \
@@ -58,7 +58,7 @@ python run_longExp.py \
     --root_path $root_path_name \
     --output_dir $setting_name \
     --source_model_dir "DKASC_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24" \
-    --ref_mse_path "/home/seongho_bak/Projects/PatchTST/data_provider/GIST_mapping/GIST_ref_mse.json" \
+    --ref_mse_path "/home/seongho_bak/Projects/PatchTST/data_provider/Germany_mapping/Germany_ref_mse.json" \
     --seq_len $seq_len \
     --label_len $label_len \
     --pred_len $pred_len \

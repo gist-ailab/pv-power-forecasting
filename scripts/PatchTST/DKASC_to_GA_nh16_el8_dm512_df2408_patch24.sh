@@ -4,7 +4,7 @@ export CUDA_VISIBLE_DEVICES=$GPU_ID
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-data_name=GIST
+data_name=OEDI_Georgia
 data_type=all
 # data_type=day
 exp_id="${DATE}_Pretrain_$data_name_$model_name"
@@ -43,9 +43,9 @@ echo "Total CPU cores: $total_cores"
 echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
-# setting_name="DKASC_to_GIST_linear_probing_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
-# setting_name="DKASC_to_GIST_fully_fine_tunning_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
-setting_name="DKASC_to_GIST_freeze_${num_freeze_layers}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+# setting_name="DKASC_to_GA_linear_probing_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+# setting_name="DKASC_to_GA_fully_fine_tunning_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+setting_name="DKASC_to_GA_freeze_${num_freeze_layers}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
 echo "Generated setting name: $setting_name"
 python run_longExp.py \
     --run_name $setting_name \
@@ -58,7 +58,7 @@ python run_longExp.py \
     --root_path $root_path_name \
     --output_dir $setting_name \
     --source_model_dir "DKASC_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24" \
-    --ref_mse_path "/home/seongho_bak/Projects/PatchTST/data_provider/GIST_mapping/GIST_ref_mse.json" \
+    --ref_mse_path "/home/seongho_bak/Projects/PatchTST/data_provider/OEDI_Georgia_mapping/OEDI_Georgia_ref_mse.json" \
     --seq_len $seq_len \
     --label_len $label_len \
     --pred_len $pred_len \
