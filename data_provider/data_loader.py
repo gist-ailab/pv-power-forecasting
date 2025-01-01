@@ -307,6 +307,15 @@ class Dataset_TimeSplit(Dataset):
         self.scaler_dir = os.path.join(root_path, 'scalers')
         os.makedirs(self.scaler_dir, exist_ok=True)
 
+        # 데이터를 저장할 리스트
+        self.data_x_list = []
+        self.data_y_list = []
+        self.data_stamp_list = []
+
+        self.inst_info = {}  # {file_name: capacity} 형태로 저장
+        self.inst_id_list = []
+        self.timestamp_inst_ids = []  # 각 시점별 installation ID를 저장할 리스트 추가
+
         # 데이터 준비
         self._prepare_data()
         self.indices = self._create_indices()
@@ -344,22 +353,37 @@ class Dataset_TimeSplit(Dataset):
             return pickle.load(f)
 
     def _prepare_data(self):
-        """시간 순으로 데이터를 분할하여 준비"""
-        self.data_x_list = []
-        self.data_y_list = []
-        self.data_stamp_list = []
 
-        # CSV 파일 로드
         if self.data_path is not None:
-            df = pd.read_csv(os.path.join(self.root_path, self.data_path))
+            # 단일 파일인 경우
+            file_name = os.listdir(self.root_path)[0]
+            file_path = os.path.join(self.root_path, file_name)
+            df = pd.read_csv(file_path)
+            inst_id = self._process_single_file(df, self.data_path)
+            self.timestamp_inst_ids = [inst_id] * len(df)
+            
         else:
-            # 디렉토리의 모든 CSV 파일 로드
+            # 디렉토리의 모든 CSV 파일 처리
             dfs = []
             for file in os.listdir(self.root_path):
                 if file.endswith('.csv'):
-                    df_temp = pd.read_csv(os.path.join(self.root_path, file))
-                    dfs.append(df_temp)
+                    df = pd.read_csv(os.path.join(self.root_path, file))
+                    inst_id = self._process_single_file(df, file)
+                    self.timestamp_inst_ids.extend([inst_id] * len(df))
+                    dfs.append(df)
             df = pd.concat(dfs, ignore_index=True)
+
+        # # CSV 파일 로드
+        # if self.data_path is not None:
+        #     df = pd.read_csv(os.path.join(self.root_path, self.data_path))
+        # else:
+        #     # 디렉토리의 모든 CSV 파일 로드
+        #     dfs = []
+        #     for file in os.listdir(self.root_path):
+        #         if file.endswith('.csv'):
+        #             df_temp = pd.read_csv(os.path.join(self.root_path, file))
+        #             dfs.append(df_temp)
+        #     df = pd.concat(dfs, ignore_index=True)
 
         # timestamp 처리
         df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -385,7 +409,7 @@ class Dataset_TimeSplit(Dataset):
             df_subset = df[df['timestamp'] < train_date]
         elif self.flag == 'val':
             df_subset = df[(df['timestamp'] >= train_date) & 
-                          (df['timestamp'] < val_date)]
+                        (df['timestamp'] < val_date)]
         else:  # test
             df_subset = df[df['timestamp'] >= val_date]
 
@@ -412,6 +436,31 @@ class Dataset_TimeSplit(Dataset):
         self.data_y_list.append(data)
         self.data_stamp_list.append(data_stamp)
 
+    def _process_single_file(self, df, file_name):
+        """개별 파일 처리 및 installation 정보 저장"""
+        try:
+            # Active_Power 컬럼의 최대값을 capacity로 사용
+            capacity = df['Active_Power'].max()
+            inst_id = len(self.inst_info)  # 순차적인 ID 부여
+            self.inst_info[file_name] = {
+                'capacity': capacity,
+                'id': inst_id,
+                'max_power': capacity  # MAPE 계산에 사용될 실제 최대 발전량
+            }
+            self.inst_id_list.append(inst_id)
+            return inst_id
+        except KeyError:
+            print(f"Warning: 'Active_Power' column not found in file: {file_name}")
+            capacity = 1.0  # 기본값 설정
+            inst_id = len(self.inst_info)
+            self.inst_info[file_name] = {
+                'capacity': capacity,
+                'id': inst_id,
+                'max_power': capacity
+            }
+            self.inst_id_list.append(inst_id)
+            return inst_id
+
     def _create_indices(self):
         """시퀀스 인덱스 생성"""
         indices = []
@@ -433,7 +482,10 @@ class Dataset_TimeSplit(Dataset):
         seq_x_mark = self.data_stamp_list[0][s_begin:s_end]
         seq_y_mark = self.data_stamp_list[0][r_begin:r_end]
 
-        return seq_x, seq_y, seq_x_mark, seq_y_mark, 0  # inst_id는 0으로 통일
+        # 해당 시점의 installation ID 반환
+        inst_id = self.timestamp_inst_ids[s_begin]
+
+        return seq_x, seq_y, seq_x_mark, seq_y_mark, inst_id
 
     def __len__(self):
         return len(self.indices)

@@ -208,12 +208,12 @@ class Exp_Main(Exp_Basic):
                 
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-                pretrain_flag = True if self.args.is_pretraining else False
+                transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
                 
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
-                            outputs = self.model(batch_x, pretrain_flag)
+                            outputs = self.model(batch_x, transfer_flag)
                         else:
                             if self.args.output_attention:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -230,7 +230,7 @@ class Exp_Main(Exp_Basic):
                     scaler.update()
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
-                        outputs = self.model(batch_x, pretrain_flag)
+                        outputs = self.model(batch_x, transfer_flag)
                     else:
                         if self.args.output_attention:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -314,12 +314,12 @@ class Exp_Main(Exp_Basic):
                 
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-                pretrain_flag = True if self.args.is_pretraining else False
+                transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
                 
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
-                            outputs = self.model(batch_x, pretrain_flag)
+                            outputs = self.model(batch_x, transfer_flag)
                         else:
                             if self.args.output_attention:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -327,7 +327,7 @@ class Exp_Main(Exp_Basic):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
-                        outputs = self.model(batch_x, pretrain_flag)
+                        outputs = self.model(batch_x, transfer_flag)
                     else:
                         if self.args.output_attention:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -365,8 +365,9 @@ class Exp_Main(Exp_Basic):
         # MetricEvaluator 초기화
         # evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
         evaluator = MetricEvaluator(
-            file_path=os.path.join(result_path, "site_metrics.txt"),
-            dataset_name=self.args.data
+            save_path=os.path.join(result_path, "site_metrics.txt"),
+            dataset_name=self.args.data,
+            data_type=self.args.data_type
             )
 
         pred_list = []
@@ -383,10 +384,10 @@ class Exp_Main(Exp_Basic):
                 
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-                pretrain_flag = True if self.args.is_pretraining else False
+                transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
               
                 if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
-                    outputs = self.model(batch_x, pretrain_flag)
+                    outputs = self.model(batch_x, transfer_flag)
                 else:
                     if self.args.output_attention:
                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
