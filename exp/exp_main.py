@@ -448,7 +448,7 @@ class Exp_Main(Exp_Basic):
 
         # wandb logging (설정된 경우)
         if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
-            for scale_name, (rmse, mae, mbe, r2, skill_score), site_ids in results:
+            for scale_name, (rmse, mae, mbe, r2, mse, skill_score), site_ids in results:
                 wandb.log({
                     f"test/{scale_name}/Sites": site_ids,
                     f"test/{scale_name}/MAE": mae,
