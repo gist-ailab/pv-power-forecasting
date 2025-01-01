@@ -64,7 +64,7 @@ class MetricEvaluator:
         r2 = r2_score(targets.flatten(), preds.flatten())
         mse = np.mean((preds - targets) ** 2)
         skill_score = self.calculate_skill_score(scale_name, mse)
-        return mae, rmse, mbe, r2, skill_score
+        return mae, rmse, mbe, r2, mse, skill_score
 
     def calculate_mape(self):
         """전체 데이터에 대한 MAPE 계산 - installation별 설치 용량 기준"""
@@ -98,7 +98,7 @@ class MetricEvaluator:
             return None
             
         skill_score = 1 - (current_mse / ref_mse)
-        return skill_score 
+        return skill_score
  
     def get_capacity_groups(self):
         """실제 데이터의 용량을 기반으로 그룹 생성"""
@@ -149,7 +149,7 @@ class MetricEvaluator:
             if group_preds:  # 데이터가 있는 경우에만 계산
                 group_preds = np.concatenate(group_preds)
                 group_targets = np.concatenate(group_targets)
-                metrics = self._calculate_metrics(group_preds, group_targets)
+                metrics = self._calculate_metrics(group_preds, group_targets, group_name)
                 results.append((group_name, metrics, sorted(group_sites)))
         
         # 전체 MAPE 계산
@@ -167,7 +167,7 @@ class MetricEvaluator:
             file.write("Scale-Specific Evaluation Metrics\n")
             file.write("=" * 50 + "\n")
             
-            for scale_name, (rmse, mae, mbe, r2, skill_score), site_ids in results:
+            for scale_name, (rmse, mae, mbe, r2, mse, skill_score), site_ids in results:
                 file.write(f"Scale: {scale_name}\n")
                 file.write(f"Sites: {site_ids}\n")
                 file.write(f"Number of sites: {len(site_ids)}\n")
@@ -175,6 +175,7 @@ class MetricEvaluator:
                 file.write(f"RMSE: {rmse:.4f} kW\n")
                 file.write(f"MBE: {mbe:.4f} kW\n")
                 file.write(f"R2 Score: {r2:.4f}\n")
+                file.write(f"MSE Score: {mse:.4f}\n")
                 if skill_score is not None:
                     file.write(f"Skill Score: {skill_score:.4f}\n")
                 file.write("-" * 50 + "\n")

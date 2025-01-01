@@ -42,6 +42,7 @@ if __name__ == '__main__':
                         help='freq for time 2 encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
     parser.add_argument('--output_dir', type=str, default='./checkpoints/', help='location of model checkpoints, recommend to use setting name')
     parser.add_argument('--source_model_dir', type=str, default=None, help='path to source model for transfer learning')
+    parser.add_argument('--ref_mse_path', type=str, default=None, help='directory of reference mse for transfer learning. JSON or CSV file')
 
     # forecasting task
     parser.add_argument('--seq_len', type=int, default=240, help='input sequence length')

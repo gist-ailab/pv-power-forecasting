@@ -367,7 +367,8 @@ class Exp_Main(Exp_Basic):
         evaluator = MetricEvaluator(
             save_path=os.path.join(result_path, "site_metrics.txt"),
             dataset_name=self.args.data,
-            data_type=self.args.data_type
+            data_type=self.args.data_type,
+            ref_mse_path=self.args.ref_mse_path,
             )
 
         pred_list = []
@@ -432,7 +433,7 @@ class Exp_Main(Exp_Basic):
         # metric 계산 및 결과 출력
         results, overall_mape = evaluator.evaluate_scale_metrics()
 
-        for scale_name, (rmse, mae, mbe, r2, skill_score), site_ids in results:
+        for scale_name, (rmse, mae, mbe, r2, mse, skill_score), site_ids in results:
             print(f'\nScale: {scale_name}')
             print(f"Sites: {site_ids}\n")
             print(f"Number of sites: {len(site_ids)}\n")
@@ -440,6 +441,7 @@ class Exp_Main(Exp_Basic):
             print(f'RMSE: {rmse:.4f} kW')
             print(f'MBE: {mbe:.4f} kW')
             print(f'R2 Score: {r2:.4f}')
+            print(f'MSE: {mse:.4f}')
             if skill_score is not None:
                 print(f"Skill Score: {skill_score:.4f}\n")
         print(f'\nOverall MAPE: {overall_mape:.4f}%')
@@ -453,6 +455,7 @@ class Exp_Main(Exp_Basic):
                     f"test/{scale_name}/RMSE": rmse,
                     f"test/{scale_name}/MBE": mbe,
                     f"test/{scale_name}/R2_Score": r2,
+                    f"test/{scale_name}/MSE": mse,
                     f"test/{scale_name}/Skill_Score": skill_score if skill_score is not None else 'N/A'
                 })
             wandb.log({"test/MAPE": overall_mape})
