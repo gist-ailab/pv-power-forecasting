@@ -212,7 +212,7 @@ if __name__ == '__main__':
         exp = Exp(args)  # set experiments
 
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-        exp.test(args.source_model)
+        exp.test(args.source_model_dir)
         torch.cuda.empty_cache()
     
     elif (args.num_freeze_layers > 0) or (args.linear_probe):    # freeze block 개수 조절을 통해 finetuning 및 linear probing 수행
