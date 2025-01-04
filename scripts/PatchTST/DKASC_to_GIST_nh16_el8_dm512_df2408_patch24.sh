@@ -57,7 +57,7 @@ python run_longExp.py \
     --data_type $data_type \
     --root_path $root_path_name \
     --output_dir $setting_name \
-    --source_model_dir "DKASC_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24" \
+    --source_model_dir "DKASC_${data_type}_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24" \
     --ref_mse_path "/home/seongho_bak/Projects/PatchTST/data_provider/GIST_mapping/GIST_ref_mse.json" \
     --seq_len $seq_len \
     --label_len $label_len \
