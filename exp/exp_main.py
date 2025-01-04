@@ -436,7 +436,7 @@ class Exp_Main(Exp_Basic):
         # metric 계산 및 결과 출력
         results, overall_mape = evaluator.evaluate_scale_metrics()
 
-        for scale_name, (rmse, mae, mbe, r2, mse, skill_score), site_ids in results:
+        for scale_name, (mae, rmse, mbe, r2, mse, skill_score), site_ids in results:
             print(f'\nScale: {scale_name}')
             print(f"Sites: {site_ids}\n")
             print(f"Number of sites: {len(site_ids)}\n")
