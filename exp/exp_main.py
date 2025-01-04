@@ -190,6 +190,8 @@ class Exp_Main(Exp_Basic):
             epochs=self.args.train_epochs,
             max_lr=self.args.learning_rate
         )
+        transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
+        print(f'Transfer learning flag: {transfer_flag}')
 
         for epoch in range(self.args.train_epochs):
             iter_count = 0
@@ -208,7 +210,6 @@ class Exp_Main(Exp_Basic):
                 
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-                transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
                 
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
@@ -303,6 +304,8 @@ class Exp_Main(Exp_Basic):
 
     def vali(self, vali_loader, criterion):
         total_loss = []
+        transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
+        print(f'Transfer learning flag: {transfer_flag}')
         self.model.eval()
         
         with torch.no_grad():
@@ -314,7 +317,6 @@ class Exp_Main(Exp_Basic):
                 
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-                transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
                 
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
@@ -374,6 +376,8 @@ class Exp_Main(Exp_Basic):
         pred_list = []
         true_list = []
         input_list = []
+        transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
+        print(f'Transfer learning flag: {transfer_flag}')
         
         self.model.eval()
         with torch.no_grad():
@@ -385,7 +389,6 @@ class Exp_Main(Exp_Basic):
                 
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-                transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
               
                 if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
                     outputs = self.model(batch_x, transfer_flag)
@@ -433,7 +436,7 @@ class Exp_Main(Exp_Basic):
         # metric 계산 및 결과 출력
         results, overall_mape = evaluator.evaluate_scale_metrics()
 
-        for scale_name, (rmse, mae, mbe, r2, mse, skill_score), site_ids in results:
+        for scale_name, (mae, rmse, mbe, r2, mse, skill_score), site_ids in results:
             print(f'\nScale: {scale_name}')
             print(f"Sites: {site_ids}\n")
             print(f"Number of sites: {len(site_ids)}\n")

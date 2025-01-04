@@ -43,14 +43,14 @@ echo "Total CPU cores: $total_cores"
 echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
-setting_name="DKASC_to_Germany_linear_probing_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+# setting_name="DKASC_to_Germany_linear_probing_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
 # setting_name="DKASC_to_Germany_fully_fine_tunning_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
-# setting_name="DKASC_to_Germany_freeze_${num_freeze_layers}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+setting_name="DKASC_to_Germany_freeze_${num_freeze_layers}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
 echo "Generated setting name: $setting_name"
 python run_longExp.py \
     --run_name $setting_name \
     --random_seed $random_seed \
-    --linear_probe \
+    --num_freeze_layers $num_freeze_layers \
     --model_id $model_id \
     --model $model_name \
     --data $data_name \

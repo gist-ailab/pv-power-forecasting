@@ -167,7 +167,7 @@ class MetricEvaluator:
             file.write("Scale-Specific Evaluation Metrics\n")
             file.write("=" * 50 + "\n")
             
-            for scale_name, (rmse, mae, mbe, r2, mse, skill_score), site_ids in results:
+            for scale_name, (mae, rmse, mbe, r2, mse, skill_score), site_ids in results:
                 file.write(f"Scale: {scale_name}\n")
                 file.write(f"Sites: {site_ids}\n")
                 file.write(f"Number of sites: {len(site_ids)}\n")

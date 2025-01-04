@@ -7,7 +7,7 @@ model_id=$DATE
 data_name=OEDI_Georgia
 data_type=all
 # data_type=day
-exp_id="${DATE}_Pretrain_$data_name_$model_name"
+exp_id="${DATE}_Transfer_$data_name_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
@@ -16,7 +16,7 @@ fi
 root_path_name="/ailab_mat/dataset/PV/${data_name}/processed_data_${data_type}/"
 random_seed=2024
 
-num_freeze_layers=2
+num_freeze_layers=1
 
 seq_len=240
 pred_len=24
