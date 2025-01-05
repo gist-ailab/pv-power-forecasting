@@ -5,7 +5,7 @@ export CUDA_VISIBLE_DEVICES=$GPU_ID
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-data_name=OEDI_Georgia
+data_name=GIST
 abbrev="None"
 data_type=all
 # data_type=day
@@ -16,7 +16,7 @@ if [ "$data_name" = "OEDI_California" ]; then
 elif [ "$data_name" = "OEDI_Georgia" ]; then
     abbrev="GA"
 else
-    abbrev="None"
+    abbrev=$data_name
 fi
 
 root_path_name="/ailab_mat/dataset/PV/${data_name}/processed_data_${data_type}/"
@@ -52,7 +52,7 @@ echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
 
-setting_name="${data_name}_${data_type}_Zeroshot_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+setting_name="DKASC_to_${abbrev}_Zeroshot_${data_name}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
 echo "Generated setting name: $setting_name"
 python run_longExp.py \
     --run_name $setting_name \
