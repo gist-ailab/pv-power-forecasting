@@ -14,8 +14,8 @@ if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-# root_path_name="/ailab_mat/dataset/PV/DKASC/processed_data_${data_type}/"
-root_path_name="/ailab_mat/dataset/PV/DKASC/processed_data_${data_type}_reduced_16/"
+root_path_name="/ailab_mat/dataset/PV/DKASC/processed_data_${data_type}/"
+# root_path_name="/ailab_mat/dataset/PV/DKASC/processed_data_${data_type}_reduced_16/"
 random_seed=2024
 
 seq_len=240
@@ -44,11 +44,11 @@ echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
 
-setting_name="${data_name}_${data_type}_reduced_16_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+setting_name="${data_name}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
 echo "Generated setting name: $setting_name"
 python run_longExp.py \
     --random_seed $random_seed \
-    --is_insference 1 \
+    --is_inference 1 \
     --model_id $model_id \
     --model $model_name \
     --data $data_name \
@@ -74,4 +74,4 @@ python run_longExp.py \
     --batch_size 256 \
     --learning_rate 0.0001 \
     --des 'Exp' \
-    --wandb
+    # --wandb
