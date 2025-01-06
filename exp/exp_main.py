@@ -360,6 +360,7 @@ class Exp_Main(Exp_Basic):
             model_path = os.path.join('./checkpoints', source_model_dir)
 
         if 'checkpoint.pth' not in source_model_dir:
+            print(f"Model path: {model_path}")
             model_path = os.path.join(model_path, 'checkpoint.pth')
         print(f"Load model from '{model_path}'")
         self.model.load_state_dict(torch.load(model_path))
