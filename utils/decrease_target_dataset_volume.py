@@ -41,21 +41,27 @@ def filter_csv_by_date(input_dir, base_output_dir, durations):
                 filtered_df = df[df['timestamp'] >= max_date - timedelta(days=days)]
 
                 # Save the filtered DataFrame
-                output_file_name = f"{os.path.splitext(file_name)[0]}_{duration_name}.csv"
+                output_file_name = f"{os.path.splitext(file_name)[0]}.csv"
                 output_file_path = os.path.join(output_dir, output_file_name)
                 filtered_df.to_csv(output_file_path, index=False)
 
                 print(f"Filtered file saved: {output_file_path}")
 
 # Example usage
-dataset_name = 'UK'
+dataset_name = 'OEDI_Georgia'  # Name of the dataset
 input_directory = f"/ailab_mat/dataset/PV/{dataset_name}/processed_data_all"  # Directory containing the original CSV files
 base_output_directory = f"/ailab_mat/dataset/PV/{dataset_name}"  # Base directory to save the filtered CSV files
 filter_durations = {
-    '2weeks': 14,
-    '1month': 30,
-    '3months': 90,
-    '6months': 180
+    # '2weeks': 14,
+    # '1month': 30,
+    # '3months': 90,
+    # '4months': 120,
+    # '6months': 180,
+    # '8months': 240,
+    # '9months': 270,
+    # '12months': 365,
+    '16months': 480,
+
 }
 
 filter_csv_by_date(input_directory, base_output_directory, filter_durations)
