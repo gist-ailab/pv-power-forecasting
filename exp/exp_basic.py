@@ -46,7 +46,9 @@ class Exp_Basic(object):
             project='pv-forecasting',
             entity='pv-forecasting',
             name=f'{run_name}',
-            config=self.args)
+            config=self.args,
+            id=self.args.wandb_id,
+            resume=self.args.wandb_resume,)
         
     def _init_distributed_mode(self, args):
         # Initialize distributed training

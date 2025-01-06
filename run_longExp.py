@@ -122,6 +122,8 @@ if __name__ == '__main__':
     parser.add_argument('--dist_on_itp', action='store_true', help='Use distributed training on internal cluster')
     parser.add_argument('--distributed', action='store_true', help='Use distributed training', default=False)
     parser.add_argument('--wandb', action='store_true', help='Use wandb')
+    parser.add_argument('--wandb_id', type=str, default=None, help='wandb id that you want to resume')
+    parser.add_argument('--wandb_resume', type=str, default=None, help='Resume a run that must use the same run ID. set "must" to resume')
     
     args = parser.parse_args()
 
