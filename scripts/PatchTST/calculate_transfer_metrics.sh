@@ -9,7 +9,7 @@ data_name=GIST
 abbrev="None"
 data_type=all
 # data_type=day
-transfer_type="freeze_1"    # linear_probing
+transfer_type="fully_finetune"    # linear_probing, fully_finetune, freeze_1
 exp_id="${DATE}_${transfer_type}_$data_name_$model_name"
 
 if [ "$data_name" = "OEDI_California" ]; then
@@ -59,7 +59,7 @@ python run_longExp.py \
     --run_name $setting_name \
     --random_seed $random_seed \
     --is_inference 1 \
-    --num_freeze_layers 1 \
+    --is_fully_finetune \
     --model_id $model_id \
     --model $model_name \
     --data $data_name \
