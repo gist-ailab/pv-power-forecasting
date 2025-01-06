@@ -17,6 +17,7 @@ if __name__ == '__main__':
 
     # basic config
     parser.add_argument('--is_pretraining', type=int, default=0, help='status')
+    parser.add_argument('--is_fully_finetune', action='store_true', default=False, help='whether to perform transfer learning')
     parser.add_argument('--num_freeze_layers', type=int, default=0,
                         help='num of transformer freeze layer. 0: finetune all layers or do not transfer learning')
     parser.add_argument('--linear_probe', action='store_true', default=False, help='whether to perform linear probing (only train head)')
@@ -177,7 +178,7 @@ if __name__ == '__main__':
             print('***************** Training Done *****************')
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-            exp.test(setting)
+            exp.test(source_model_dir=args.output_dir)
             print('***************** Test Done *****************')
 
             if args.do_predict:
@@ -245,11 +246,11 @@ if __name__ == '__main__':
                 print('>>>>>>>>>>>>>>>>>>>>>>>>>> start linear probing : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
             else:
                 print('>>>>>>>>>>>>>>>>>>>>>>>>>> start finetuning : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-            exp.train(output_dir=args.output_dir, source_model_dir=args.source_model_dir)
+            exp.train(output_dir=args.output_dir)
             print('***************** Training Done *****************')
 
             print('>>>>>>>>>>>>>>>>>>>>>>>>>> testing : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-            exp.test(args.source_model_dir)
+            exp.test(source_model_dir=args.output_dir)
             print('***************** Test Done *****************')
      
             torch.cuda.empty_cache()

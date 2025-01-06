@@ -135,14 +135,14 @@ class Exp_Main(Exp_Basic):
         source_model_dir = os.path.join('./checkpoints', source_model_dir)
         if self.args.resume:
             model_path = os.path.join(source_model_dir, 'model_latest.pth')
-        elif (self.args.num_freeze_layers > 0) or (self.args.linear_probe):
+        elif (self.args.num_freeze_layers > 0) or (self.args.linear_probe) or self.args.is_fully_finetune:
             model_path = os.path.join(source_model_dir, 'checkpoint.pth')
 
         model.load_state_dict(torch.load(model_path))
         print(f'Model loaded from {model_path}')
         return model
 
-    def train(self, output_dir, source_model_dir=None):
+    def train(self, output_dir):
         self.args.output_dir = os.path.join('checkpoints', output_dir)
         # wandb 관련 작업은 rank 0에서만 실행
         if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
@@ -190,7 +190,7 @@ class Exp_Main(Exp_Basic):
             epochs=self.args.train_epochs,
             max_lr=self.args.learning_rate
         )
-        transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
+        transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe or self.args.is_fully_finetune else False
         print(f'Transfer learning flag: {transfer_flag}')
 
         for epoch in range(self.args.train_epochs):
@@ -304,7 +304,7 @@ class Exp_Main(Exp_Basic):
 
     def vali(self, vali_loader, criterion):
         total_loss = []
-        transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
+        transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe or self.args.is_fully_finetune else False
         print(f'Transfer learning flag: {transfer_flag}')
         self.model.eval()
         
@@ -361,7 +361,7 @@ class Exp_Main(Exp_Basic):
 
         if 'checkpoint.pth' not in source_model_dir:
             model_path = os.path.join(model_path, 'checkpoint.pth')
-        
+        print(f"Load model from '{model_path}'")
         self.model.load_state_dict(torch.load(model_path))
         
         # MetricEvaluator 초기화
@@ -376,7 +376,7 @@ class Exp_Main(Exp_Basic):
         pred_list = []
         true_list = []
         input_list = []
-        transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe else False
+        transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe or self.args.is_fully_finetune else False
         print(f'Transfer learning flag: {transfer_flag}')
         
         self.model.eval()
@@ -460,6 +460,7 @@ class Exp_Main(Exp_Basic):
                     f"test/{scale_name}/R2_Score": r2,
                     f"test/{scale_name}/MSE": mse,
                     f"test/{scale_name}/Skill_Score": skill_score if skill_score is not None else 'N/A'
+                    f"test/{scale_name}/MAPE": overall_mape
                 })
             wandb.log({"test/MAPE": overall_mape})
 
