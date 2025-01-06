@@ -7,7 +7,7 @@ model_id=$DATE
 data_name=GIST
 data_type=all
 # data_type=day
-exp_id="${DATE}_Pretrain_$data_name_$model_name"
+exp_id="${DATE}_Transfer_$data_name_$model_name"
 
 if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
