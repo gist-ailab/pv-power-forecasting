@@ -459,7 +459,7 @@ class Exp_Main(Exp_Basic):
                     f"test/{scale_name}/MBE": mbe,
                     f"test/{scale_name}/R2_Score": r2,
                     f"test/{scale_name}/MSE": mse,
-                    f"test/{scale_name}/Skill_Score": skill_score if skill_score is not None else 'N/A'
+                    f"test/{scale_name}/Skill_Score": skill_score if skill_score is not None else 'N/A',
                     f"test/{scale_name}/MAPE": overall_mape
                 })
             wandb.log({"test/MAPE": overall_mape})
