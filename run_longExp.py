@@ -216,7 +216,7 @@ if __name__ == '__main__':
         exp.test(args.source_model_dir)
         torch.cuda.empty_cache()
     
-    elif (args.num_freeze_layers > 0) or (args.linear_probe):    # freeze block 개수 조절을 통해 finetuning 및 linear probing 수행
+    elif (args.num_freeze_layers > 0) or args.linear_probe or args.is_fully_finetune:    # transfer learning 수행
         for ii in range(args.itr):
             # setting record of experiments
             setting = '{}_{}_{}_{}_{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_wb{}_{}'.format(
