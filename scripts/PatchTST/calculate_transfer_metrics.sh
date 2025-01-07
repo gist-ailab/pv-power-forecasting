@@ -21,7 +21,7 @@ else
 fi
 
 root_path_name="/ailab_mat/dataset/PV/${data_name}/processed_data_${data_type}/"
-source_model_dir="DKASC_to_${abbrev}_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
+source_model_dir="DKASC_to_${data_name}_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
 ref_mse_path="/home/seongho_bak/Projects/PatchTST/data_provider/${data_name}_mapping/${data_name}_ref_mse.json"
 
 random_seed=2024
@@ -53,7 +53,7 @@ echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
 
-setting_name="DKASC_to_${abbrev}_${transfer_type}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+setting_name="DKASC_to_${data_name}_${transfer_type}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
 echo "Generated setting name: $setting_name"
 python run_longExp.py \
     --run_name $setting_name \
@@ -66,7 +66,7 @@ python run_longExp.py \
     --data_type $data_type \
     --root_path $root_path_name \
     --output_dir $setting_name \
-    --source_model_dir "DKASC_to_${abbrev}_${transfer_type}_${data_type}_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24" \
+    --source_model_dir "DKASC_to_${data_name}_${transfer_type}_${data_type}_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24" \
     --ref_mse_path $ref_mse_path \
     --seq_len $seq_len \
     --label_len $label_len \
