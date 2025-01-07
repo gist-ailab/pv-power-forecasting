@@ -297,7 +297,8 @@ class Exp_Main(Exp_Basic):
 
         final_model_artifact = wandb.Artifact('final_model_weights', type='model')
         final_model_artifact.add_file(best_model_path)
-        wandb.log_artifact(final_model_artifact)
+        if self.args.wandb:
+            wandb.log_artifact(final_model_artifact)
 
         self.model.load_state_dict(torch.load(best_model_path))
         return self.model
@@ -358,7 +359,9 @@ class Exp_Main(Exp_Basic):
 
         if source_model_dir.split('/')[0] != 'checkpoints':
             model_path = os.path.join('./checkpoints', source_model_dir)
-
+        else:
+            model_path = source_model_dir
+            
         if 'checkpoint.pth' not in source_model_dir:
             print(f"Model path: {model_path}")
             model_path = os.path.join(model_path, 'checkpoint.pth')
