@@ -251,8 +251,8 @@ if __name__ == '__main__':
             exp.train(output_dir=args.output_dir)
             print('***************** Training Done *****************')
 
-            print('>>>>>>>>>>>>>>>>>>>>>>>>>> testing : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-            exp.test(source_model_dir=args.output_dir)
-            print('***************** Test Done *****************')
+            # print('>>>>>>>>>>>>>>>>>>>>>>>>>> testing : {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+            # exp.test(source_model_dir=args.output_dir)
+            # print('***************** Test Done *****************')
      
             torch.cuda.empty_cache()

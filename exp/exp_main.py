@@ -455,6 +455,28 @@ class Exp_Main(Exp_Basic):
 
         # wandb logging (설정된 경우)
         if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
+            self._set_wandb(result_path)
+            config = {
+                "model": self.args.model,
+                "num_parameters": sum(p.numel() for p in self.model.parameters()),
+                "batch_size": self.args.batch_size,
+                "num_workers": self.args.num_workers,
+                "learning_rate": self.args.learning_rate,
+                "loss_function": self.args.loss,
+                "dataset": self.args.data,
+                "epochs": self.args.train_epochs,
+                "input_seqeunce_length": self.args.seq_len,
+                "prediction_sequence_length": self.args.pred_len,
+                "patch_length": self.args.patch_len,
+                "stride": self.args.stride,
+                "num_freeze_layers": self.args.num_freeze_layers,
+            }
+            upload_files_to_wandb(
+                project_name=self.project_name,
+                run_name=self.run_name,
+                config=config
+            )        
+
             for scale_name, (rmse, mae, mbe, r2, mse, skill_score), site_ids in results:
                 wandb.log({
                     f"test/{scale_name}/Sites": site_ids,
