@@ -140,7 +140,7 @@ class Exp_Main(Exp_Basic):
 
         model.load_state_dict(torch.load(model_path))
         print(f'Model loaded from {model_path}')
-        return model
+        return model 
 
     def train(self, output_dir):
         self.args.output_dir = os.path.join('checkpoints', output_dir)
@@ -477,7 +477,7 @@ class Exp_Main(Exp_Basic):
                 config=config
             )        
 
-            for scale_name, (rmse, mae, mbe, r2, mse, skill_score), site_ids in results:
+            for scale_name, (mae, rmse, mbe, r2, mse, skill_score), site_ids in results:
                 wandb.log({
                     f"test/{scale_name}/Sites": site_ids,
                     f"test/{scale_name}/MAE": mae,
