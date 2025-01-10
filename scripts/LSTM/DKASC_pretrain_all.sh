@@ -36,7 +36,7 @@ echo "Total CPU cores: $total_cores"
 echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
-for seq_len in 168 240 336
+for seq_len in 240
 do
     setting_name="${data_name}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}"
     echo "Generated setting name: $setting_name"
@@ -47,7 +47,7 @@ do
         --model $model_name \
         --data $data_name \
         --root_path $root_path_name \
-        --checkpoints "${setting_name}" \
+        --source_model_dir "${setting_name}" \
         --seq_len $seq_len \
         --label_len $label_len \
         --pred_len $pred_len \
@@ -60,5 +60,6 @@ do
         --batch_size 512 \
         --learning_rate 0.0001 \
         --des 'Exp' \
-        --wandb
+        --wandb \
+        --is_inference 1
 done
