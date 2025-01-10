@@ -288,7 +288,7 @@ class Exp_Main(Exp_Basic):
                 print(f'Learning rate updated to {scheduler.get_last_lr()[0]}')
         
         best_model_path = os.path.join(save_path, 'checkpoint.pth')
-        if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
+        if self.args.wandb:
             upload_files_to_wandb(
                 project_name=self.project_name,
                 run_name=self.run_name,
