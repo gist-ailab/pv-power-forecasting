@@ -261,11 +261,7 @@ class Dataset_Germany(Dataset_DKASC):
                  timeenc=0, freq='h',
                  scaler=True,
                  ):
-        # 입력 채널 정의
-        input_channels = ['Global_Horizontal_Radiation', 'Weather_Temperature_Celsius',
-                          'Weather_Relative_Humidity', 'Active_Power']
-        super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler,
-                         input_channels=input_channels)
+        super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler)
 
 
 #######################################################################################
