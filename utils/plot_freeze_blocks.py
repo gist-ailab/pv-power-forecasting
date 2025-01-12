@@ -122,7 +122,7 @@ def make_broken_axis(fig, gs, data, title, break_points, y_ranges):
 
 
 # Data
-categories = ['all', '1', '2', '3', '4', '5', '6', '7', '8', 'zero-shot']
+categories = ['fully-finetune', '1', '2', '3', '4', '5', '6', '7', '8', 'zero-shot']
 data = {
     'GIST': [1.6293, 1.6008, 1.6438, 1.6514, 1.7037, 1.8012, 2.0653, 2.7289, 5.4627, 6.127],
     'Miryang': [3.1986, 2.3044, 2.3204, 2.3256, 2.3348, 2.3628, 2.4544, 2.7459, 3.4867, 3.7475],
