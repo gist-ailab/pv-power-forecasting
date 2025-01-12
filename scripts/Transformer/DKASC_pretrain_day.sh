@@ -21,11 +21,11 @@ pred_len=24
 # label_len=0
 
 n_heads=8
-e_layers=8
-d_model=512
-d_ff=2048
+e_layers=6
+d_model=256
+d_ff=1024
 
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=5
 # export WORLD_SIZE=2 # 총 프로세스 수
 # export MASTER_ADDR='localhost'
 # # export MASTER_PORT='12356'  # 임의의 빈 포트
@@ -53,7 +53,7 @@ do
         --model $model_name \
         --data $data_name \
         --root_path $root_path_name \
-        --checkpoints "${setting_name}" \
+        --source_model_dir "${setting_name}" \
         --seq_len $seq_len \
         --label_len $((seq_len / 2)) \
         --pred_len $pred_len \
@@ -68,7 +68,7 @@ do
         --dropout 0.05\
         --embed 'timeF' \
         --num_workers $num_workers \
-        --batch_size 128 \
+        --batch_size 256 \
         --learning_rate 0.0001 \
         --des 'Exp' \
         --wandb

@@ -47,18 +47,18 @@ do
         --model $model_name \
         --data $data_name \
         --root_path $root_path_name \
-        --checkpoints "${setting_name}" \
+        --source_model_dir "${setting_name}" \
         --seq_len $seq_len \
         --label_len $label_len \
         --pred_len $pred_len \
         --input_dim 5\
-        --hidden_dim 1024 \
+        --hidden_dim 256 \
         --bidirectional True\
         --individual 1 \
         --embed 'timeF' \
         --num_workers $num_workers \
-        --batch_size 128 \
+        --batch_size 256 \
         --learning_rate 0.0001 \
         --des 'Exp' \
-        --wandb
+        --wandb 1
 done
