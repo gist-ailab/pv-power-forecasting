@@ -136,8 +136,11 @@ if __name__ == '__main__':
 
     # random seed
     fix_seed = args.random_seed
-    random.seed(fix_seed)
     torch.manual_seed(fix_seed)
+    torch.cuda.manual_seed(fix_seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    random.seed(fix_seed)
     np.random.seed(fix_seed)
 
     if args.local_rank == -1:
