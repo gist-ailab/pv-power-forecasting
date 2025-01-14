@@ -17,13 +17,16 @@ plt.figure(figsize=(10, 6))
 plt.style.use('default')
 
 # Create bars
-plt.bar(x - width, data_1_16, width, label='1/16', color='#0C527D')
-plt.bar(x, data_1_8, width, label='1/8', color='#E95420')
-plt.bar(x + width, data_entire, width, label='Entire Volume', color='#1A7F37')
+# plt.bar(x - width, data_1_16, width, label='1/16', color='#3191C7')
+# plt.bar(x, data_1_8, width, label='1/8', color='#1A73A5')
+# plt.bar(x + width, data_entire, width, label='Entire Volume', color='#0C527D')
+plt.bar(x - width, data_1_16, width, label='1/16', color='#3191C7')
+plt.bar(x, data_1_8, width, label='1/8', color='#2C3E50')
+plt.bar(x + width, data_entire, width, label='Entire Volume', color='#27AE60')
 
 # Customize plot
 plt.ylabel('MAPE')
-plt.xlabel('Train Set Size of Target Data')
+plt.xlabel('Train Set Size of Target Data', labelpad=15)
 plt.title('GIST')
 plt.xticks(x, months)
 plt.legend(title='Source Data Size')
@@ -43,7 +46,7 @@ plt.gca().spines['right'].set_visible(False)
 plt.tight_layout()
 
 # Save plots
-plt.savefig('gist_plot.png', dpi=300, bbox_inches='tight')
-plt.savefig('gist_plot.pdf', dpi=300, bbox_inches='tight')
+plt.savefig('gist_plot1.png', dpi=300, bbox_inches='tight')
+plt.savefig('gist_plot1.pdf', dpi=300, bbox_inches='tight')
 plt.close()
 # %%
