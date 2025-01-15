@@ -475,3 +475,4 @@ test_results/*
 
 .vscode/*
 wandb/*
+plot/*
