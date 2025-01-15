@@ -56,6 +56,13 @@ class Exp_Main(Exp_Basic):
         # 먼저 모델을 GPU로 이동
         model = model.to(self.device)
 
+        # 모델 파라미터 수 계산
+        total_params = sum(p.numel() for p in model.parameters())
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    
+        print(f"Total parameters: {total_params}")
+        print(f"Trainable parameters: {trainable_params}")
+
         if self.args.resume:
             model = self.load_model(model, self.args.source_model_dir)
 
