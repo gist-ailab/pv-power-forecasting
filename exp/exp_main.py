@@ -548,104 +548,210 @@ class Exp_Main(Exp_Basic):
         plt.savefig(os.path.join(save_path, f'pred_{i}.png'))
         plt.close()
     
-    # def plot_predictions(self, i, input_sequence, ground_truth, predictions, save_path):
-    #     """
-    #     예측 시각화 함수 (인덱스 기반)
-    #     Args:
-    #         input_sequence (numpy array): 입력 시퀀스 데이터
-    #         ground_truth (numpy array): 실제값
-    #         predictions (numpy array): 예측값
-    #         save_path (str): 플롯을 저장할 경로
-    #     """
-    #     # 인덱스 기반으로 x축을 설정
-    #     input_index = np.arange(len(input_sequence))
+    def plot_predictions_2(self, i, input_data, actual_data, predicted_data, save_path):
+        """
+        예측 시각화 함수 (인덱스 기반, 시각적 개선)
+        Args:
+            input_sequence (numpy array): 입력 시퀀스 데이터
+            ground_truth (numpy array): 실제값
+            predictions (numpy array): 예측값
+            save_path (str): 플롯을 저장할 경로
+        """
+        plt.style.use('default')
+        fig, ax = plt.subplots(figsize=(15, 7))
         
-    #     # ground_truth와 predictions에 input_sequence의 마지막 값을 앞에 추가하여 연결
-    #     ground_truth = np.insert(ground_truth, 0, input_sequence[-1])
-    #     predictions = np.insert(predictions, 0, input_sequence[-1])
-    #     ground_truth_index = np.arange(len(input_sequence) - 1, len(input_sequence) + len(ground_truth) - 1)
+        # 입력 데이터 전체를 먼저 그립니다
+        ax.plot(input_data, 
+                color='#3191C7', 
+                linewidth=2, 
+                label='Input Data',
+                zorder=1)
+        # forecast_length = 24
+
+        # 0 - 9 (input) 9 - 11 (pred) 
+        forecast_start_idx = len(input_data) - 1
+        # 예측 시작 지점을 포함한 예측 구간의 x 좌표를 생성합니다
+        forecast_x = np.arange(forecast_start_idx, forecast_start_idx + len(actual_data) + 1)
+        actual_data = np.concatenate([input_data[-1].reshape(-1, 1), actual_data])
+        predicted_data = np.concatenate([input_data[-1].reshape(-1, 1), predicted_data])
+        # 실제 데이터를 그립니다
+        # 시작점에서의 연속성을 위해 input_data의 마지막 값을 사용합니다
+        ax.plot(forecast_x, actual_data,
+                color='#3191C7', 
+                linewidth=5, 
+                label='Actual Data',
+                zorder=2)
         
-    #     predictions_index = np.arange(len(input_sequence) -1, len(input_sequence) + len(predictions)-1)
-
-    #     plt.figure(figsize=(12, 6))
-
-    #     # 입력 시퀀스 플롯
-    #     plt.plot(input_index, input_sequence.squeeze(), label='Input Sequence', color='blue', linestyle='--')
+        # 예측 데이터를 점선으로 그립니다
+        ax.plot(forecast_x, predicted_data,
+                color='#8E44AD', 
+                linewidth=2, 
+                label='Predicted Data',
+                zorder=2)
         
-    #     # 수정된 ground_truth 사용하여 실제값 플롯
-    #     plt.plot(ground_truth_index, ground_truth.squeeze(), label='Ground Truth', color='green')
+        # 그래프 스타일링
+        ax.grid(True, linestyle='--', alpha=0.3)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
         
-    #     # 예측값 플롯
-    #     plt.plot(predictions_index, predictions.squeeze(), label='Predictions', color='red')
-
-    #     # 레이블, 제목 설정
-    #     plt.xlabel('Index')
-    #     plt.ylabel('Value')
-    #     plt.title('Prediction vs Ground Truth')
+        # 레이블 설정
+        ax.set_xlabel('Time Steps', labelpad=10)
+        ax.set_ylabel('Value', labelpad=10)
+        ax.set_title('Time Series Forecasting Prediction VS GroundTruth', pad=15)
         
-    #     # 레전드를 오른쪽 상단에 고정
-    #     plt.legend(loc='upper right')
+        # 범례 설정
+        ax.legend(loc='upper left', frameon=True)
+        
+        # 여백 조정
+        plt.tight_layout()
+    
+        # 플롯 저장
+        os.makedirs(save_path, exist_ok=True)
+        plt.savefig(os.path.join(save_path, f'pred_{i}.png'))
+        plt.close()
+        
 
-    #     # 플롯 저장
-    #     os.makedirs(save_path, exist_ok=True)
-    #     plt.savefig(os.path.join(save_path, f'pred_{i}.png'))
-    #     plt.close()
 
-    def predict(self, setting, load=False):
-        pred_data, pred_loader = self._get_data(flag='pred')
+    def predict(self, source_model_dir=None):
+        test_data, test_loader = self._get_data(flag='test')
+        dir_name = source_model_dir.split('/')[-1]
+        result_path = os.path.join('./plot/', dir_name)
+        # if 'checkpoint.pth' in model_path:
+        #     folder_path = os.path.join('./test_results/', model_path.split('/')[-1:])
+        os.makedirs(result_path, exist_ok=True)
 
-        if load:
-            path = os.path.join(self.args.checkpoints, setting)
-            best_model_path = os.path.join(path, 'checkpoint.pth')
-            self.model.load_state_dict(torch.load(best_model_path))
+        if source_model_dir[0] == '.':
+            source_model_dir = source_model_dir[2:]
+
+        if source_model_dir.split('/')[0] != 'checkpoints':
+            model_path = os.path.join('./checkpoints', source_model_dir)
+        else:
+            model_path = source_model_dir
+            
+        if 'checkpoint.pth' not in source_model_dir:
+            print(f"Model path: {model_path}")
+            model_path = os.path.join(model_path, 'checkpoint.pth')
+        print(f"Load model from '{model_path}'")
+        self.model.load_state_dict(torch.load(model_path))
+        
+        # MetricEvaluator 초기화
+        # evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
+        # evaluator = MetricEvaluator(
+        #     save_path=os.path.join(result_path, "site_metrics.txt"),
+        #     dataset_name=self.args.data,
+        #     data_type=self.args.data_type,
+        #     ref_mse_path=self.args.ref_mse_path,
+        #     )
 
         pred_list = []
-
+        true_list = []
+        input_list = []
+        transfer_flag = True if (self.args.num_freeze_layers > 0) or self.args.linear_probe or self.args.is_fully_finetune else False
+        print(f'Transfer learning flag: {transfer_flag}')
+        
         self.model.eval()
         with torch.no_grad():
-            for i, data in enumerate(pred_loader):
-
-                batch_x, batch_y, batch_x_mark, batch_y_mark = data
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark, inst_id) in tqdm(enumerate(test_loader)):
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
-
-                # decoder input
+                
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-                # encoder - decoder
-                if self.args.use_amp:
-                    with torch.cuda.amp.autocast():
-                        if 'Linear' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
-                        else:
-                            if self.args.output_attention:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-                            else:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+              
+                if 'Linear' in self.args.model or 'TST' in self.args.model or self.args.model == 'LSTM':
+                    outputs = self.model(batch_x, transfer_flag)
                 else:
-                    if 'Linear' in self.args.model or 'TST' in self.args.model:
-                        outputs = self.model(batch_x)
+                    if self.args.output_attention:
+                        outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
                     else:
-                        if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-                        else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                        outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 
-                pred = outputs.detach().cpu().numpy()  # .squeeze()
+                outputs = outputs[:, -self.args.pred_len:, -1:]
+                batch_y = batch_y[:, -self.args.pred_len:, -1:].to(self.device)
+                
+                # numpy 변환 및 inverse transform
+                outputs_np = outputs.detach().cpu().numpy()
+                batch_y_np = batch_y.detach().cpu().numpy()
+                batch_x_np = batch_x.detach().cpu().numpy()
+                inst_id_np = inst_id.cpu().numpy()
+                
+                # inverse transform 적용
+                input_seq = test_data.inverse_transform(batch_x_np, inst_id_np)
+                pred = test_data.inverse_transform(outputs_np, inst_id_np)
+                true = test_data.inverse_transform(batch_y_np, inst_id_np)
+
+                # input_seq = batch_x_np
+                # pred = outputs_np
+                # true = batch_y_np
+
+                # denormalized 데이터로 평가 수행
+                # evaluator.update(inst_id=inst_id_np, preds=pred, targets=true)
+                
                 pred_list.append(pred)
-                
+                true_list.append(true)
+                input_list.append(input_seq)
 
-        pred_np = np.array(pred_list)
-        pred_np = pred_np.reshape(-1, pred_np.shape[-2], pred_np.shape[-1])
+                if i % 10 == 0:
+                    # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
+                    self.plot_predictions_2(i,
+                                          input_seq[0, -50:, -1],    # 마지막 5개 입력값
+                                          true[0],                  # 실제값
+                                          pred[0],                  # 예측값
+                                          result_path)
+        # print(f"Plotting complete. Results saved in {folder_path}")
 
-        # result save
-        folder_path = os.path.join('./results/', setting)
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+        # TODO: metric 계산하는거 개선해야 함.
+        # metric 계산 및 결과 출력
+        # results, overall_mape = evaluator.evaluate_scale_metrics()
 
-        np_save_path = os.path.join(folder_path, "real_prediction_source.npy", pred_np)
-        np.save(np_save_path)
+        # for scale_name, (mae, rmse, mbe, r2, mse, skill_score), site_ids in results:
+        #     print(f'\nScale: {scale_name}')
+        #     print(f"Sites: {site_ids}\n")
+        #     print(f"Number of sites: {len(site_ids)}\n")
+        #     print(f'MAE: {mae:.4f} kW')
+        #     print(f'RMSE: {rmse:.4f} kW')
+        #     print(f'MBE: {mbe:.4f} kW')
+        #     print(f'R2 Score: {r2:.4f}')
+        #     print(f'MSE: {mse:.4f}')
+        #     if skill_score is not None:
+        #         print(f"Skill Score: {skill_score:.4f}\n")
+        # print(f'\nOverall MAPE: {overall_mape:.4f}%')
 
-        return
+        # # wandb logging (설정된 경우)
+        # if self.args.wandb and (not self.args.distributed or self.args.rank == 0):
+        #     self._set_wandb(result_path)
+        #     config = {
+        #         "model": self.args.model,
+        #         "num_parameters": sum(p.numel() for p in self.model.parameters()),
+        #         "batch_size": self.args.batch_size,
+        #         "num_workers": self.args.num_workers,
+        #         "learning_rate": self.args.learning_rate,
+        #         "loss_function": self.args.loss,
+        #         "dataset": self.args.data,
+        #         "epochs": self.args.train_epochs,
+        #         "input_seqeunce_length": self.args.seq_len,
+        #         "prediction_sequence_length": self.args.pred_len,
+        #         "patch_length": self.args.patch_len,
+        #         "stride": self.args.stride,
+        #         "num_freeze_layers": self.args.num_freeze_layers,
+        #     }
+        #     upload_files_to_wandb(
+        #         project_name=self.project_name,
+        #         run_name=self.run_name,
+        #         config=config
+        #     )        
+
+        #     for scale_name, (mae, rmse, mbe, r2, mse, skill_score), site_ids in results:
+        #         wandb.log({
+        #             f"test/{scale_name}/Sites": site_ids,
+        #             f"test/{scale_name}/MAE": mae,
+        #             f"test/{scale_name}/RMSE": rmse,
+        #             f"test/{scale_name}/MBE": mbe,
+        #             f"test/{scale_name}/R2_Score": r2,
+        #             f"test/{scale_name}/MSE": mse,
+        #             f"test/{scale_name}/Skill_Score": skill_score if skill_score is not None else 'N/A',
+        #             f"test/{scale_name}/MAPE": overall_mape
+        #         })
+        #     wandb.log({"test/MAPE": overall_mape})

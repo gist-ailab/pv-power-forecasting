@@ -136,8 +136,11 @@ if __name__ == '__main__':
 
     # random seed
     fix_seed = args.random_seed
-    random.seed(fix_seed)
     torch.manual_seed(fix_seed)
+    torch.cuda.manual_seed(fix_seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    random.seed(fix_seed)
     np.random.seed(fix_seed)
 
     if args.local_rank == -1:
@@ -216,6 +219,7 @@ if __name__ == '__main__':
 
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
         exp.test(args.source_model_dir)
+        # exp.predict(args.source_model_dir)
         torch.cuda.empty_cache()
     
     elif (args.num_freeze_layers > 0) or args.linear_probe or args.is_fully_finetune:    # transfer learning 수행
