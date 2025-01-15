@@ -218,8 +218,8 @@ if __name__ == '__main__':
         exp = Exp(args)  # set experiments
 
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-        exp.test(args.source_model_dir)
-        # exp.predict(args.source_model_dir)
+        # exp.test(args.source_model_dir)
+        exp.predict(args.source_model_dir)
         torch.cuda.empty_cache()
     
     elif (args.num_freeze_layers > 0) or args.linear_probe or args.is_fully_finetune:    # transfer learning 수행

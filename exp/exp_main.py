@@ -558,12 +558,15 @@ class Exp_Main(Exp_Basic):
             save_path (str): 플롯을 저장할 경로
         """
         plt.style.use('default')
-        fig, ax = plt.subplots(figsize=(15, 7))
+        fig, ax = plt.subplots(figsize=(30, 7))
+        plt.rcParams['font.size'] = 30  
+        plt.rcParams['font.family'] = 'Liberation Serif'
+
         
         # 입력 데이터 전체를 먼저 그립니다
-        ax.plot(input_data, 
-                color='#3191C7', 
-                linewidth=2, 
+        ax.plot(input_data, '--',
+                color= '#5E6064',#'#BEBDBD', #'#E2BEA2', #'#755139', #'#3191C7', 
+                linewidth=3, 
                 label='Input Data',
                 zorder=1)
         # forecast_length = 24
@@ -577,30 +580,32 @@ class Exp_Main(Exp_Basic):
         # 실제 데이터를 그립니다
         # 시작점에서의 연속성을 위해 input_data의 마지막 값을 사용합니다
         ax.plot(forecast_x, actual_data,
-                color='#3191C7', 
-                linewidth=5, 
+                color= '#5E6064', #'#E2BEA2', #'#755139', #'#3191C7', 
+                linewidth=3, 
                 label='Actual Data',
                 zorder=2)
         
         # 예측 데이터를 점선으로 그립니다
         ax.plot(forecast_x, predicted_data,
-                color='#8E44AD', 
+                color= '#B31A23', #'#8E44AD', 
                 linewidth=2, 
                 label='Predicted Data',
                 zorder=2)
         
         # 그래프 스타일링
         ax.grid(True, linestyle='--', alpha=0.3)
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
+        # ax.spines['top'].set_visible(False)
+        # ax.spines['right'].set_visible(False)
         
+        plt.tick_params(axis='both', which='both', labelsize=22, width=2, length=10, labelfontfamily='Liberation Serif')
+        plt.tick_params(axis='y', direction='in', length=10, width=2)
         # 레이블 설정
-        ax.set_xlabel('Time Steps', labelpad=10)
-        ax.set_ylabel('Value', labelpad=10)
-        ax.set_title('Time Series Forecasting Prediction VS GroundTruth', pad=15)
+        ax.set_xlabel('Time Steps', labelpad=10, fontdict={'fontsize': 28, 'fontfamily': 'Liberation Serif'})
+        ax.set_ylabel('Value', labelpad=10, fontdict={'fontsize': 28, 'fontfamily': 'Liberation Serif'})
+        ax.set_title('Time Series Forecasting Prediction VS GroundTruth', pad=15, fontdict={'fontfamily': 'Liberation Serif'})
         
         # 범례 설정
-        ax.legend(loc='upper left', frameon=True)
+        ax.legend(loc='upper left', frameon=True, handlelength=2, edgecolor='black')
         
         # 여백 조정
         plt.tight_layout()
@@ -696,7 +701,7 @@ class Exp_Main(Exp_Basic):
                 if i % 10 == 0:
                     # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
                     self.plot_predictions_2(i,
-                                          input_seq[0, -50:, -1],    # 마지막 5개 입력값
+                                          input_seq[0, -5:, -1],    # 마지막 5개 입력값
                                           true[0],                  # 실제값
                                           pred[0],                  # 예측값
                                           result_path)

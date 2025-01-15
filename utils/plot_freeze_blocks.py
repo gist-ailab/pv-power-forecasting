@@ -127,7 +127,7 @@ def calculate_mape_position(fig, axes):
         y_pos = bbox.y0 + bbox.height / 2
     
     # 모든 그래프에 대해 동일한 x 위치 사용
-    x_pos = 0.08  # 이 값은 필요에 따라 조정 가능
+    x_pos = 0.07  # 이 값은 필요에 따라 조정 가능
     
     return x_pos, y_pos
 
@@ -147,18 +147,18 @@ def assign_highlight_colors(data):
     second_min_idx = sorted_indices[1]
     
     # 기본 색상은 매우 연한 회색
-    colors = ['#F0F0F0'] * len(data)  
+    colors = ['#5E6064'] * len(data)  
     # 두 번째로 작은 값은 연한 파란색
-    colors[second_min_idx] = '#ADBED3' #'#90CAF9'  
+    colors[second_min_idx] = '#6A282C' #'#ADBED3' #'#90CAF9'  
     # 가장 작은 값은 진한 파란색
-    colors[min_idx] = '#103B58' #'#2196F3'  
+    colors[min_idx] = '#B31A23'#'#103B58' #'#2196F3'  
     
     return colors
 # 데이터 정의
 categories = ['0', '1', '2', '3', '4', '5', '6', '7', '8', 'zero-shot']
 data = {
     'GIST': [1.6293, 1.6008, 1.6438, 1.6514, 1.7037, 1.8012, 2.0653, 2.7289, 5.4627, 6.127],
-    'Konstanz': [1.466, 1.0643, 1.0794, 1.0956, 1.1274, 1.1795, 1.298, 1.5509, 2.4999, 3.2284],
+    'Germany': [1.466, 1.0643, 1.0794, 1.0956, 1.1274, 1.1795, 1.298, 1.5509, 2.4999, 3.2284],
     'Miryang': [3.1986, 2.3044, 2.3204, 2.3256, 2.3348, 2.3628, 2.4544, 2.7459, 3.4867, 3.7475],
     'California': [5.2096, 5.2434, 5.2638, 5.2827, 5.3013, 5.3254, 5.3791, 5.1777, 5.1154, 5.2956],
     'Georgia': [6.4877, 6.4395, 6.463, 6.4671, 6.49, 6.506, 6.4227, 6.2644, 6.1461, 6.1932],
@@ -171,7 +171,7 @@ plot_settings = {
         'break_points': [1.8, 2.6],
         'y_ranges': [(1.5, 1.8), (2.6, 6.5)]
     },
-    'Konstanz': {
+    'Germany': {
         'break_points': [1.3, 2.4],
         'y_ranges': [(1.0, 1.3), (2.4, 3.5)]
     },
@@ -194,7 +194,7 @@ plot_settings = {
 }
 
 # 그래프 순서 정의
-plot_order = ['GIST', 'Konstanz', 'Miryang', 'California', 'Georgia', 'UK']
+plot_order = ['GIST', 'Germany', 'Miryang', 'California', 'Georgia', 'UK']
 
 # 플롯 스타일 설정
 plt.style.use('default')
@@ -206,7 +206,7 @@ plt.style.use('default')
 #     'ytick.labelsize': 10
 # })
 
-plt.rcParams['font.size'] = 22  
+plt.rcParams['font.size'] = 30
 plt.rcParams['font.family'] = 'Liberation Serif'
 
 # 메인 figure 생성
@@ -244,7 +244,7 @@ for idx, region in enumerate(plot_order):
         for spine in ax.spines.values():
             spine.set_linewidth(2)  # 원하는 굵기로 설정 (예: 2)
 
-        ax.set_title(region, pad=10, fontweight='bold')
+        ax.set_title(region, pad=20, fontweight='bold')
         if show_ylabel:
             x_pos, y_pos = calculate_mape_position(fig, ax)
             fig.text(x_pos, y_pos, 'MAPE [%]', rotation=90, va='center')
@@ -268,7 +268,7 @@ fig.text(
     'Common x-axis: Number of freeze layers',
     ha='center',
     va='center',
-    fontsize=26
+    fontsize=28
 )
 
 plt.show()
