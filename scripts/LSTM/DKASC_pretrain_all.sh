@@ -11,13 +11,15 @@ if [ ! -d "./logs/$exp_id" ]; then
     mkdir -p ./logs/$exp_id
 fi
 
-root_path_name="/home/intern/doyoon/innovation/PatchTST/data/DKASC/processed_data_${data_type}/"
+root_path_name="/ailab_mat/dataset/PV/DKASC/processed_data_${data_type}/"
 data_name=DKASC
 random_seed=2024
 
 # seq_len=240
 pred_len=24
 label_len=0
+
+hidden_dim=256
 
 export CUDA_VISIBLE_DEVICES=2
 # export WORLD_SIZE=2 # 총 프로세스 수
@@ -38,7 +40,7 @@ echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
 for seq_len in 240
 do
-    setting_name="${data_name}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}"
+    setting_name="${data_name}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_hd${hidden_dim}"
     echo "Generated setting name: $setting_name"
     python run_longExp.py \
         --random_seed $random_seed \
@@ -47,12 +49,12 @@ do
         --model $model_name \
         --data $data_name \
         --root_path $root_path_name \
-        --source_model_dir "${setting_name}" \
+        --output_dir "${setting_name}" \
         --seq_len $seq_len \
         --label_len $label_len \
         --pred_len $pred_len \
         --input_dim 5\
-        --hidden_dim 1024 \
+        --hidden_dim $hidden_dim \
         --bidirectional True\
         --individual 1 \
         --embed 'timeF' \
@@ -60,6 +62,5 @@ do
         --batch_size 512 \
         --learning_rate 0.0001 \
         --des 'Exp' \
-        --wandb \
-        --is_inference 1
+        --wandb
 done

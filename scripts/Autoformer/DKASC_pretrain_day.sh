@@ -21,9 +21,9 @@ pred_len=24
 # label_len=24
 
 n_heads=8
-e_layers=8
-d_model=512
-d_ff=2048
+e_layers=6
+d_model=256
+d_ff=1024
 
 export CUDA_VISIBLE_DEVICES=0
 # export WORLD_SIZE=2 # 총 프로세스 수
@@ -53,7 +53,7 @@ do
         --model $model_name \
         --data $data_name \
         --root_path $root_path_name \
-        --checkpoints "${setting_name}" \
+        --source_model_dir "${setting_name}" \
         --seq_len $seq_len \
         --label_len $((seq_len / 2)) \
         --pred_len $pred_len \
@@ -71,5 +71,6 @@ do
         --batch_size 128 \
         --learning_rate 0.0001 \
         --des 'Exp' \
-        --wandb
+        --wandb \
+        --is_inference 1
 done

@@ -71,5 +71,6 @@ do
         --batch_size 256 \
         --learning_rate 0.0001 \
         --des 'Exp' \
-        --wandb
+        --wandb \
+        --is_inference 1
 done
