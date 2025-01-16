@@ -559,7 +559,7 @@ class Exp_Main(Exp_Basic):
         """
         plt.style.use('default')
         fig, ax = plt.subplots(figsize=(30, 7))
-        plt.rcParams['font.size'] = 30  
+        plt.rcParams['font.size'] = 40  
         plt.rcParams['font.family'] = 'Liberation Serif'
 
         
@@ -600,8 +600,8 @@ class Exp_Main(Exp_Basic):
         plt.tick_params(axis='both', which='both', labelsize=22, width=2, length=10, labelfontfamily='Liberation Serif')
         plt.tick_params(axis='y', direction='in', length=10, width=2)
         # 레이블 설정
-        ax.set_xlabel('Time Steps', labelpad=10, fontdict={'fontsize': 28, 'fontfamily': 'Liberation Serif'})
-        ax.set_ylabel('Value', labelpad=10, fontdict={'fontsize': 28, 'fontfamily': 'Liberation Serif'})
+        ax.set_xlabel('Time Steps', labelpad=10, fontdict={'fontsize': 38, 'fontfamily': 'Liberation Serif'})
+        ax.set_ylabel('Value', labelpad=10, fontdict={'fontsize': 38, 'fontfamily': 'Liberation Serif'})
         ax.set_title('Time Series Forecasting Prediction VS GroundTruth', pad=15, fontdict={'fontfamily': 'Liberation Serif'})
         
         # 범례 설정

@@ -127,7 +127,7 @@ def calculate_mape_position(fig, axes):
         y_pos = bbox.y0 + bbox.height / 2
     
     # 모든 그래프에 대해 동일한 x 위치 사용
-    x_pos = 0.07  # 이 값은 필요에 따라 조정 가능
+    x_pos = 0.05  # 이 값은 필요에 따라 조정 가능
     
     return x_pos, y_pos
 
@@ -206,7 +206,7 @@ plt.style.use('default')
 #     'ytick.labelsize': 10
 # })
 
-plt.rcParams['font.size'] = 30
+plt.rcParams['font.size'] = 40
 plt.rcParams['font.family'] = 'Liberation Serif'
 
 # 메인 figure 생성
@@ -268,7 +268,7 @@ fig.text(
     'Common x-axis: Number of freeze layers',
     ha='center',
     va='center',
-    fontsize=28
+    fontsize=40
 )
 
 plt.show()
