@@ -1,12 +1,13 @@
 #%%
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from matplotlib import gridspec
 import numpy as np
 import random
 
-input_dummy = np.random.rand(5)
+input_dummy = np.random.rand(3)
 pred_dummy = np.random.rand(24)
-gt_dumpy = np.random.rand(24)
+gt_dummy = np.random.rand(24)
 
 plot_order = ['DKASC', 'DKASC', 'DKASC', 'DKASC',
               'GIST', 'GIST', 'California', 'California',
@@ -26,10 +27,15 @@ for idx, region in enumerate(plot_order):
     show_ylabel = idx % 4 == 0 # 왼쪽 열에 y축 레이블 표시
     ax = fig.add_subplot(outer_grid[idx])
 
-    x = np.arange(len(np.concatenate([input_dummy, pred_dummy])))
+   
     for spine in ax.spines.values():
-            spine.set_linewidth(2)  # 원하는 굵기로 설정 (예: 2)
-    ax.plot(x, np.concatenate([input_dummy, pred_dummy]), color='blue', label='Input')
+            spine.set_linewidth(3)  # 원하는 굵기로 설정 (예: 2)
+    dash, = ax.plot(input_dummy, '--', color='#4B6D41', label='Input', linewidth=3)
+    dash_pattern = [8, 4]  # 선 길이 10, 빈 간격 5
+    dash.set_dashes(dash_pattern)
+    ax.plot(np.arange(len(input_dummy), len(input_dummy) + len(gt_dummy)), gt_dummy, color='#4B6D41', label='Ground Truth', linewidth=3)
+    ax.plot(np.arange(len(input_dummy), len(input_dummy) + len(gt_dummy)), pred_dummy, color='#77202E', label='Prediction', linewidth=3)
+
     ax.set_title(region, pad=20, fontweight='bold')
     
     # if show_ylabel:
@@ -48,15 +54,26 @@ for idx, region in enumerate(plot_order):
     ax.yaxis.grid(True, linestyle='--', alpha=0.3, zorder=0)
 
 fig.text(
-    0.5, 0.04, 'Timestamp', ha='center', va='center', fontdict={'fontsize': 60}
+    0.5, 0.95, 'Timestamp', ha='center', va='center', fontdict={'fontsize': 70}
 )
 
 fig.text(
-    0.08, 0.5, 'MAPE [%]', ha='center', va='center', rotation='vertical', fontdict={'fontsize': 60}
+    0.08, 0.5, 'MAPE [%]', ha='center', va='center', rotation='vertical', fontdict={'fontsize': 70}
 )
-fig.legend(
-     category
+
+colors = ['#5E6064', '#B31A23', '#5E6064']
+fig_legend = fig.legend(
+     labels=['Input', 'Prediction', 'Ground Truth'],
+     loc='lower center',
+     bbox_to_anchor=(0.5, -0.03),
+     ncols=3,
+     edgecolor='black',
+    fontsize=60,
 )
+
+fig_legend.get_frame().set_linewidth(2)
+
+
 plt.show()
                  
 # %%
