@@ -558,18 +558,25 @@ class Exp_Main(Exp_Basic):
             save_path (str): 플롯을 저장할 경로
         """
         plt.style.use('default')
-        fig, ax = plt.subplots(figsize=(30, 7))
-        plt.rcParams['font.size'] = 40  
+        fig, ax = plt.subplots(figsize=(25, 15))
+        plt.rcParams['font.size'] = 65
         plt.rcParams['font.family'] = 'Liberation Serif'
 
+        for spine in ax.spines.values():
+                spine.set_linewidth(5)  # 원하는 굵기로 설정 (예: 2)
+
+        dash, = ax.plot(input_data, '--', color='#4B6D41', label='Input', linewidth=6)
+        dash_pattern = [5, 2]  # 선 길이 10, 빈 간격 5
+        dash.set_dashes(dash_pattern)
+
         
-        # 입력 데이터 전체를 먼저 그립니다
-        ax.plot(input_data, '--',
-                color= '#5E6064',#'#BEBDBD', #'#E2BEA2', #'#755139', #'#3191C7', 
-                linewidth=3, 
-                label='Input Data',
-                zorder=1)
-        # forecast_length = 24
+        # # 입력 데이터 전체를 먼저 그립니다
+        # ax.plot(input_data, '--',
+        #         color= '#5E6064',#'#BEBDBD', #'#E2BEA2', #'#755139', #'#3191C7', 
+        #         linewidth=3, 
+        #         label='Input Data',
+        #         zorder=1)
+        # # forecast_length = 24
 
         # 0 - 9 (input) 9 - 11 (pred) 
         forecast_start_idx = len(input_data) - 1
@@ -579,39 +586,47 @@ class Exp_Main(Exp_Basic):
         predicted_data = np.concatenate([input_data[-1].reshape(-1, 1), predicted_data])
         # 실제 데이터를 그립니다
         # 시작점에서의 연속성을 위해 input_data의 마지막 값을 사용합니다
-        ax.plot(forecast_x, actual_data,
-                color= '#5E6064', #'#E2BEA2', #'#755139', #'#3191C7', 
-                linewidth=3, 
-                label='Actual Data',
-                zorder=2)
+        # ax.plot(forecast_x, actual_data,
+        #         color= '#5E6064', #'#E2BEA2', #'#755139', #'#3191C7', 
+        #         linewidth=3, 
+        #         label='Actual Data',
+        #         zorder=2)
         
-        # 예측 데이터를 점선으로 그립니다
-        ax.plot(forecast_x, predicted_data,
-                color= '#B31A23', #'#8E44AD', 
-                linewidth=2, 
-                label='Predicted Data',
-                zorder=2)
+        # # 예측 데이터를 점선으로 그립니다
+        # ax.plot(forecast_x, predicted_data,
+        #         color= '#B31A23', #'#8E44AD', 
+        #         linewidth=2, 
+        #        label='Predicted Data',
+        #         zorder=2)
+        plt.plot(forecast_x, actual_data, color='#4B6D41', label='Ground Truth', linewidth=6)
+        plt.plot(forecast_x, predicted_data, color='#77202E', label='Prediction', linewidth=6)
         
         # 그래프 스타일링
-        ax.grid(True, linestyle='--', alpha=0.3)
+        ax.yaxis.grid(True, linestyle='--', alpha=0.3, zorder=0)
         # ax.spines['top'].set_visible(False)
         # ax.spines['right'].set_visible(False)
+        plt.tick_params(axis='y', direction='in', length=10, width=2, pad=12, left=True, labelleft=True, labelsize=75, labelfontfamily='Liberation Serif')
+
+        if 'Miryang' in save_path or 'UK' in save_path:
+            plt.tick_params(axis='x', length=10, width=2, pad=12, labelsize=75, labelfontfamily='Liberation Serif')
+        else:
+            plt.tick_params(axis='x', bottom=False, top=False, labelbottom=False, labelsize=50)
         
-        plt.tick_params(axis='both', which='both', labelsize=22, width=2, length=10, labelfontfamily='Liberation Serif')
-        plt.tick_params(axis='y', direction='in', length=10, width=2)
         # 레이블 설정
-        ax.set_xlabel('Time Steps', labelpad=10, fontdict={'fontsize': 38, 'fontfamily': 'Liberation Serif'})
-        ax.set_ylabel('Value', labelpad=10, fontdict={'fontsize': 38, 'fontfamily': 'Liberation Serif'})
-        ax.set_title('Time Series Forecasting Prediction VS GroundTruth', pad=15, fontdict={'fontfamily': 'Liberation Serif'})
+        # ax.set_xlabel('Time Steps', labelpad=10, fontdict={'fontsize': 38, 'fontfamily': 'Liberation Serif'})
+        # ax.set_ylabel('Value', labelpad=10, fontdict={'fontsize': 38, 'fontfamily': 'Liberation Serif'})
+        # ax.set_title('Time Series Forecasting Prediction VS GroundTruth', pad=15, fontdict={'fontfamily': 'Liberation Serif'})
         
-        # 범례 설정
-        ax.legend(loc='upper left', frameon=True, handlelength=2, edgecolor='black')
-        
+        # # 범례 설정
+        # ax.legend(loc='upper left', frameon=True, handlelength=2, edgecolor='black')
+        region = save_path.split('/')[-1].split('_')[0]
+        ax.set_title(region, pad=20, fontweight='bold', fontdict={'fontsize': 90, 'fontfamily': 'Liberation Serif'})
         # 여백 조정
         plt.tight_layout()
     
         # 플롯 저장
         os.makedirs(save_path, exist_ok=True)
+        plt.yticks(fontfamily='Liberation Serif')
         plt.savefig(os.path.join(save_path, f'pred_{i}.png'))
         plt.close()
         
@@ -701,7 +716,7 @@ class Exp_Main(Exp_Basic):
                 if i % 10 == 0:
                     # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
                     self.plot_predictions_2(i,
-                                          input_seq[0, -5:, -1],    # 마지막 5개 입력값
+                                          input_seq[0, -3:, -1],    # 마지막 5개 입력값
                                           true[0],                  # 실제값
                                           pred[0],                  # 예측값
                                           result_path)
