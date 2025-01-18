@@ -9,16 +9,16 @@ data_names=(
     # "DKASC"
     # "GIST"
     # "GIST"
-    # "OEDI_California"
     "OEDI_California"
-    # "Germany"
-    # "Germany"
-    # "OEDI_Georgia"
-    # "OEDI_Georgia"
-    # "Miryang"
-    # "Miryang"
-    # "UK"
-    # "UK"
+    "OEDI_California"
+    "Germany"
+    "Germany"
+    "OEDI_Georgia"
+    "OEDI_Georgia"
+    "Miryang"
+    "Miryang"
+    "UK"
+    "UK"
 )
 data_type=all
 # data_type=day
@@ -63,20 +63,20 @@ source_model_dir_list=(
     # "/ailab_mat/dataset/PV/checkpoints/pretrain_all_day/GIST_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
     # "/ailab_mat/dataset/PV/checkpoints/fine-tunning/block_freeze_fully_finetune/GIST/Re_DKASC_to_GIST_freeze_1_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
     
-    # "/ailab_mat/dataset/PV/checkpoints/pretrain_all_day/OEDI_California_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
+    "/ailab_mat/dataset/PV/checkpoints/pretrain_all_day/OEDI_California_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
     "/ailab_mat/dataset/PV/checkpoints/fine-tunning/block_freeze_fully_finetune/OEDI_California/DKASC_to_OEDI_California_freeze_8_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
     
-    # "/ailab_mat/dataset/PV/checkpoints/pretrain_all_day/Germany_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
-    # "/ailab_mat/dataset/PV/checkpoints/fine-tunning/block_freeze_fully_finetune/Germany/DKASC_to_Germany_freeze_1_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
+    "/ailab_mat/dataset/PV/checkpoints/pretrain_all_day/Germany_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
+    "/ailab_mat/dataset/PV/checkpoints/fine-tunning/block_freeze_fully_finetune/Germany/DKASC_to_Germany_freeze_1_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
 
-    # "/ailab_mat/dataset/PV/checkpoints/pretrain_all_day/OEDI_Georgia_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
-    # "/ailab_mat/dataset/PV/checkpoints/fine-tunning/block_freeze_fully_finetune/OEDI_Georgia/DKASC_to_OEDI_Georgia_freeze_8_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
+    "/ailab_mat/dataset/PV/checkpoints/pretrain_all_day/OEDI_Georgia_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
+    "/ailab_mat/dataset/PV/checkpoints/fine-tunning/block_freeze_fully_finetune/OEDI_Georgia/DKASC_to_OEDI_Georgia_freeze_8_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
 
-    # "/ailab_mat/dataset/PV/checkpoints/pretrain_all_day/Miryang_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
-    # "/ailab_mat/dataset/PV/checkpoints/fine-tunning/block_freeze_fully_finetune/Miryang/DKASC_to_Miryang_freeze_1_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
+    "/ailab_mat/dataset/PV/checkpoints/pretrain_all_day/Miryang_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
+    "/ailab_mat/dataset/PV/checkpoints/fine-tunning/block_freeze_fully_finetune/Miryang/DKASC_to_Miryang_freeze_1_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
 
-    # "/ailab_mat/dataset/PV/checkpoints/pretrain_all_day/UK_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
-    # "/ailab_mat/dataset/PV/checkpoints/fine-tunning/block_freeze_fully_finetune/UK/DKASC_to_UK_freeze_7_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
+    "/ailab_mat/dataset/PV/checkpoints/pretrain_all_day/UK_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
+    "/ailab_mat/dataset/PV/checkpoints/fine-tunning/block_freeze_fully_finetune/UK/DKASC_to_UK_freeze_7_all_PatchTST_sl240_pl24_ll0_nh16_el8_dm512_df2048_patch24"
 )
 
 
@@ -84,16 +84,16 @@ setting_names=(
     # "DKASC_(Source)"
     # "GIST_(TO)"
     # "GIST_(S2T)"
-    # "California_(TO)"
+    "California_(TO)"
     "California_(S2T)"
-    # "Germany_(TO)"
-    # "Germany_(S2T)"
-    # "Georgia_(TO)"
-    # "Georgia_(S2T)"
-    # "Miryang_(TO)"
-    # "Miryang_(S2T)"
-    # "UK_(TO)"
-    # "UK_(S2T)"
+    "Germany_(TO)"
+    "Germany_(S2T)"
+    "Georgia_(TO)"
+    "Georgia_(S2T)"
+    "Miryang_(TO)"
+    "Miryang_(S2T)"
+    "UK_(TO)"
+    "UK_(S2T)"
 
 )
 
@@ -101,16 +101,32 @@ enc_in_list=(
     # 5
     # 5
     # 5
-    # 4
     4
-    # 5
-    # 5
-    # 4
-    # 4
-    # 5
-    # 5
-    # 5
-    # 5
+    5
+    5
+    5
+    4
+    5
+    5
+    5
+    5
+    5
+)
+num_freeze_layers_list=(
+    # 0
+    # 0
+    # 1
+    0
+    8
+    0
+    1
+    0
+    8
+    0
+    1
+    0
+    7
+
 )
 echo "Generated setting name: $setting_name"
 
@@ -121,10 +137,12 @@ for i in "${!source_model_dir_list[@]}"; do
     data_name="${data_names[$i]}"
     enc_in="${enc_in_list[$i]}"
     root_path_name="/ailab_mat/dataset/PV/${data_name}/processed_data_${data_type}/"
+    num_freeze_layers="${num_freeze_layers_list[$i]}"
     python run_longExp.py \
         --run_name $setting_name \
         --random_seed $random_seed \
         --is_inference 1 \
+        --num_freeze_layers $num_freeze_layers \
         --model_id $model_id \
         --model $model_name \
         --data $data_name \
