@@ -548,7 +548,7 @@ class Exp_Main(Exp_Basic):
         plt.savefig(os.path.join(save_path, f'pred_{i}.png'))
         plt.close()
     
-    def plot_predictions_2(self, i, input_data, actual_data, predicted_data, save_path):
+    def plot_predictions_2(self, i, input_data, actual_data, predicted_data, save_path, target_dataset=None, run_name=None):
         """
         예측 시각화 함수 (인덱스 기반, 시각적 개선)
         Args:
@@ -565,7 +565,7 @@ class Exp_Main(Exp_Basic):
         for spine in ax.spines.values():
                 spine.set_linewidth(5)  # 원하는 굵기로 설정 (예: 2)
 
-        dash, = ax.plot(input_data, '--', color='#4B6D41', label='Input', linewidth=6)
+        dash, = ax.plot(input_data, '--', color='#4B6D41', label='Input', linewidth=8)
         dash_pattern = [5, 2]  # 선 길이 10, 빈 간격 5
         dash.set_dashes(dash_pattern)
 
@@ -598,17 +598,17 @@ class Exp_Main(Exp_Basic):
         #         linewidth=2, 
         #        label='Predicted Data',
         #         zorder=2)
-        plt.plot(forecast_x, actual_data, color='#4B6D41', label='Ground Truth', linewidth=6)
-        plt.plot(forecast_x, predicted_data, color='#77202E', label='Prediction', linewidth=6)
+        plt.plot(forecast_x, actual_data, color='#4B6D41', label='Ground Truth', linewidth=8)
+        plt.plot(forecast_x, predicted_data, color='#77202E', label='Prediction', linewidth=8)
         
         # 그래프 스타일링
         ax.yaxis.grid(True, linestyle='--', alpha=0.3, zorder=0)
         # ax.spines['top'].set_visible(False)
         # ax.spines['right'].set_visible(False)
-        plt.tick_params(axis='y', direction='in', length=10, width=2, pad=12, left=True, labelleft=True, labelsize=75, labelfontfamily='Liberation Serif')
+        plt.tick_params(axis='y', direction='in', length=20, width=5, pad=12, left=True, labelleft=True, labelsize=80, labelfontfamily='Liberation Serif')
 
         if 'Miryang' in save_path or 'UK' in save_path:
-            plt.tick_params(axis='x', length=10, width=2, pad=12, labelsize=75, labelfontfamily='Liberation Serif')
+            plt.tick_params(axis='x', length=20, width=5, pad=12, labelsize=80, labelfontfamily='Liberation Serif')
         else:
             plt.tick_params(axis='x', bottom=False, top=False, labelbottom=False, labelsize=50)
         
@@ -619,8 +619,8 @@ class Exp_Main(Exp_Basic):
         
         # # 범례 설정
         # ax.legend(loc='upper left', frameon=True, handlelength=2, edgecolor='black')
-        region = save_path.split('/')[-1].split('_')[0]
-        ax.set_title(region, pad=20, fontweight='bold', fontdict={'fontsize': 90, 'fontfamily': 'Liberation Serif'})
+        run_name = run_name.replace('_', ' ')
+        ax.set_title(run_name, pad=30, fontdict={'fontsize': 90, 'fontfamily': 'Liberation Serif'})#, font_weight='bold')
         # 여백 조정
         plt.tight_layout()
     
@@ -632,7 +632,7 @@ class Exp_Main(Exp_Basic):
         
 
 
-    def predict(self, source_model_dir=None):
+    def predict(self, source_model_dir=None, target_dataset=None, run_name=None):
         test_data, test_loader = self._get_data(flag='test')
         dir_name = source_model_dir.split('/')[-1]
         result_path = os.path.join('./plot/', dir_name)
@@ -719,7 +719,9 @@ class Exp_Main(Exp_Basic):
                                           input_seq[0, -3:, -1],    # 마지막 5개 입력값
                                           true[0],                  # 실제값
                                           pred[0],                  # 예측값
-                                          result_path)
+                                          result_path, 
+                                          target_dataset,
+                                          run_name)
         # print(f"Plotting complete. Results saved in {folder_path}")
 
         # TODO: metric 계산하는거 개선해야 함.

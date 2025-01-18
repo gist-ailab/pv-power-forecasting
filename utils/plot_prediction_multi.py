@@ -9,17 +9,19 @@ input_dummy = np.random.rand(3)
 pred_dummy = np.random.rand(24)
 gt_dummy = np.random.rand(24)
 
-plot_order = ['DKASC', 'DKASC', 'DKASC', 'DKASC',
-              'GIST', 'GIST', 'California', 'California',
-              'Germany', 'Germany', 'Georgia', 'Georgia',
-              'Miryang', 'Miryang', 'UK', 'UK']
+plot_order = ['DKASC Source', 'DKASC Source', 'DKASC Source', 'DKASC Source',
+              'GIST TO', 'GIST S2T', 'California TO', 'California S2T',
+              'Germany TO', 'Germany S2T', 'Georgia TO', 'Georgia S2T',
+              'Miryang TO', 'Miryang S2T', 'UK TO', 'UK S2T']
 
 plt.style.use('default')
 
 plt.rcParams['font.size'] = 44
 plt.rcParams['font.family'] = 'Liberation Serif'
+plt.rcParams['figure.dpi'] = 300
+plt.rcParams['savefig.dpi'] = 300
 
-fig = plt.figure(figsize=(50, 30)) # 50?
+fig = plt.figure(figsize=(50, 30), dpi=300) # 50?
 
 outer_grid = gridspec.GridSpec(4, 4, figure=fig, hspace=0.2, wspace=0.2)
 
