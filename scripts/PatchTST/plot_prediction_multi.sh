@@ -165,7 +165,7 @@ for i in "${!source_model_dir_list[@]}"; do
         --dropout 0.05\
         --embed 'timeF' \
         --num_workers $num_workers \
-        --batch_size 256 \
+        --batch_size 1 \
         --learning_rate 0.0001 \
         --des 'Exp' \
         # --wandb

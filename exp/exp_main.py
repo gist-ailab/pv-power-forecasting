@@ -16,6 +16,8 @@ import os
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import MaxNLocator
 
 import os
 import time
@@ -556,10 +558,15 @@ class Exp_Main(Exp_Basic):
             ground_truth (numpy array): 실제값
             predictions (numpy array): 예측값
             save_path (str): 플롯을 저장할 경로
-        """
+    """
+        def thousands_formatter(x, pos):
+            if x >= 1000:
+                return f'{x/1000:.0f}k'  # 1000 이상이면 k로 변환
+            return f'{x:.0f}'            # 1000 미만이면 그대로 표시
+
         plt.style.use('default')
         fig, ax = plt.subplots(figsize=(25, 15))
-        plt.rcParams['font.size'] = 65
+        plt.rcParams['font.size'] = 80
         plt.rcParams['font.family'] = 'Liberation Serif'
 
         for spine in ax.spines.values():
@@ -601,16 +608,21 @@ class Exp_Main(Exp_Basic):
         plt.plot(forecast_x, actual_data, color='#4B6D41', label='Ground Truth', linewidth=8)
         plt.plot(forecast_x, predicted_data, color='#77202E', label='Prediction', linewidth=8)
         
+        # ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+        # plt.ticklabel_format(style='plain', axis='y', scilimits=(0,4))
         # 그래프 스타일링
+        ax.yaxis.set_major_formatter(FuncFormatter(thousands_formatter))
         ax.yaxis.grid(True, linestyle='--', alpha=0.3, zorder=0)
+        # 2. MaxNLocator 사용 (개수 지정)
+        ax.xaxis.set_major_locator(MaxNLocator(3))  # 최대 5개의 눈금 표시
         # ax.spines['top'].set_visible(False)
         # ax.spines['right'].set_visible(False)
-        plt.tick_params(axis='y', direction='in', length=20, width=5, pad=12, left=True, labelleft=True, labelsize=80, labelfontfamily='Liberation Serif')
+        plt.tick_params(axis='y', direction='in', length=20, width=5, pad=12, left=True, labelleft=True, labelsize=100, labelfontfamily='Liberation Serif')
 
         if 'Miryang' in save_path or 'UK' in save_path:
-            plt.tick_params(axis='x', length=20, width=5, pad=12, labelsize=80, labelfontfamily='Liberation Serif')
+            plt.tick_params(axis='x', length=20, width=5, pad=12, labelsize=100, labelfontfamily='Liberation Serif')
         else:
-            plt.tick_params(axis='x', bottom=False, top=False, labelbottom=False, labelsize=50)
+            plt.tick_params(axis='x', bottom=False, top=False, labelbottom=False, labelsize=100)
         
         # 레이블 설정
         # ax.set_xlabel('Time Steps', labelpad=10, fontdict={'fontsize': 38, 'fontfamily': 'Liberation Serif'})
@@ -620,7 +632,7 @@ class Exp_Main(Exp_Basic):
         # # 범례 설정
         # ax.legend(loc='upper left', frameon=True, handlelength=2, edgecolor='black')
         run_name = run_name.replace('_', ' ')
-        ax.set_title(run_name, pad=30, fontdict={'fontsize': 90, 'fontfamily': 'Liberation Serif'})#, font_weight='bold')
+        # ax.set_title(run_name, pad=30, fontdict={'fontsize': 90, 'fontfamily': 'Liberation Serif'})#, font_weight='bold')
         # 여백 조정
         plt.tight_layout()
     
