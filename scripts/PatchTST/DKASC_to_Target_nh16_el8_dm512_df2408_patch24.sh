@@ -45,8 +45,9 @@ echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
 # setting_name="DKASC_to_${data_name}_linear_probe_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
-setting_name="DKASC_to_${data_name}_fully_finetune_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+# setting_name="DKASC_to_${data_name}_fully_finetune_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
 # setting_name="DKASC_to_${data_name}_freeze_${num_freeze_layers}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
+setting_name="DKASC_to_${data_name}_freeze_${num_freeze_layers}_${data_type}_${model_name}_sl${seq_len}_pl${pred_len}_ll${label_len}_nh${n_heads}_el${e_layers}_dm${d_model}_df${d_ff}_patch${patch_len}"
 echo "Generated setting name: $setting_name"
 python run_longExp.py \
     --run_name $setting_name \
