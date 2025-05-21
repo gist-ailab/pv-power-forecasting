@@ -65,6 +65,14 @@ class Dataset_DKASC(Dataset):
 
         # mapping 파일 로드
         dataset_name = self.__class__.__name__.split('_')[-1]  # 클래스 이름에서 데이터셋 이름 추출
+        if dataset_name == 'Spring':
+            dataset_name = 'GIST_Spring'
+        elif dataset_name == 'Summer':
+            dataset_name = 'GIST_Summer'
+        elif dataset_name == 'Autumn':
+            dataset_name = 'GIST_Autumn'
+        elif dataset_name == 'Winter':
+            dataset_name = 'GIST_Winter'
         self.mapping_df = pd.read_csv(f'./data_provider/{dataset_name}_mapping/mapping_{data_type}.csv')
         self.current_dataset = self.mapping_df[self.mapping_df['dataset'] == dataset_name]
         self.current_dataset['index'] = self.current_dataset['mapping_name'].apply(lambda x: int(x.split('_')[0]))  # index 열 추가
@@ -270,6 +278,48 @@ class Dataset_Germany(Dataset_DKASC):
         super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler)
 
 
+#######################################################################################
+
+class Dataset_GIST_Spring(Dataset_DKASC):
+    def __init__(self,
+                 root_path, data_path=None,
+                 data_type='all', split_configs=None,
+                 flag='test', size=None,
+                 timeenc=0, freq='h',
+                 scaler=True,
+                 ):
+        super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler)
+
+
+class Dataset_GIST_Summer(Dataset_DKASC):
+    def __init__(self,
+                 root_path, data_path=None,
+                 data_type='all', split_configs=None,
+                 flag='test', size=None,
+                 timeenc=0, freq='h',
+                 scaler=True,
+                 ):
+        super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler)
+
+class Dataset_GIST_Autumn(Dataset_DKASC):
+    def __init__(self,
+                 root_path, data_path=None,
+                 data_type='all', split_configs=None,
+                 flag='test', size=None,
+                 timeenc=0, freq='h',
+                 scaler=True,
+                 ):
+        super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler)
+
+class Dataset_GIST_Winter(Dataset_DKASC):
+    def __init__(self,
+                 root_path, data_path=None,
+                 data_type='all', split_configs=None,
+                 flag='test', size=None,
+                 timeenc=0, freq='h',
+                 scaler=True,
+                 ):
+        super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler)
 #######################################################################################
 
 class Dataset_TimeSplit(Dataset):

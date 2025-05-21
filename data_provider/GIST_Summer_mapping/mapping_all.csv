@@ -1,0 +1,15 @@
+dataset,original_name,mapping_name
+GIST_Summer,122.5_C11_GAIA.csv,01_122.5_C11_GAIA.csv
+GIST_Summer,127.9_W11_Facility-Maintenance-Bldg.csv,02_127.9_W11_Facility-Maintenance-Bldg.csv
+GIST_Summer,133.1_E03_GTI.csv,03_133.1_E03_GTI.csv
+GIST_Summer,164.1_Soccer-Field.csv,04_164.1_Soccer-Field.csv
+GIST_Summer,220.1_E8_Natural-Science-Bldg.csv,05_220.1_E8_Natural-Science-Bldg.csv
+GIST_Summer,27.7_E11_DormA.csv,06_27.7_E11_DormA.csv
+GIST_Summer,29.9_N01_Central-Library.csv,07_29.9_N01_Central-Library.csv
+GIST_Summer,33.7_W13_Centeral-Storage.csv,08_33.7_W13_Centeral-Storage.csv
+GIST_Summer,37.4_C09_Dasan.csv,09_37.4_C09_Dasan.csv
+GIST_Summer,45.8_N02_LG-Library.csv,10_45.8_N02_LG-Library.csv
+GIST_Summer,48.2_W06_Student-Union.csv,11_48.2_W06_Student-Union.csv
+GIST_Summer,52.1_E12_DormB.csv,12_52.1_E12_DormB.csv
+GIST_Summer,66.0_C07_Samsung-Env-Bldg.csv,13_66.0_C07_Samsung-Env-Bldg.csv
+GIST_Summer,69.6_C10_Renewable-E-Bldg.csv,14_69.6_C10_Renewable-E-Bldg.csv
