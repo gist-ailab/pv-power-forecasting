@@ -11,4 +11,5 @@ xmltodict
 seaborn
 selenium
 webdriver-manager
+wandb
 plotly==5.24.1
