@@ -1,6 +1,6 @@
 # from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
 #      Dataset_DKASC_AliceSprings, Dataset_DKASC_Yulara, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang, Dataset_Miryang_MinMax, Dataset_Miryang_Standard, Dataset_SineMax
-from data_provider.data_loader import Dataset_DKASC, Dataset_GIST, Dataset_Miryang, Dataset_Germany, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_UK, Dataset_SineMax
+from data_provider.data_loader import Dataset_DKASC, Dataset_GIST, Dataset_Miryang, Dataset_Germany, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_UK, Dataset_SineMax, Dataset_GIST_Spring, Dataset_GIST_Summer, Dataset_GIST_Autumn, Dataset_GIST_Winter
 from torch.utils.data import DataLoader, ConcatDataset
 import torch
 
@@ -13,6 +13,10 @@ data_dict = {
     'OEDI_Georgia': Dataset_OEDI_Georgia,
     'OEDI_California': Dataset_OEDI_California,
     'UK': Dataset_UK,
+    'GIST_Spring': Dataset_GIST_Spring,
+    'GIST_Summer': Dataset_GIST_Summer,
+    'GIST_Autumn': Dataset_GIST_Autumn,
+    'GIST_Winter': Dataset_GIST_Winter,
 }
 
 split_configs = {
@@ -48,6 +52,27 @@ split_configs = {
         'val': [6],
         'test': [4]
     },
+    'GIST_Spring': {
+        'train': [1, 4, 5, 6, 7, 8, 9, 10, 11, 13],
+        'val': [2, 12],
+        'test': [3, 14]
+    },
+    'GIST_Summer': {
+        'train': [1, 4, 5, 6, 7, 8, 9, 10, 11, 13],
+        'val': [2, 12],
+        'test': [3, 14]
+    },
+    'GIST_Autumn': {
+        'train': [1, 4, 5, 6, 7, 8, 9, 10, 11, 13],
+        'val': [2, 12],
+        'test': [3, 14]
+    },
+    'GIST_Winter': {
+        'train': [1, 4, 5, 6, 7, 8, 9, 10, 11, 13],
+        'val': [2, 12],
+        'test': [3, 14]
+    },
+
     #### 날짜로 나누는 loc
 
     'OEDI_California': { # 2017.12.05  2023.10.31
@@ -65,6 +90,15 @@ split_configs = {
         'val' : 0.1,
         'test' : 0.15
     },
+
+    # # ablation study for chronological on GIST dataset
+    # 'GIST' : {
+    #     'train' : 0.5,
+    #     'val' : 0.166,
+    #     'test' : 0.334
+    # },
+    
+
 }
 
 
