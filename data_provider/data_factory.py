@@ -37,11 +37,11 @@ split_configs = {
         'val': [2, 5],
         'test': [3, 6]
     },
-    'GIST': {
-        'train': [1, 4, 5, 6, 7, 8, 9, 10, 11, 13],
-        'val': [2, 12],
-        'test': [3, 14]
-    },
+    # 'GIST': {
+    #     'train': [1, 4, 5, 6, 7, 8, 9, 10, 11, 13],
+    #     'val': [2, 12],
+    #     'test': [3, 14]
+    # },
     'Germany': {
         'train': [2, 3, 4, 5, 6, 7, 8],
         'val': [9],
@@ -91,12 +91,18 @@ split_configs = {
         'test' : 0.15
     },
 
-    # # ablation study for chronological on GIST dataset
-    # 'GIST' : {
-    #     'train' : 0.5,
-    #     'val' : 0.166,
-    #     'test' : 0.334
-    # },
+    # ablation study for chronological on GIST dataset
+    'GIST' : {  # divide into train:val:test = 3:1:2
+        # 'train' : 0.5,
+        # 'val' : 0.166,
+        # 'test' : 0.334
+        # 'train' : 0.5,
+        # 'val' : 0.163,
+        # 'test' : 0.337
+        'train' : 0.5,
+        'val' : 0.1625,
+        'test' : 0.3375
+    },
     
 
 }
