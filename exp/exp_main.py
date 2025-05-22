@@ -1,7 +1,7 @@
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
 from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, PatchTST, LSTM
-from models.Stat_models import Naive_repeat, Arima
+# from models.Stat_models import Naive_repeat, Arima
 from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop, visual_out, visual_original
 from utils.metrics import MetricEvaluator
 
@@ -48,8 +48,8 @@ class Exp_Main(Exp_Basic):
             'NLinear': NLinear,
             'Linear': Linear,
             'PatchTST': PatchTST,
-            'Naive_repeat': Naive_repeat,
-            'Arima': Arima,
+            # 'Naive_repeat': Naive_repeat,
+            # 'Arima': Arima,
             'LSTM': LSTM
         }
         
@@ -564,6 +564,10 @@ class Exp_Main(Exp_Basic):
                 return f'{x/1000:.0f}k'  # 1000 이상이면 k로 변환
             return f'{x:.0f}'            # 1000 미만이면 그대로 표시
 
+        # 기존 설정을 저장
+        original_font_size = plt.rcParams['font.size']
+        original_font_family = plt.rcParams['font.family']
+
         plt.style.use('default')
         fig, ax = plt.subplots(figsize=(25, 15))
         plt.rcParams['font.size'] = 80
@@ -641,6 +645,10 @@ class Exp_Main(Exp_Basic):
         plt.yticks(fontfamily='Liberation Serif')
         plt.savefig(os.path.join(save_path, f'pred_{i}.png'))
         plt.close()
+
+        # 원래 설정 복원
+        plt.rcParams['font.size'] = original_font_size
+        plt.rcParams['font.family'] = original_font_family
         
 
 
@@ -648,8 +656,7 @@ class Exp_Main(Exp_Basic):
         test_data, test_loader = self._get_data(flag='test')
         dir_name = source_model_dir.split('/')[-1]
         result_path = os.path.join('./plot/', dir_name)
-        # if 'checkpoint.pth' in model_path:
-        #     folder_path = os.path.join('./test_results/', model_path.split('/')[-1:])
+
         os.makedirs(result_path, exist_ok=True)
 
         if source_model_dir[0] == '.':
@@ -665,6 +672,10 @@ class Exp_Main(Exp_Basic):
             model_path = os.path.join(model_path, 'checkpoint.pth')
         print(f"Load model from '{model_path}'")
         self.model.load_state_dict(torch.load(model_path))
+
+        if 'checkpoint.pth' in model_path:
+            # folder_path = os.path.join('./test_results/', model_path.split('/')[:-1])
+            folder_path = os.path.join('./pred_results/', 'plot')
         
         # MetricEvaluator 초기화
         # evaluator = MetricEvaluator(file_path=os.path.join(folder_path, "site_metrics.txt"))
@@ -726,7 +737,7 @@ class Exp_Main(Exp_Basic):
                 input_list.append(input_seq)
 
                 if i % 10 == 0:
-                    # self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
+                    self.plot_predictions(i, batch_x_np[0, -5:, -1], batch_y_np[0], outputs_np[0], folder_path)
                     self.plot_predictions_2(i,
                                           input_seq[0, -3:, -1],    # 마지막 5개 입력값
                                           true[0],                  # 실제값
