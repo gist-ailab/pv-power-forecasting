@@ -52,7 +52,7 @@ echo "Generated setting name: $setting_name"
 python run_longExp.py \
     --run_name $setting_name \
     --random_seed $random_seed \
-    --is_fully_finetune \
+    --num_freeze_layers $num_freeze_layers \
     --model_id $model_id \
     --model $model_name \
     --data $data_name \
