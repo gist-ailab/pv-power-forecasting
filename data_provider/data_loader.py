@@ -236,21 +236,21 @@ class Dataset_DKASC(Dataset):
 
 ########################################################################################
 
-# class Dataset_GIST(Dataset_DKASC):
-#     def __init__(self,
-#                  root_path, data_path=None,
-#                  data_type='all', split_configs=None,
-#                  flag='train', size=None,
-#                  timeenc=0, freq='h',
-#                  scaler=True,
-#                  ):
-#         input_channels = ['Global_Horizontal_Radiation',
-#                           'Weather_Temperature_Celsius',
-#                           'Weather_Relative_Humidity',
-#                           'Wind_Speed',
-#                           'Active_Power']
-#         super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler,
-#                          input_channels=input_channels)
+class Dataset_GIST(Dataset_DKASC):
+    def __init__(self,
+                 root_path, data_path=None,
+                 data_type='all', split_configs=None,
+                 flag='train', size=None,
+                 timeenc=0, freq='h',
+                 scaler=True,
+                 ):
+        input_channels = ['Global_Horizontal_Radiation',
+                          'Weather_Temperature_Celsius',
+                          'Weather_Relative_Humidity',
+                          'Wind_Speed',
+                          'Active_Power']
+        super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler,
+                         input_channels=input_channels)
 
 #######################################################################################
 
@@ -279,6 +279,17 @@ class Dataset_Germany(Dataset_DKASC):
 
 
 #######################################################################################
+
+class Dataset_GISTchrono(Dataset_DKASC):
+    def __init__(self,
+                 root_path, data_path=None,
+                 data_type='all', split_configs=None,
+                 flag='train', size=None,
+                 timeenc=0, freq='h',
+                 scaler=True,
+                 ):
+        super().__init__(root_path, data_path, data_type, split_configs, flag, size, timeenc, freq, scaler)
+
 
 class Dataset_GIST_Spring(Dataset_DKASC):
     def __init__(self,
@@ -578,14 +589,6 @@ class Dataset_UK(Dataset_TimeSplit):
                  flag='train', size=None, timeenc=0, freq='h', scaler=True):
         super().__init__(root_path, data_path, data_type, split_configs, flag, size,
                          timeenc, freq, scaler)
-
-class Dataset_GIST(Dataset_TimeSplit):
-    def __init__(self, root_path, data_path=None, data_type='all', split_configs=None,
-                 flag='train', size=None, timeenc=0, freq='h', scaler=True):
-        super().__init__(root_path, data_path, data_type, split_configs, flag, size,
-                         timeenc, freq, scaler)
-
-
 
 ####################################################
 

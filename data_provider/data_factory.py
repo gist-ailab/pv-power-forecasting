@@ -1,6 +1,6 @@
 # from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
 #      Dataset_DKASC_AliceSprings, Dataset_DKASC_Yulara, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang, Dataset_Miryang_MinMax, Dataset_Miryang_Standard, Dataset_SineMax
-from data_provider.data_loader import Dataset_DKASC, Dataset_GIST, Dataset_Miryang, Dataset_Germany, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_UK, Dataset_SineMax, Dataset_GIST_Spring, Dataset_GIST_Summer, Dataset_GIST_Autumn, Dataset_GIST_Winter
+from data_provider.data_loader import Dataset_DKASC, Dataset_GIST, Dataset_Miryang, Dataset_Germany, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_UK, Dataset_SineMax, Dataset_GISTchrono, Dataset_GIST_Spring, Dataset_GIST_Summer, Dataset_GIST_Autumn, Dataset_GIST_Winter
 from torch.utils.data import DataLoader, ConcatDataset
 import torch
 
@@ -17,6 +17,7 @@ data_dict = {
     'GIST_Summer': Dataset_GIST_Summer,
     'GIST_Autumn': Dataset_GIST_Autumn,
     'GIST_Winter': Dataset_GIST_Winter,
+    'GISTchrono': Dataset_GISTchrono,
 }
 
 split_configs = {
@@ -92,19 +93,11 @@ split_configs = {
     },
 
     # ablation study for chronological on GIST dataset
-    'GIST' : {  # divide into train:val:test = 3:1:2
-        # 'train' : 0.5,
-        # 'val' : 0.166,
-        # 'test' : 0.334
-        # 'train' : 0.5,
-        # 'val' : 0.163,
-        # 'test' : 0.337
-        'train' : 0.5,
-        'val' : 0.1625,
-        'test' : 0.3375
+    'GISTchrono' : {  # divide into train:val:test = 3:1:2
+        'train': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13],
+        'val': [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+        'test': [27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]
     },
-    
-
 }
 
 
