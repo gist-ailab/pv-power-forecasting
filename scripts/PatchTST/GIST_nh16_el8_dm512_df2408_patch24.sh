@@ -3,7 +3,7 @@
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-data_name=GIST
+data_name=GISTchrono2
 data_type=all
 # data_type=day
 exp_id="${DATE}_Pretrain_$data_name_$model_name"
@@ -48,7 +48,7 @@ python run_longExp.py \
     --data $data_name \
     --data_type $data_type \
     --root_path $root_path_name \
-    --checkpoints $setting_name \
+    --output_dir $setting_name \
     --seq_len $seq_len \
     --label_len $label_len \
     --pred_len $pred_len \
