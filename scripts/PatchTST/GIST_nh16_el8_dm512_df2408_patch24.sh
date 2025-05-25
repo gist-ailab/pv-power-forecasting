@@ -1,5 +1,6 @@
 #!/bin/bash
-
+GPU_ID=$1
+export CUDA_VISIBLE_DEVICES=$GPU_ID
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
@@ -24,8 +25,6 @@ e_layers=8
 d_model=512
 d_ff=2048
 patch_len=24
-
-export CUDA_VISIBLE_DEVICES=0
 
 # CPU 코어 개수와 num_workers 계산
 total_cores=$(nproc)  # 전체 CPU 코어 개수
