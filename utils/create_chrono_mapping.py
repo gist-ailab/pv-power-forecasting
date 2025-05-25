@@ -18,9 +18,10 @@ def create_gist_chrono_mapping(processed_data_folder, output_file="mapping_gist_
     csv_files = [f for f in os.listdir(data_path) if f.endswith('.csv')]
     
     # train, val, test 파일들을 분류
-    train_files = [f for f in csv_files if f.endswith('_train.csv')]
-    val_files = [f for f in csv_files if f.endswith('_val.csv')]
-    test_files = [f for f in csv_files if f.endswith('_test.csv')]
+    # train_files = [f for f in csv_files if f.endswith('_train.csv')]
+    train_files = [f for f in csv_files if f.endswith('.csv') and not f.endswith('_1.csv') and not f.endswith('_2.csv')]
+    val_files = [f for f in csv_files if f.endswith('_1.csv')]
+    test_files = [f for f in csv_files if f.endswith('_2.csv')]
     
     # 파일명 정렬
     train_files.sort()
@@ -121,7 +122,8 @@ def verify_file_structure(processed_data_folder, mapping_df):
 # 사용 예시
 if __name__ == "__main__":
     # 실제 폴더 경로로 변경하세요
-    processed_data_folder = "/home/bak/Projects/pv-power-forecasting/data/GISTchrono/processed_data_all"
+    # processed_data_folder = "/home/bak/Projects/pv-power-forecasting/data/GISTchrono/processed_data_all"
+    processed_data_folder = "/home/bak/Projects/pv-power-forecasting/data/GIST_chronological/processed_data_all"
     
     # 매핑 파일 생성
     mapping_df = create_gist_chrono_mapping(processed_data_folder)

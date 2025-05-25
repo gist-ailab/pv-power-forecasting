@@ -23,7 +23,9 @@ def split_pv_data_by_period(input_folder, output_folder):
     
     # 기준 날짜 설정 (2024년 9월 24일을 기준으로)
     end_date = datetime(2024, 9, 24)
-    test_start_date = end_date - timedelta(days=2*365)  # 최근 2년
+    # test_start_date = end_date - timedelta(days=2*365)  # 최근 2년
+    # val_start_date = test_start_date - timedelta(days=365)  # 그 전 1년
+    test_start_date = end_date - timedelta(days=365)  # 최근 2년
     val_start_date = test_start_date - timedelta(days=365)  # 그 전 1년
     
     print(f"데이터 분할 기준:")
@@ -66,21 +68,24 @@ def split_pv_data_by_period(input_folder, output_folder):
             
             # 각 분할된 데이터 저장 (데이터가 있는 경우만)
             if len(train_data) > 0:
-                train_file_path = train_path / f"{file_name_without_ext}_train.csv"
+                # train_file_path = train_path / f"{file_name_without_ext}_train.csv"
+                train_file_path = train_path / f"{file_name_without_ext}.csv"
                 train_data.to_csv(train_file_path, index=False)
                 print(f"  Train 데이터 저장: {train_file_path}")
             else:
                 print(f"  Train 데이터 없음")
             
             if len(val_data) > 0:
-                val_file_path = val_path / f"{file_name_without_ext}_val.csv"
+                # val_file_path = val_path / f"{file_name_without_ext}_val.csv"
+                val_file_path = val_path / f"{file_name_without_ext}_1.csv"
                 val_data.to_csv(val_file_path, index=False)
                 print(f"  Validation 데이터 저장: {val_file_path}")
             else:
                 print(f"  Validation 데이터 없음")
             
             if len(test_data) > 0:
-                test_file_path = test_path / f"{file_name_without_ext}_test.csv"
+                # test_file_path = test_path / f"{file_name_without_ext}_test.csv"
+                test_file_path = test_path / f"{file_name_without_ext}_2.csv"
                 test_data.to_csv(test_file_path, index=False)
                 print(f"  Test 데이터 저장: {test_file_path}")
             else:
