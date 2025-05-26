@@ -2,7 +2,8 @@ import pandas as pd
 import os
 from pathlib import Path
 
-def create_gist_chrono_mapping(processed_data_folder, output_file="mapping_all.csv"):
+def create_gist_chrono_mapping(processed_data_folder, dataset_name,
+                               output_file="mapping_all.csv"):
     """
     GISTchrono 데이터셋에 대한 매핑 파일 생성 (train/val/test 각각 별도 항목)
     
@@ -33,7 +34,6 @@ def create_gist_chrono_mapping(processed_data_folder, output_file="mapping_all.c
     mapping_data = []
     current_idx = 1
 
-    dataset_name = 'Germanychrono'  # 데이터셋 이름
     print(f"dataset_name: {dataset_name}")
 
     # Train 파일들 처리
@@ -100,7 +100,8 @@ def verify_file_structure(processed_data_folder, mapping_df):
     print("\n=== 파일 구조 통계 ===")
     
     # 각 타입별 파일 수 계산
-    train_count = len([row for _, row in mapping_df.iterrows() if '_train.csv' in row['original_name']])
+    # train_count = len([row for _, row in mapping_df.iterrows() if '.csv' in row['original_name']])
+    train_count = len([row for _, row in mapping_df.iterrows() if '.csv' in row['original_name'] and not row['original_name'].endswith('_test.csv')])
     # val_count = len([row for _, row in mapping_df.iterrows() if '_val.csv' in row['original_name']])
     test_count = len([row for _, row in mapping_df.iterrows() if '_test.csv' in row['original_name']])
     
@@ -126,12 +127,13 @@ def verify_file_structure(processed_data_folder, mapping_df):
 # 사용 예시
 if __name__ == "__main__":
     # 실제 폴더 경로로 변경하세요
-    # processed_data_folder = "/home/bak/Projects/pv-power-forecasting/data/GISTchrono/processed_data_all"
+    dataset_name = 'GISTchrono'  # 데이터셋 이름
+    processed_data_folder = f"/home/bak/Projects/pv-power-forecasting/data/{dataset_name}/processed_data_all"
     # processed_data_folder = "/home/bak/Projects/pv-power-forecasting/data/GIST_chronological/processed_data_all"
-    processed_data_folder = "/home/bak/Projects/pv-power-forecasting/data/Germanychrono/processed_data_all"
+    # processed_data_folder = "/home/bak/Projects/pv-power-forecasting/data/Germanychrono/processed_data_all"
     
     # 매핑 파일 생성
-    mapping_df = create_gist_chrono_mapping(processed_data_folder)
+    mapping_df = create_gist_chrono_mapping(processed_data_folder, dataset_name)
     
     # 파일 구조 확인
     verify_file_structure(processed_data_folder, mapping_df)
