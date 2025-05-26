@@ -19,7 +19,8 @@ def create_gist_chrono_mapping(processed_data_folder, output_file="mapping_all.c
     
     # train, val, test 파일들을 분류
     # train_files = [f for f in csv_files if f.endswith('_train.csv')]
-    train_files = [f for f in csv_files if f.endswith('.csv') and not f.endswith('_1.csv') and not f.endswith('_2.csv')]
+    # train_files = [f for f in csv_files if f.endswith('.csv') and not f.endswith('_1.csv') and not f.endswith('_2.csv')]
+    train_files = [f for f in csv_files if f.endswith('.csv') and not f.endswith('_test.csv')]
     # val_files = [f for f in csv_files if f.endswith('_1.csv')]
     test_files = [f for f in csv_files if f.endswith('_test.csv')]
     
