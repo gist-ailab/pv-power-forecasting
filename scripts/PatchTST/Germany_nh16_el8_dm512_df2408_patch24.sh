@@ -1,9 +1,10 @@
 #!/bin/bash
-
+GPU_ID=$1
+export CUDA_VISIBLE_DEVICES=$GPU_ID
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-data_name=Germany
+data_name=Germanychrono
 data_type=all
 # data_type=day
 exp_id="${DATE}_Pretrain_$data_name_$model_name"
@@ -25,7 +26,6 @@ d_model=512
 d_ff=2048
 patch_len=24
 
-export CUDA_VISIBLE_DEVICES=0
 # export WORLD_SIZE=2 # 총 프로세스 수
 # export MASTER_ADDR='localhost'
 # export MASTER_PORT=12356  # 임의의 빈 포트
