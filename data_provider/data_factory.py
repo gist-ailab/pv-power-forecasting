@@ -18,7 +18,6 @@ data_dict = {
     'GIST_Autumn': Dataset_GIST_Autumn,
     'GIST_Winter': Dataset_GIST_Winter,
     'GISTchrono': Dataset_GISTchrono,
-    'GISTchrono2': Dataset_GISTchrono2,
     'Germanychrono': Dataset_Germanychrono,
 }
 
