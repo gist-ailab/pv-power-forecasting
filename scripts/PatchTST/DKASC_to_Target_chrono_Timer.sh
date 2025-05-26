@@ -2,6 +2,7 @@
 
 # 사용자가 지정할 GPU ID (예: 0번 GPU)
 GPU_ID=$1
+num_freeze_layers=$2
 
 # GPU 사용률 확인 함수
 check_gpu_usage() {
@@ -26,4 +27,4 @@ done
 
 echo "GPU $GPU_ID is now free. Starting training..."
 
-bash /home/seongho_bak/Projects/PatchTST/scripts/PatchTST/DKASC_to_Target_chronological.sh $GPU_ID
+bash /home/seongho_bak/Projects/PatchTST/scripts/PatchTST/DKASC_to_Target_chronological.sh $GPU_ID $num_freeze_layers
