@@ -16,7 +16,7 @@ fi
 root_path_name="/ailab_mat/dataset/PV/${data_name}/processed_data_${data_type}/"
 random_seed=2024
 
-num_freeze_layers=1
+num_freeze_layers=$2
 
 seq_len=240
 pred_len=24
