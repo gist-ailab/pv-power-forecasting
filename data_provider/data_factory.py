@@ -1,6 +1,6 @@
 # from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred, \
 #      Dataset_DKASC_AliceSprings, Dataset_DKASC_Yulara, Dataset_GIST, Dataset_German, Dataset_UK, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_Miryang, Dataset_Miryang_MinMax, Dataset_Miryang_Standard, Dataset_SineMax
-from data_provider.data_loader import Dataset_DKASC, Dataset_GIST, Dataset_Miryang, Dataset_Germany, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_UK, Dataset_SineMax, Dataset_GISTchrono, Dataset_GISTchrono2, Dataset_GIST_Spring, Dataset_GIST_Summer, Dataset_GIST_Autumn, Dataset_GIST_Winter
+from data_provider.data_loader import Dataset_DKASC, Dataset_GIST, Dataset_Miryang, Dataset_Germany, Dataset_OEDI_Georgia, Dataset_OEDI_California, Dataset_UK, Dataset_SineMax, Dataset_GISTchrono, Dataset_GISTchrono2, Dataset_Germanychrono, Dataset_GIST_Spring, Dataset_GIST_Summer, Dataset_GIST_Autumn, Dataset_GIST_Winter
 from torch.utils.data import DataLoader, ConcatDataset
 import torch
 
@@ -19,6 +19,7 @@ data_dict = {
     'GIST_Winter': Dataset_GIST_Winter,
     'GISTchrono': Dataset_GISTchrono,
     'GISTchrono2': Dataset_GISTchrono2,
+    'Germanychrono': Dataset_Germanychrono,
 }
 
 split_configs = {
@@ -103,6 +104,11 @@ split_configs = {
         'train': [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12],
         'val': [3, 13],
         'test': [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41]
+    },
+    'Germanychrono': {
+        'train': [2, 3, 4, 5, 6, 7, 8],
+        'val': [1, 9],
+        'test': [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
     },
 }
 
