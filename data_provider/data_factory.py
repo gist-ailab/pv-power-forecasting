@@ -40,11 +40,11 @@ split_configs = {
         'val': [2, 5],
         'test': [3, 6]
     },
-    # 'GIST': {
-    #     'train': [1, 4, 5, 6, 7, 8, 9, 10, 11, 13],
-    #     'val': [2, 12],
-    #     'test': [3, 14]
-    # },
+    'GIST': {
+        'train': [1, 4, 5, 6, 7, 8, 9, 10, 11, 13],
+        'val': [2, 12],
+        'test': [3, 14]
+    },
     'Germany': {
         'train': [2, 3, 4, 5, 6, 7, 8],
         'val': [9],
@@ -95,19 +95,15 @@ split_configs = {
     },
 
     # ablation study for chronological on GIST dataset
-    'GISTchrono' : {  # divide into train:val:test = 3:1:2
-        'train': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13],
-        'val': [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
-        'test': [27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]
-    },
-    'GISTchrono2' : {  # divide into train:val:test = 3:1:2
+    'GISTchrono' : {
         'train': [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-        'val': [3, 13],
-        'test': [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41]
+        'val': [3, 13], # 3: Soccer field, 13: C10_Renewable-E-Bldg
+        'test': [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
     },
+    # ablation study for chronological on Germany dataset
     'Germanychrono': {
-        'train': [2, 3, 4, 5, 6, 7, 8],
-        'val': [1, 9],
+        'train': [1, 3, 4, 5, 7, 8, 9],
+        'val': [2, 6],  # 2: DE_KN_industrial2_pv, 6: DE_KN_industrial3_pv_facade
         'test': [10, 11, 12, 13, 14, 15, 16, 17, 18]
     },
 }
