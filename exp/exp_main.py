@@ -635,7 +635,7 @@ class Exp_Main(Exp_Basic):
         
         # # 범례 설정
         # ax.legend(loc='upper left', frameon=True, handlelength=2, edgecolor='black')
-        run_name = run_name.replace('_', ' ')
+        # run_name = run_name.replace('_', ' ')
         # ax.set_title(run_name, pad=30, fontdict={'fontsize': 90, 'fontfamily': 'Liberation Serif'})#, font_weight='bold')
         # 여백 조정
         plt.tight_layout()
