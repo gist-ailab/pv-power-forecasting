@@ -4,7 +4,7 @@ export CUDA_VISIBLE_DEVICES=$GPU_ID
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-data_name=OEDI_Georgia
+data_name=Germany
 data_type=all
 # data_type=day
 exp_id="${DATE}_volume_control_$data_name_$model_name"
@@ -43,12 +43,12 @@ echo "Using num_workers: $num_workers"
 echo "Using CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
 # 1 for entire, 8 for 1/8, 16 for 1/16
-# for source_vol in 1 8 16
-for source_vol in 1
+for source_vol in 1 8 16
+# for source_vol in 1
 do
     # for target_vol in 360    # GIST, Miryang, Germany
     # for target_vol in 240 360 480   # OEDI, UK
-    for target_vol in 180 270 360    # GIST, Miryang, Germany
+    for target_vol in 90 180 270 360    # GIST, Miryang, Germany
     do
 
         if [ "$source_vol" = 1 ]; then
@@ -71,7 +71,7 @@ do
         python run_longExp.py \
             --run_name $setting_name \
             --random_seed $random_seed \
-            --is_fully_finetune \
+            --num_freeze_layers $num_freeze_layers \
             --model_id $model_id \
             --model $model_name \
             --data $data_name \
