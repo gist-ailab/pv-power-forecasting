@@ -84,7 +84,7 @@ if __name__ == '__main__':
     
     dataset_name = 'Germany'
     
-    save_dir = os.path.join(project_root, f'data/{dataset_name}/processed_data_night')
+    save_dir = os.path.join(project_root, f'data/{dataset_name}/processed_data_all')
     log_save_dir = os.path.join(project_root, f'data_preprocessing_night/{dataset_name}/processed_info')
 
     # 디렉토리 삭제
@@ -163,6 +163,16 @@ if __name__ == '__main__':
         
         # Interpolate NaN values (1 or fewer consecutive NaNs)
         df_hourly.interpolate(method='linear', limit=1, inplace=True)
+        
+                # Remove days where Active_Power is all 0 or NaN
+        df_hourly['date'] = df_hourly['timestamp'].dt.date
+        zero_or_nan_days = df_hourly.groupby('date')['Active_Power'].apply(
+            lambda x: (x.fillna(0) == 0).all()
+        )
+        days_to_remove = zero_or_nan_days[zero_or_nan_days].index
+        df_hourly = df_hourly[~df_hourly['date'].isin(days_to_remove)]
+        df_hourly.drop(columns=['date'], inplace=True)
+
         
         # Save the processed DataFrame
         max_active_power = df_hourly['Active_Power'].max(skipna=True)
