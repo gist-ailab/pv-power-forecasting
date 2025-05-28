@@ -96,8 +96,8 @@ split_configs = {
     # ablation study for chronological on GIST dataset
     'GISTchrono' : {
         'train': [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-        'val': [3, 13], # 3: Soccer field, 13: C10_Renewable-E-Bldg
-        'test': [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+        'val': [3, 14], # 3: E03_GTI, 13: C10_Renewable-E-Bldg
+        'test': [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]
     },
     # ablation study for chronological on Germany dataset
     'Germanychrono': {
