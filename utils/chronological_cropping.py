@@ -23,12 +23,12 @@ def split_pv_data_by_period(input_folder, output_folder):
         path.mkdir(parents=True, exist_ok=True)
     
     # 기준 날짜 설정
-    # GIST: 2024년 9월 25일이 가장 최신. GIST는 최근 1년 데이터를 test set으로 사용
+    # GIST: 2024년 9월 25일이 가장 최신. GIST는 최근 1년 데이터를 test set으로 사용. 하지만 seasonality를 고려하여 1년보다 더 긴 기간을 사용 
     # Germany: 2023년 12월 29일이 가장 최신. Germany는 최근 3년 데이터를 test set으로 사용
-    end_date = datetime(2023, 12, 29)
+    end_date = datetime(2024, 8, 31)
     # test_start_date = end_date - timedelta(days=2*365)  # 최근 2년
     # val_start_date = test_start_date - timedelta(days=365)  # 그 전 1년
-    test_start_date = end_date - timedelta(days=365*4)
+    test_start_date = end_date - timedelta(days=365)
     # val_start_date = test_start_date - timedelta(days=365)  # 그 전 1년
     
     print(f"데이터 분할 기준:")
@@ -109,11 +109,11 @@ def split_pv_data_by_period(input_folder, output_folder):
 # 사용 예시
 if __name__ == "__main__":
     # 입력 및 출력 폴더 경로 설정
-    # input_folder = "/home/bak/Projects/pv-power-forecasting/data/GIST/processed_data_all"  # 원본 CSV 파일들이 있는 폴더 경로
-    # output_folder = "/home/bak/Projects/pv-power-forecasting/data/GISTchrono/processed_data_split"  # 분할된 데이터를 저장할 폴더 경로
+    input_folder = "/home/bak/Projects/pv-power-forecasting/data/GIST/processed_data_all"  # 원본 CSV 파일들이 있는 폴더 경로
+    output_folder = "/home/bak/Projects/pv-power-forecasting/data/GISTchrono/processed_data_split"  # 분할된 데이터를 저장할 폴더 경로
 
-    input_folder = "/home/bak/Projects/pv-power-forecasting/data/Germany/processed_data_all"  # 원본 CSV 파일들이 있는 폴더 경로
-    output_folder = "/home/bak/Projects/pv-power-forecasting/data/Germanychrono/processed_data_split"  # 분할된 데이터를 저장할 폴더 경로
+    # input_folder = "/home/bak/Projects/pv-power-forecasting/data/Germany/processed_data_all"  # 원본 CSV 파일들이 있는 폴더 경로
+    # output_folder = "/home/bak/Projects/pv-power-forecasting/data/Germanychrono/processed_data_split"  # 분할된 데이터를 저장할 폴더 경로
 
     # 실제 경로로 변경해서 사용하세요
     # input_folder = "/home/user/pv_data/"
