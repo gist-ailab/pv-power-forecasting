@@ -4,7 +4,7 @@ export CUDA_VISIBLE_DEVICES=$GPU_ID
 DATE=$(date +%y%m%d%H)
 model_name=PatchTST
 model_id=$DATE
-data_name=GIST
+data_name=GISTchrono
 data_type=all
 # data_type=day
 exp_id="${DATE}_Transfer_$data_name_$model_name"
@@ -16,7 +16,7 @@ fi
 root_path_name="/ailab_mat/dataset/PV/${data_name}/processed_data_${data_type}/"
 random_seed=2024
 
-num_freeze_layers=1
+num_freeze_layers=$2
 
 seq_len=240
 pred_len=24
