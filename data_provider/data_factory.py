@@ -77,15 +77,15 @@ split_configs = {
 
     #### 날짜로 나누는 loc
 
-    'OEDI_California': { # 2017.12.05  2023.10.31
-        'train' : 0.75,
-        'val' : 0.1,
-        'test' : 0.15
+    'OEDI_California': { # 2018.01.23. ~ 2023.10.31
+        'train' : 0.75, # 180123 ~ 220522   => 4 years and 4 months
+    'val' : 0.1,        # 220523 ~ 221218   => 7 months
+        'test' : 0.15   # 221219 ~ 231031   => 10 months
     },
-    'OEDI_Georgia' : {  # 2018.03.29  2022.03.10
-        'train' : 0.75,
-        'val' : 0.1,
-        'test' : 0.15
+    'OEDI_Georgia' : {  # 2018.03.29. ~ 2022.03.10.
+        'train' : 0.75, # 180329 ~ 210314   => 3 years
+        'val' : 0.1,    # 210315 ~ 210805   => 5 months
+        'test' : 0.15   # 210806 ~ 220310   => 7 months
     },
     'UK' : {
         'train' : 0.75,
